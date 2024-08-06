@@ -2,11 +2,20 @@
   "name": "pano-cli",
   "description": "Pano: a command line tool suite for operating and monitoring an options market, such as Panoptic",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "axios": "^1.7.3",
     "dotenv": "^16.4.5",
     "ink": "^5.0.1",
     "react": "^18.3.1",
+    "viem": "^2.18.8",
     "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "@types/eslint__js": "^8.42.3",
+    "eslint": "^9.8.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.0.1"
   }
 }
