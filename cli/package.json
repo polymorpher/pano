@@ -3,5 +3,10 @@
   "description": "Pano: a command line tool suite for operating and monitoring an options market, such as Panoptic",
   "version": "1.0.0",
   "dependencies": {
+    "axios": "^1.7.3",
+    "dotenv": "^16.4.5",
+    "ink": "^5.0.1",
+    "react": "^18.3.1",
+    "yargs": "^17.7.2"
   }
 }
