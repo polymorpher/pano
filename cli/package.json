@@ -1,0 +1,7 @@
+{
+  "name": "pano-cli",
+  "description": "Pano: a command line tool suite for operating and monitoring an options market, such as Panoptic",
+  "version": "1.0.0",
+  "dependencies": {
+  }
+}
