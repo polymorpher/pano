@@ -22,6 +22,6 @@
     "typescript-eslint": "^8.0.1",
     "eslint-plugin-compat": "^6.0.0",
     "eslint-plugin-n": "^16",
-    "eslint-plugin-promise": "^7.1.0"
+    "eslint-plugin-promise": "^6"
   }
 }
