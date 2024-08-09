@@ -4,7 +4,8 @@ dotenv.config()
 
 const DEBUG = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
 
-interface Network {
+export interface Network {
+  name: string
   rpc: string
   chainId: number
   nativeCurrency: { name: string, symbol: string, decimals: number }
@@ -19,6 +20,7 @@ const config: Config = {
   debug: DEBUG,
   networks: {
     local: {
+      name: 'Local (Forked Ethereum Mainnet)',
       rpc: 'http://127.0.0.1:8545',
       chainId: 1,
       nativeCurrency: {
@@ -28,6 +30,7 @@ const config: Config = {
       }
     },
     anvil: {
+      name: 'Local Anvil',
       rpc: 'http://127.0.0.1:8545',
       chainId: 31337,
       nativeCurrency: {
@@ -37,6 +40,7 @@ const config: Config = {
       }
     },
     harmony: {
+      name: 'Harmony Mainnet',
       rpc: 'https://api.harmony.one',
       chainId: 0x63564C40,
       nativeCurrency: {

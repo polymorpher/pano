@@ -3,7 +3,8 @@ import { hideBin } from 'yargs/helpers'
 import * as process from 'process'
 import options from './options.js'
 import config from './config.js'
-import { createPublicClient, http } from 'viem'
+import renderStats from 'src/stats.tsx'
+import { publicClient, updateNetwork } from './client.js'
 
 const cmd = await yargs(hideBin(process.argv))
   .command('lp', 'Show liquidity provider tools')
@@ -25,25 +26,25 @@ async function main () {
   }
   rpc = rpc ?? networkSettings.rpc
   chainId = Number(chainId ?? networkSettings.chainId)
-
-  const rClient = createPublicClient({
-    chain: {
-      rpcUrls: { default: { http: [rpc] } },
-      nativeCurrency: networkSettings.nativeCurrency,
-      name: network,
-      id: chainId
-    },
-    transport: http()
+  updateNetwork({
+    ...networkSettings,
+    rpc,
+    chainId
   })
-
-  console.log(`Network: ${network} | Chain ID: ${chainId} | RPC: ${rpc}`)
+  const client = publicClient()
   console.log('Testing RPC connection...')
-  const resChainId = await rClient.getChainId()
+  if (!client) {
+    console.error('Failed to create RPC client!')
+    process.exit(1)
+  }
+  const resChainId = await client.getChainId()
   if (chainId !== resChainId) {
     console.error(`Chain ID mismatch! RPC Response: ${resChainId}, Expected: ${chainId}`)
     process.exit(1)
   }
   console.log('RPC Connection test completed. Retrieving option pool stats...')
+
+  renderStats()
 
   if (isCommand('lp')) {
     console.log('test')
