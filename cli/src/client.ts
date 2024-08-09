@@ -1,4 +1,3 @@
-import React from 'react'
 import { type Network } from 'src/config.js'
 import { createPublicClient, http } from 'viem'
 

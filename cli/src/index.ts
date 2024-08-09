@@ -2,7 +2,7 @@ import yargs from 'yargs/yargs'
 import { hideBin } from 'yargs/helpers'
 import * as process from 'process'
 import options from './options.js'
-import config from './config.js'
+import { networks } from './config.js'
 import renderStats from 'src/stats.tsx'
 import { publicClient, updateNetwork } from './client.js'
 
@@ -19,7 +19,7 @@ async function main () {
   const network = cmd.network as string
   let rpc = cmd.rpc as string | undefined ?? process.env.RPC
   let chainId = cmd.chainId as number | undefined ?? process.env.CHAIN_ID
-  const networkSettings = config.networks[network]
+  const networkSettings = networks[network]
   if (!networkSettings) {
     console.error(`Unknown network: ${network}`)
     process.exit(1)
