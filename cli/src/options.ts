@@ -1,23 +1,23 @@
-import config from './config.js'
 import { type Options } from 'yargs'
 const options: Record<string, Options> = {
   network: {
     alias: 'n',
     type: 'string',
     default: 'local',
-    describe: 'The network you want to use, which provides a set of default values for RPC, chain id, and contract addresses, so you don\'t need to specify them one by one'
+    describe: 'The network you want to use, which provides a set of default values for RPC, chain id, and contract addresses, so you don\'t need to specify them one by one\n' +
+        '  - local (forked ETH mainnet): RPC=http://localhost:8545 chainId=1\n' +
+        '  - anvil: RPC=http://localhost:8545 chainId=31337\n' +
+        '  - harmony: RPC=https://api.harmony.one chainId=1666600000'
   },
   rpc: {
     alias: 'r',
     type: 'string',
-    default: config.rpc,
-    describe: 'RPC server for the blockchain'
+    describe: 'RPC server for the blockchain, to override network default value'
   },
   chainId: {
     alias: 'c',
     type: 'number',
-    default: config.chainId,
-    describe: 'Chain ID for the blockchain'
+    describe: 'Chain ID for the blockchain, to override network default value'
   }
 }
 export default options
