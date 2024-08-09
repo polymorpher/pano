@@ -3,25 +3,31 @@
   "description": "Pano: a command line tool suite for operating and monitoring an options market, such as Panoptic",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
   "dependencies": {
     "axios": "^1.7.3",
     "dotenv": "^16.4.5",
     "ink": "^5.0.1",
     "react": "^18.3.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.17.0",
     "viem": "^2.18.8",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/node": "^22.1.0",
+    "@types/yargs": "^17.0.33",
     "eslint": "^8",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-compat": "^6.0.0",
+    "eslint-plugin-n": "^16",
+    "eslint-plugin-promise": "^6",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^4",
     "globals": "^15.9.0",
-    "eslint-config-standard-with-typescript": "^43.0.1",
     "typescript": "^5.5.4",
-    "typescript-eslint": "^8.0.1",
-    "eslint-plugin-compat": "^6.0.0",
-    "eslint-plugin-n": "^16",
-    "eslint-plugin-promise": "^6"
+    "typescript-eslint": "^8.0.1"
   }
 }
