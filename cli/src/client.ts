@@ -1,9 +1,10 @@
 import { type Network } from 'src/config.js'
 import { createPublicClient, http } from 'viem'
+import { type PublicClient } from 'viem'
 
 let selectedNetwork: Network | undefined
 
-const publicClient = () => {
+const publicClient = (): PublicClient | undefined => {
   if (!selectedNetwork) {
     return
   }

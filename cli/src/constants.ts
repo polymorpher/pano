@@ -1,9 +1,17 @@
-import UniswapFactoryAbi from '../../panoptic-v1-core/artifacts/contracts/IUniswapV3Factory.sol/IUniswapV3Factory.json'
-import UniswapPoolAbi from '../../panoptic-v1-core/artifacts/contracts/IUniswapV3Pool.sol/IUniswapV3Pool.json'
-import PanopticFactoryAbi from '../../panoptic-v1-core/artifacts/contracts/PanopticFactory.sol/PanopticFactory.json'
-import PanopticPoolAbi from '../../panoptic-v1-core/artifacts/contracts/PanopticPool.sol/PanopticPool.json'
-import SFPMAbi from '../../panoptic-v1-core/artifacts/contracts/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json'
-import CollateralTrackerAbi from '../../panoptic-v1-core/artifacts/contracts/CollateralTracker.sol/CollateralTracker.json'
+import UniswapFactoryAbiJson from '../../panoptic-v1-core/artifacts/contracts/IUniswapV3Factory.sol/IUniswapV3Factory.json'
+import UniswapPoolAbiJson from '../../panoptic-v1-core/artifacts/contracts/IUniswapV3Pool.sol/IUniswapV3Pool.json'
+import PanopticFactoryAbiJson from '../../panoptic-v1-core/artifacts/contracts/PanopticFactory.sol/PanopticFactory.json'
+import PanopticPoolAbiJson from '../../panoptic-v1-core/artifacts/contracts/PanopticPool.sol/PanopticPool.json'
+import SFPMAbiJson from '../../panoptic-v1-core/artifacts/contracts/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json'
+import CollateralTrackerAbiJson from '../../panoptic-v1-core/artifacts/contracts/CollateralTracker.sol/CollateralTracker.json'
+import { type Abi } from 'viem'
+
+const UniswapFactoryAbi = UniswapFactoryAbiJson.abi as Abi
+const UniswapPoolAbi = UniswapPoolAbiJson.abi as Abi
+const PanopticFactoryAbi = PanopticFactoryAbiJson.abi as Abi
+const PanopticPoolAbi = PanopticPoolAbiJson.abi as Abi
+const SFPMAbi = SFPMAbiJson.abi as Abi
+const CollateralTrackerAbi = CollateralTrackerAbiJson.abi as Abi
 
 export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi }
 

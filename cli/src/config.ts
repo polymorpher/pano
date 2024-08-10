@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv'
 import * as process from 'process'
 import { DefaultAssets } from './constants.js'
 import { merge } from 'lodash-es'
+import { type Address } from 'viem'
 dotenv.config()
 
 export const DEBUG = Boolean(process.env.DEBUG === 'true' || process.env.DEBUG === '1')
@@ -57,4 +58,4 @@ export const pairs: Array<[string, string, number]> = process.env.PAIRS
     ]
 
 // local ETH fork's deployment address, using test/junk mnemonic
-export const factoryAddress = process.env.FACTORY_ADDRESS ?? '0x00436c9f57dffd96cecd129c04d9e488c57266cf'
+export const factoryAddress: Address = (process.env.FACTORY_ADDRESS ?? '0x00436c9f57dffd96cecd129c04d9e488c57266cf') as Address
