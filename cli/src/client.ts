@@ -1,27 +1,30 @@
 import { type Network } from 'src/config.js'
 import { createPublicClient, http } from 'viem'
 import { type PublicClient } from 'viem'
+import { useEffect, useState } from 'react'
 
-let selectedNetwork: Network | undefined
-
-const publicClient = (): PublicClient | undefined => {
-  if (!selectedNetwork) {
-    return
-  }
-  return createPublicClient({
-    chain: {
-      rpcUrls: { default: { http: [selectedNetwork.rpc] } },
-      nativeCurrency: selectedNetwork.nativeCurrency,
-      name: selectedNetwork.name,
-      id: selectedNetwork?.chainId
-    },
-    transport: http()
-  })
+const usePublicClient = () => {
+  const [network, setNetwork] = useState<Network | undefined>()
+  // const [pk, setPk] = useState<string>('')
+  const [publicClient, setPublicClient] = useState<PublicClient>()
+  useEffect(() => {
+    if (!network) {
+      console.log('No network selected')
+      return
+    }
+    const client = createPublicClient({
+      chain: {
+        rpcUrls: { default: { http: [network.rpc] } },
+        nativeCurrency: network.nativeCurrency,
+        name: network.name,
+        id: network?.chainId
+      },
+      transport: http()
+    })
+    console.log(`Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`)
+    setPublicClient(client)
+  }, [network])
+  return { network, setNetwork, client: publicClient }
 }
 
-const updateNetwork = (network: Network) => {
-  selectedNetwork = network
-  console.log(`Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`)
-}
-
-export { publicClient, updateNetwork }
+export { usePublicClient }

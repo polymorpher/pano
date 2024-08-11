@@ -4,7 +4,7 @@ import * as process from 'process'
 import options from './options.js'
 import { networks } from './config.js'
 import renderStats from 'src/stats.tsx'
-import { publicClient, updateNetwork } from './client.js'
+import { usePublicClient } from './client.js'
 
 const cmd = await yargs(hideBin(process.argv))
   .command('lp', 'Show liquidity provider tools')
@@ -26,12 +26,12 @@ async function main () {
   }
   rpc = rpc ?? networkSettings.rpc
   chainId = Number(chainId ?? networkSettings.chainId)
-  updateNetwork({
+  const { client, setNetwork } = usePublicClient()
+  setNetwork({
     ...networkSettings,
     rpc,
     chainId
   })
-  const client = publicClient()
   console.log('Testing RPC connection...')
   if (!client) {
     console.error('Failed to create RPC client!')

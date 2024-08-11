@@ -10,6 +10,7 @@ export const DEBUG = Boolean(process.env.DEBUG === 'true' || process.env.DEBUG =
 export const knownAssets = process.env.KNOWN_ASSETS ? merge(DefaultAssets, JSON.parse(process.env.KNOWN_ASSETS)) : DefaultAssets
 
 export interface Network {
+  id: string
   name: string
   rpc: string
   chainId: number
@@ -18,6 +19,7 @@ export interface Network {
 
 export const networks: Record<string, Network> = {
   local: {
+    id: 'local',
     name: 'Local (Forked Ethereum Mainnet)',
     rpc: 'http://127.0.0.1:8545',
     chainId: 1,
@@ -28,6 +30,7 @@ export const networks: Record<string, Network> = {
     }
   },
   anvil: {
+    id: 'anvil',
     name: 'Local Anvil',
     rpc: 'http://127.0.0.1:8545',
     chainId: 31337,
@@ -38,6 +41,7 @@ export const networks: Record<string, Network> = {
     }
   },
   harmony: {
+    id: 'harmony',
     name: 'Harmony Mainnet',
     rpc: 'https://api.harmony.one',
     chainId: 0x63564C40,
@@ -49,12 +53,18 @@ export const networks: Record<string, Network> = {
   }
 }
 
+export interface Pair {
+  token0: string
+  token1: string
+  fee: number
+}
+
 // each tuple is [token0, token1, fee in bps]. Order of token0 and token1 does not matter
 // token0 and token1 must exist from address lookup table
-export const pairs: Array<[string, string, number]> = process.env.PAIRS
+export const pairs: Pair[] = process.env.PAIRS
   ? JSON.parse(process.env.PAIRS)
   : [
-      ['USDC', 'WETH', 500]
+      { token0: 'USDC', token1: 'WETH', fee: 500 }
     ]
 
 // local ETH fork's deployment address, using test/junk mnemonic
