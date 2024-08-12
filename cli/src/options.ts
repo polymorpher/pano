@@ -18,6 +18,14 @@ const options: Record<string, Options> = {
     alias: 'c',
     type: 'number',
     describe: 'Chain ID for the blockchain, to override network default value'
+  },
+  uniswapFactory: {
+    type: 'string',
+    describe: 'Uniswap V3 Factory Deployment Address'
+  },
+  panopticFactory: {
+    type: 'string',
+    describe: 'Panoptic Factory Deployment Address'
   }
 }
 export default options

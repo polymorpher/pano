@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { type Abi, type Address, getContract, type GetContractReturnType, type PublicClient } from 'viem'
+import { type Abi, getContract, type GetContractReturnType, type PublicClient } from 'viem'
 import { usePublicClient } from './client.js'
-import { factoryAddress } from './config.js'
 import { PanopticFactoryAbi, UniswapFactoryAbi } from './constants.js'
+import { getPanopticFactoryAddress, getUniswapFactoryAddress } from './cmd.js'
 
 export const useFactories = () => {
   const { client } = usePublicClient()
@@ -13,10 +13,11 @@ export const useFactories = () => {
       if (!client) {
         return
       }
-      const pf = getContract({ address: factoryAddress, abi: PanopticFactoryAbi, client })
+      const pf = getContract({ address: getPanopticFactoryAddress(), abi: PanopticFactoryAbi, client })
       setPanopticFactory(pf)
-      const uf = await pf.read.univ3Factory() as Address
-      const uniswapFactory = getContract({ address: uf, abi: UniswapFactoryAbi, client })
+      // inaccessible from contract, until the member is made public
+      // const uf = await pf.read.univ3Factory() as Address
+      const uniswapFactory = getContract({ address: getUniswapFactoryAddress(), abi: UniswapFactoryAbi, client })
       setUniswapFactory(uniswapFactory)
     }
     init().catch(console.error)

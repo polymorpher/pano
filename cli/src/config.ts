@@ -68,4 +68,6 @@ export const pairs: Pair[] = process.env.PAIRS
     ]
 
 // local ETH fork's deployment address, using test/junk mnemonic
-export const factoryAddress: Address = (process.env.FACTORY_ADDRESS ?? '0x00436c9f57dffd96cecd129c04d9e488c57266cf') as Address
+export const defaultPanopticfactoryAddress: Address = (process.env.PANOPTIC_FACTORY_ADDRESS ?? '0x00436c9f57dffd96cecd129c04d9e488c57266cf') as Address
+
+export const defaultUniswapFactoryAddress: Address = (process.env.UNISWAP_FACTORY_ADDRESS ?? '0x1F98431c8aD98523631AE4a59f267346ea31F984') as Address
