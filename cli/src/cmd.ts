@@ -1,4 +1,4 @@
-import { type Network, networks, defaultPanopticfactoryAddress } from './config.js'
+import {type Network, networks, defaultPanopticfactoryAddress, defaultUniswapFactoryAddress} from './config.js'
 import yargs from 'yargs/yargs'
 import { hideBin } from 'yargs/helpers'
 import process from 'process'
@@ -38,5 +38,5 @@ export const getPanopticFactoryAddress = (): Address => {
 
 export const getUniswapFactoryAddress = (): Address => {
   const ufa = cmd.uniswapFactory as Address
-  return ufa ?? defaultPanopticfactoryAddress
+  return ufa ?? defaultUniswapFactoryAddress
 }
