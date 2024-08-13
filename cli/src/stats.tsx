@@ -55,7 +55,8 @@ const Stats = () => {
     init().catch(console.error)
   }, [client, panopticFactory, uniswapFactory, network])
   return <Box>
-    <Text>Pairs: ${JSON.stringify(pairs)}</Text>
+    <Text>Pairs</Text>
+    <Text>{JSON.stringify(pairs, null, 2)}</Text>
   </Box>
 }
 
