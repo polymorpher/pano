@@ -4,14 +4,25 @@ import PanopticFactoryAbiJson from '../../panoptic-v1-core/artifacts/contracts/P
 import PanopticPoolAbiJson from '../../panoptic-v1-core/artifacts/contracts/PanopticPool.sol/PanopticPool.json'
 import SFPMAbiJson from '../../panoptic-v1-core/artifacts/contracts/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json'
 import CollateralTrackerAbiJson from '../../panoptic-v1-core/artifacts/contracts/CollateralTracker.sol/CollateralTracker.json'
-import { type Abi } from 'viem'
+import { parseAbi, type Abi } from 'viem'
 
 const UniswapFactoryAbi = UniswapFactoryAbiJson.abi as Abi
+export type UniswapFactoryAbiType = typeof UniswapFactoryAbi
+
 const UniswapPoolAbi = UniswapPoolAbiJson.abi as Abi
+export type UniswapPoolAbiType = typeof UniswapPoolAbi
+
 const PanopticFactoryAbi = PanopticFactoryAbiJson.abi as Abi
+export type PanopticFactoryAbiType = typeof PanopticFactoryAbi
+
 const PanopticPoolAbi = PanopticPoolAbiJson.abi as Abi
+export type PanopticPoolAbiType = typeof PanopticPoolAbi
+
 const SFPMAbi = SFPMAbiJson.abi as Abi
+export type SFPMAbiType = typeof SFPMAbi
+
 const CollateralTrackerAbi = CollateralTrackerAbiJson.abi as Abi
+export type CollateralTrackerAbiType = typeof CollateralTrackerAbi
 
 export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi }
 
