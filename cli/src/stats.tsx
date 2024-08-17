@@ -6,6 +6,7 @@ import { type Address, getContract, type GetContractReturnType, type PublicClien
 import { useFactories } from './uniswap.js'
 import { getTokenAddress, pairToStr } from './util.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from './constants.js'
+import { useERC20 } from './token.js'
 
 interface ValidatedPair extends Pair {
   token0Address: Address
@@ -29,6 +30,8 @@ const CollateralStats = ({ address }: { address: Address }) => {
   const [totalAssets, setTotalAssets] = useState<bigint>()
   const [tracker, setTracker] = useState<CollateralTracker>()
   const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
+  const [tokenAddress, setTokenAddress] = useState<Address>(zeroAddress)
+  const { name, symbol, decimals } = useERC20({ address: tokenAddress })
   // const [metadata, setMetadata] =
   useEffect(() => {
     async function init () {
@@ -51,15 +54,19 @@ const CollateralStats = ({ address }: { address: Address }) => {
       setShares(shares)
       const [poolAssets, inAmm, utilization] = await tracker.read.getPoolData()
       setPoolState({ poolAssets, inAmm, utilization: Number(utilization) / DECIMALS })
+      const tokenAddress = await tracker.read.asset()
+      setTokenAddress(tokenAddress)
     }
     getStats().catch(console.error)
   }, [tracker])
   return <Box>
+    <Text>{name} {symbol} {decimals}</Text>
+    <Text>Underlying: {tokenAddress}</Text>
     <Text>{poolAssets.toString()}</Text>
     <Text>{inAmm.toString()}</Text>
     <Text>{utilization}</Text>
-    <Text>{shares}</Text>
-    <Text>{totalAssets}</Text>
+    <Text>{shares?.toString()}</Text>
+    <Text>{totalAssets?.toString()}</Text>
   </Box>
 }
 
