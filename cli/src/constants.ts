@@ -1,30 +1,13 @@
-import UniswapFactoryAbiJson from '../../panoptic-v1-core/artifacts/contracts/IUniswapV3Factory.sol/IUniswapV3Factory.json'
-import UniswapPoolAbiJson from '../../panoptic-v1-core/artifacts/contracts/IUniswapV3Pool.sol/IUniswapV3Pool.json'
-import PanopticFactoryAbiJson from '../../panoptic-v1-core/artifacts/contracts/PanopticFactory.sol/PanopticFactory.json'
-import PanopticPoolAbiJson from '../../panoptic-v1-core/artifacts/contracts/PanopticPool.sol/PanopticPool.json'
-import SFPMAbiJson from '../../panoptic-v1-core/artifacts/contracts/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json'
-import CollateralTrackerAbiJson from '../../panoptic-v1-core/artifacts/contracts/CollateralTracker.sol/CollateralTracker.json'
-import { parseAbi, type Abi } from 'viem'
+import UniswapFactoryAbi from '../types-contract/IUniswapV3Factory.sol/IUniswapV3Factory.json.ts'
+import UniswapPoolAbi from '../types-contract/IUniswapV3Pool.sol/IUniswapV3Pool.json.ts'
+import PanopticFactoryAbi from '../types-contract/PanopticFactory.sol/PanopticFactory.json.ts'
+import PanopticPoolAbi from '../types-contract/PanopticPool.sol/PanopticPool.json.ts'
+import SFPMAbi from '../types-contract/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json.ts'
+import CollateralTrackerAbi from '../types-contract/CollateralTracker.sol/CollateralTracker.json.ts'
+import IERC20Abi from '../types-contract/IERC20.sol/IERC20.json.ts'
+import IERC20MetadataAbi from '../types-contract/IERC20Metadata.sol/IERC20Metadata.json.ts'
 
-const UniswapFactoryAbi = UniswapFactoryAbiJson.abi as Abi
-export type UniswapFactoryAbiType = typeof UniswapFactoryAbi
-
-const UniswapPoolAbi = UniswapPoolAbiJson.abi as Abi
-export type UniswapPoolAbiType = typeof UniswapPoolAbi
-
-const PanopticFactoryAbi = PanopticFactoryAbiJson.abi as Abi
-export type PanopticFactoryAbiType = typeof PanopticFactoryAbi
-
-const PanopticPoolAbi = PanopticPoolAbiJson.abi as Abi
-export type PanopticPoolAbiType = typeof PanopticPoolAbi
-
-const SFPMAbi = SFPMAbiJson.abi as Abi
-export type SFPMAbiType = typeof SFPMAbi
-
-const CollateralTrackerAbi = CollateralTrackerAbiJson.abi as Abi
-export type CollateralTrackerAbiType = typeof CollateralTrackerAbi
-
-export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi }
+export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi, IERC20Abi, IERC20MetadataAbi }
 
 export const DefaultAssets: Record<string, Record<string, string>> = {
   ethereum: {
@@ -41,3 +24,5 @@ export const DefaultAssets: Record<string, Record<string, string>> = {
   }
 }
 DefaultAssets.local = DefaultAssets.ethereum
+
+export const DECIMALS = 10_000
