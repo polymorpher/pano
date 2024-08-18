@@ -6,7 +6,7 @@ import { type Address, getContract, type GetContractReturnType, type PublicClien
 import { useFactories } from './uniswap.js'
 import { getTokenAddress, pairToStr } from './util.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from './constants.js'
-import { useERC20 } from './token.js'
+import { type ERC20Metadata, useERC20 } from './token.js'
 
 interface ValidatedPair extends Pair {
   token0Address: Address
@@ -24,15 +24,20 @@ interface CollateralPoolState {
   utilization: number
 }
 
-const CollateralStats = ({ address }: { address: Address }) => {
+interface CollateralInfo {
+  totalAssets: bigint
+  shares: bigint
+  tokenAddress: Address
+}
+
+const useCollateralInfo = ({ address }: { address: Address }): CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker } => {
   const { network, client } = usePublicClient()
-  const [shares, setShares] = useState<bigint>()
-  const [totalAssets, setTotalAssets] = useState<bigint>()
+  const [shares, setShares] = useState<bigint>(0n)
+  const [totalAssets, setTotalAssets] = useState<bigint>(0n)
   const [tracker, setTracker] = useState<CollateralTracker>()
   const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
   const [tokenAddress, setTokenAddress] = useState<Address>(zeroAddress)
   const { name, symbol, decimals } = useERC20({ address: tokenAddress })
-  // const [metadata, setMetadata] =
   useEffect(() => {
     async function init () {
       if (!client) {
@@ -59,6 +64,11 @@ const CollateralStats = ({ address }: { address: Address }) => {
     }
     getStats().catch(console.error)
   }, [tracker])
+  return { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets }
+}
+
+const CollateralStats = ({ address }: { address: Address }) => {
+  const { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, shares, totalAssets } = useCollateralInfo({ address })
   return <Box>
     <Text>{name} {symbol} {decimals}</Text>
     <Text>Underlying: {tokenAddress}</Text>
@@ -98,8 +108,8 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
       }
       const [priceArray, medianTick] = await panopticPool.read.getPriceArray()
       // TODO: convert ticks to prices
-      setPrice(medianTick)
-      setRecentPrices(priceArray)
+      setPrice(medianTick as number)
+      setRecentPrices(priceArray as number[])
     }
     getStats().catch(console.error)
   }, [panopticPool])
@@ -108,6 +118,8 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
     <Text>{token0} {token1}</Text>
     <Text>{price}</Text>
     <Text>{recentPrices}</Text>
+    <CollateralStats address={token0}/>
+    <CollateralStats address={token1}/>
   </Box>
 }
 

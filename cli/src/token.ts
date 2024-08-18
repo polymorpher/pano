@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { type Address, getContract, type GetContractReturnType, type PublicClient } from 'viem'
 
 import {
@@ -15,7 +15,7 @@ export interface ERC20Metadata {
   decimals: number
 }
 
-export const useERC20 = ({ address }: { address: Address }) => {
+export const useERC20 = ({ address }: { address: Address }): ERC20Metadata & { contract?: IERC20 } => {
   const { client } = usePublicClient()
   const [name, setName] = useState<string>('')
   const [decimals, setDecimals] = useState<number>(0)
