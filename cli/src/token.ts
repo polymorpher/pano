@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { type Address, getContract, type GetContractReturnType, type PublicClient } from 'viem'
+import { type Address, getContract, type GetContractReturnType, type PublicClient, isAddress } from 'viem'
 
 import {
   IERC20Abi,
@@ -24,7 +24,7 @@ export const useERC20 = ({ address }: { address: Address }): ERC20Metadata & { c
 
   useEffect(() => {
     async function init () {
-      if (!client) {
+      if (!client || !isAddress(address)) {
         return
       }
       const c = getContract({ abi: IERC20Abi, address, client })
