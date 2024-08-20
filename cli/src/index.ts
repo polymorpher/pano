@@ -18,13 +18,9 @@ async function main () {
   }
   console.log('RPC Connection test completed. Retrieving option pool stats...')
 
-  renderMainframe()
+  const { waitUntilExit } = renderMainframe()
 
-  if (isCommand('lp')) {
-    console.log('test')
-    return
-  }
-  console.log('test2')
+  await waitUntilExit()
 }
 
 main().catch(console.error)

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Text, Newline } from 'ink'
+import { Box, Text, Newline, useStdout, useStderr } from 'ink'
 import { usePublicClient } from './client.js'
 import { type Pair, pairs as initPairs } from './config.js'
 import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
@@ -38,6 +38,7 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo &
   const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
   const [tokenAddress, setTokenAddress] = useState<Address | undefined>()
   const { name, symbol, decimals } = useERC20({ address: tokenAddress })
+  const { write: writeErr } = useStderr()
   useEffect(() => {
     async function init () {
       if (!client || !address) {
@@ -46,8 +47,8 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo &
       const tracker = getContract({ address, abi: CollateralTrackerAbi, client })
       setTracker(tracker)
     }
-    init().catch(console.error)
-  }, [network, client, address])
+    init().catch(writeErr)
+  }, [writeErr, network, client, address])
   useEffect(() => {
     async function getStats () {
       if (!tracker) {
@@ -61,22 +62,23 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo &
       setPoolState({ poolAssets, inAmm, utilization: Number(utilization) / DECIMALS })
       const tokenAddress = await tracker.read.asset()
       setTokenAddress(tokenAddress)
+      // console.log({ totalAssets, shares, poolAssets, inAmm, tokenAddress })
     }
-    getStats().catch(console.error)
-  }, [tracker])
+    getStats().catch(writeErr)
+  }, [writeErr, tracker])
   return { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets }
 }
 
 const CollateralStats = ({ address }: { address?: Address }) => {
   const { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, shares, totalAssets } = useCollateralInfo({ address })
-  return <Box>
-    <Text>{name} {symbol} {decimals}</Text><Newline />
-    <Text>Underlying: {tokenAddress}</Text><Newline />
-    <Text>{poolAssets.toString()}</Text><Newline />
-    <Text>{inAmm.toString()}</Text><Newline />
-    <Text>{utilization}</Text><Newline />
-    <Text>{shares?.toString()}</Text><Newline />
-    <Text>{totalAssets?.toString()}</Text><Newline />
+  return <Box marginTop={1} flexDirection='column'>
+    <Text>Collateral: {address}</Text>
+    <Text>Underlying: {name} | {symbol} | {decimals} | {tokenAddress}</Text>
+    <Text>Collateral In Pool: {poolAssets.toString()}</Text>
+    <Text>Collateral In Uniswap: {inAmm.toString()}</Text>
+    <Text>Total Collateral: {totalAssets?.toString()}</Text>
+    <Text>Utilization {(utilization * 100).toFixed(2)}%</Text>
+    <Text># LP Shares: {shares?.toString()}</Text>
   </Box>
 }
 
@@ -86,7 +88,7 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
   const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>([undefined, undefined])
   const [price, setPrice] = useState<number>(0)
   const [recentPrices, setRecentPrices] = useState<number[]>([])
-
+  const { write: writeErr } = useStderr()
   useEffect(() => {
     async function init () {
       if (!client) {
@@ -96,18 +98,18 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
       setPanopticPool(pp)
       const t0 = await pp.read.collateralToken0()
       if (t0 === zeroAddress) {
-        console.error('Bad collateral token0 tracker address')
+        writeErr('Bad collateral token0 tracker address')
         return
       }
       const t1 = await pp.read.collateralToken1()
       if (t1 === zeroAddress) {
-        console.error('Bad collateral token0 tracker address')
+        writeErr('Bad collateral token0 tracker address')
         return
       }
       setTokens([t0, t1])
     }
-    init().catch(console.error)
-  }, [network, client, pair])
+    init().catch(writeErr)
+  }, [network, client, pair, writeErr])
 
   useEffect(() => {
     async function getStats () {
@@ -119,13 +121,13 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
       setPrice(medianTick as number)
       setRecentPrices(priceArray as number[])
     }
-    getStats().catch(console.error)
-  }, [panopticPool])
+    getStats().catch(writeErr)
+  }, [panopticPool, writeErr])
 
-  return <Box>
-    <Text>{token0} {token1}</Text><Newline />
-    <Text>{price}</Text><Newline />
-    <Text>{recentPrices}</Text><Newline />
+  return <Box flexDirection='column'>
+    <Text>Pair: {token0} {token1}</Text>
+    <Text>Price: {price}</Text>
+    <Text>Recent ticks: [{recentPrices.join(', ')}]</Text>
     <CollateralStats address={token0}/>
     <CollateralStats address={token1}/>
   </Box>
@@ -135,7 +137,8 @@ const Stats = () => {
   const { network, client } = usePublicClient()
   const { panopticFactory, uniswapFactory } = useFactories()
   const [pairs, setPairs] = useState<ValidatedPair[]>([])
-
+  const { write } = useStdout()
+  const { write: writeErr } = useStderr()
   useEffect(() => {
     if (!client || !uniswapFactory || !panopticFactory || !network) {
       return
@@ -147,38 +150,36 @@ const Stats = () => {
         const token0Address = getTokenAddress(token0, network)
         const token1Address = getTokenAddress(token1, network)
         if (!token0Address) {
-          console.error(`Unknown asset ${token0} on network ${network?.name}`)
+          writeErr(`Unknown asset ${token0} on network ${network?.name}`)
           continue
         }
         if (!token1Address) {
-          console.error(`Unknown asset ${token1} on network ${network?.name}`)
+          writeErr(`Unknown asset ${token1} on network ${network?.name}`)
           continue
         }
         const uniswapPoolAddress = await uniswapFactory.read.getPool([token0Address, token1Address, fee])
         if (uniswapPoolAddress === zeroAddress) {
-          console.error(`Cannot find Uniswap pool address for pair ${pairToStr(token0, token1, fee, network)} `)
+          writeErr(`Cannot find Uniswap pool address for pair ${pairToStr(token0, token1, fee, network)} `)
           continue
         }
         const panopticPoolAddress = await panopticFactory.read.getPanopticPool([uniswapPoolAddress]) as Address
         if (panopticPoolAddress === zeroAddress) {
-          console.error(`Panoptic pool is not created for pair ${pairToStr(token0, token1, fee, network)}`)
+          writeErr(`Panoptic pool is not created for pair ${pairToStr(token0, token1, fee, network)}`)
           continue
         }
-        console.log(`Validated pair: ${pairToStr(token0, token1, fee, network)}`)
+        write(`Validated pair: ${pairToStr(token0, token1, fee, network)}`)
         validatedPairs.push({ ...pair, token0Address, token1Address, uniswapPoolAddress, panopticPoolAddress })
       }
       setPairs(validatedPairs)
-      console.log(`${validatedPairs.length} pairs validated. Initial pair validation completed.`)
+      write(`${validatedPairs.length} pairs validated. Initial pair validation completed.`)
     }
-    init().catch(console.error)
-  }, [client, panopticFactory, uniswapFactory, network])
-  return <Box>
-    <Text>Pairs</Text><Newline />
+    init().catch(writeErr)
+  }, [write, writeErr, client, panopticFactory, uniswapFactory, network])
+  return <Box flexDirection='column'>
+    <Text>Pairs</Text>
     {pairs.map(pair => {
       return <PoolStats key={pair.panopticPoolAddress} pair={pair}/>
     })}
-
-    {/* <Text>{JSON.stringify(pairs, null, 2)}</Text> */}
   </Box>
 }
 
