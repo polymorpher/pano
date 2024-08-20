@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { type Network } from 'src/config.js'
 import { createPublicClient, http } from 'viem'
 import { type PublicClient } from 'viem'
@@ -17,9 +17,18 @@ const buildPublicClient = (network: Network): PublicClient => {
   })
 }
 
+interface PublicClientContextProps {
+  client?: PublicClient
+  network: Network
+}
+
+const initialNetwork = parseInitialNetwork()
+
+const PublicClientContext = createContext<PublicClientContextProps>({ network: initialNetwork })
+
 // a react hook, use inside react components
-const usePublicClient = () => {
-  const [network, setNetwork] = useState<Network>(parseInitialNetwork())
+const usePublicClientHook = () => {
+  const [network, setNetwork] = useState<Network>(initialNetwork)
   // const [pk, setPk] = useState<string>('')
   const [publicClient, setPublicClient] = useState<PublicClient>()
   useEffect(() => {
@@ -34,4 +43,13 @@ const usePublicClient = () => {
   return { network, setNetwork, client: publicClient }
 }
 
-export { usePublicClient, buildPublicClient }
+export const PublicClientProvider = ({ children }: { children: any }) => {
+  const { client, network } = usePublicClientHook()
+  return <PublicClientContext.Provider value={{ client, network }}>
+    {children}
+  </PublicClientContext.Provider>
+}
+
+export const usePublicClient = () => useContext(PublicClientContext)
+
+export { buildPublicClient }

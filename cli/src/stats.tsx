@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Box, render, Text } from 'ink'
+import { Box, Text } from 'ink'
 import { usePublicClient } from './client.js'
 import { type Pair, pairs as initPairs } from './config.js'
 import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
@@ -27,20 +27,20 @@ interface CollateralPoolState {
 interface CollateralInfo {
   totalAssets: bigint
   shares: bigint
-  tokenAddress: Address
+  tokenAddress?: Address
 }
 
-const useCollateralInfo = ({ address }: { address: Address }): CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker } => {
+const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker } => {
   const { network, client } = usePublicClient()
   const [shares, setShares] = useState<bigint>(0n)
   const [totalAssets, setTotalAssets] = useState<bigint>(0n)
   const [tracker, setTracker] = useState<CollateralTracker>()
   const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
-  const [tokenAddress, setTokenAddress] = useState<Address>(zeroAddress)
+  const [tokenAddress, setTokenAddress] = useState<Address | undefined>()
   const { name, symbol, decimals } = useERC20({ address: tokenAddress })
   useEffect(() => {
     async function init () {
-      if (!client) {
+      if (!client || !address) {
         return
       }
       const tracker = getContract({ address, abi: CollateralTrackerAbi, client })
@@ -67,7 +67,7 @@ const useCollateralInfo = ({ address }: { address: Address }): CollateralInfo & 
   return { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets }
 }
 
-const CollateralStats = ({ address }: { address: Address }) => {
+const CollateralStats = ({ address }: { address?: Address }) => {
   const { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, shares, totalAssets } = useCollateralInfo({ address })
   return <Box>
     <Text>{name} {symbol} {decimals}</Text>
@@ -83,7 +83,7 @@ const CollateralStats = ({ address }: { address: Address }) => {
 const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
-  const [[token0, token1], setTokens] = useState<[Address, Address]>([zeroAddress, zeroAddress])
+  const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>([undefined, undefined])
   const [price, setPrice] = useState<number>(0)
   const [recentPrices, setRecentPrices] = useState<number[]>([])
 
@@ -95,7 +95,15 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
       const pp = getContract({ address: pair.panopticPoolAddress, abi: PanopticPoolAbi, client })
       setPanopticPool(pp)
       const t0 = await pp.read.collateralToken0()
+      if (t0 === zeroAddress) {
+        console.error('Bad collateral token0 tracker address')
+        return
+      }
       const t1 = await pp.read.collateralToken1()
+      if (t1 === zeroAddress) {
+        console.error('Bad collateral token0 tracker address')
+        return
+      }
       setTokens([t0, t1])
     }
     init().catch(console.error)
@@ -174,8 +182,4 @@ const Stats = () => {
   </Box>
 }
 
-const renderStats = () => {
-  render(<Stats/>)
-}
-
-export default renderStats
+export default Stats

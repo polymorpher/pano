@@ -1,11 +1,7 @@
-import yargs from 'yargs/yargs'
-import { hideBin } from 'yargs/helpers'
 import * as process from 'process'
-import options from './options.js'
-import { networks } from './config.js'
-import renderStats from 'src/stats.tsx'
-import { buildPublicClient, usePublicClient } from './client.js'
+import { buildPublicClient } from './client.js'
 import { isCommand, parseInitialNetwork } from './cmd.js'
+import { renderMainframe } from './mainframe.js'
 
 async function main () {
   const network = parseInitialNetwork()
@@ -22,7 +18,7 @@ async function main () {
   }
   console.log('RPC Connection test completed. Retrieving option pool stats...')
 
-  renderStats()
+  renderMainframe()
 
   if (isCommand('lp')) {
     console.log('test')
