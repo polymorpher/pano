@@ -12,3 +12,17 @@ export const pairToStr = (token0: string, token1: string, fee: number, network: 
 }
 
 export const isReadableAddress = (address?: Address) => address && address !== zeroAddress && isAddress(address)
+
+export const TickBase = 1.0001
+
+export const tickToPrice = (tick: number, decimals: number, precision: number = 7): number => {
+  const raw = TickBase ** tick
+  const scaled = raw / (10 ** decimals)
+  if (scaled < 10 ** -precision) {
+    return 0
+  }
+  if (scaled > 10 ** precision) {
+    return Infinity
+  }
+  return scaled
+}

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Text, Newline, useStdout, useStderr } from 'ink'
+import { Box, Text, useStdout, useStderr } from 'ink'
 import { usePublicClient } from './client.js'
 import { type Pair, pairs as initPairs } from './config.js'
 import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
 import { useFactories } from './uniswap.js'
-import { getTokenAddress, pairToStr } from './util.js'
+import { getTokenAddress, pairToStr, tickToPrice } from './util.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from './constants.js'
 import { type ERC20Metadata, useERC20 } from './token.js'
 
@@ -30,7 +30,8 @@ interface CollateralInfo {
   tokenAddress?: Address
 }
 
-const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker } => {
+type CollateralFullInfo = CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker, address?: Address }
+const useCollateralInfo = ({ address }: { address?: Address }): CollateralFullInfo => {
   const { network, client } = usePublicClient()
   const [shares, setShares] = useState<bigint>(0n)
   const [totalAssets, setTotalAssets] = useState<bigint>(0n)
@@ -66,11 +67,12 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo &
     }
     getStats().catch(writeErr)
   }, [writeErr, tracker])
-  return { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets }
+  return { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets }
 }
 
-const CollateralStats = ({ address }: { address?: Address }) => {
-  const { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, shares, totalAssets } = useCollateralInfo({ address })
+const DisplayCollateralStats = (
+  { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, shares, totalAssets }: CollateralFullInfo
+) => {
   return <Box marginTop={1} flexDirection='column'>
     <Text>Collateral: {address}</Text>
     <Text>Underlying: {name} | {symbol} | {decimals} | {tokenAddress}</Text>
@@ -86,8 +88,17 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
   const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>([undefined, undefined])
-  const [price, setPrice] = useState<number>(0)
-  const [recentPrices, setRecentPrices] = useState<number[]>([])
+  const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>({
+    priceTick: 1e-36,
+    recentPriceTicks: []
+  })
+  const c0Info = useCollateralInfo({ address: token0 })
+  const c1Info = useCollateralInfo({ address: token1 })
+  const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
+  const priceInverse = price ? 1 / price : 0
+  const recentPrices = recentPriceTicks.map(t => tickToPrice(t, c1Info.decimals - c0Info.decimals))
+  const recentPricesInverse = recentPrices.map(p => p ? 1 / p : 0)
+
   const { write: writeErr } = useStderr()
   useEffect(() => {
     async function init () {
@@ -117,19 +128,19 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
         return
       }
       const [priceArray, medianTick] = await panopticPool.read.getPriceArray()
-      // TODO: convert ticks to prices
-      setPrice(medianTick as number)
-      setRecentPrices(priceArray as number[])
+      setPriceTickInfo({ priceTick: medianTick as number, recentPriceTicks: priceArray as number[] })
     }
     getStats().catch(writeErr)
   }, [panopticPool, writeErr])
 
   return <Box flexDirection='column'>
-    <Text>Pair: {token0} {token1}</Text>
-    <Text>Price: {price}</Text>
-    <Text>Recent ticks: [{recentPrices.join(', ')}]</Text>
-    <CollateralStats address={token0}/>
-    <CollateralStats address={token1}/>
+    <Text>Pair: {c0Info.symbol}/{c1Info.symbol}</Text>
+    <Text>Price</Text>
+    <Text>- {c1Info.symbol} per 1 {c0Info.symbol}: {price}</Text>
+    <Text>- {c0Info.symbol} per 1 {c1Info.symbol}: {priceInverse}</Text>
+    {/* <Text>Recent prices: [{recentPrices.join(', ')}] | Inverse: [{recentPricesInverse.join(', ')}]</Text> */}
+    <DisplayCollateralStats {...c0Info}/>
+    <DisplayCollateralStats {...c1Info}/>
   </Box>
 }
 
