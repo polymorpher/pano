@@ -88,6 +88,7 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
   const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>([undefined, undefined])
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>({
     priceTick: 1e-36,
     recentPriceTicks: []
@@ -96,8 +97,8 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
   const c1Info = useCollateralInfo({ address: token1 })
   const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
   const priceInverse = price ? 1 / price : 0
-  const recentPrices = recentPriceTicks.map(t => tickToPrice(t, c1Info.decimals - c0Info.decimals))
-  const recentPricesInverse = recentPrices.map(p => p ? 1 / p : 0)
+  // const recentPrices = recentPriceTicks.map(t => tickToPrice(t, c1Info.decimals - c0Info.decimals))
+  // const recentPricesInverse = recentPrices.map(p => p ? 1 / p : 0)
 
   const { write: writeErr } = useStderr()
   useEffect(() => {
