@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Text } from 'ink'
+import { Box, Text, Newline } from 'ink'
 import { usePublicClient } from './client.js'
 import { type Pair, pairs as initPairs } from './config.js'
 import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
@@ -70,13 +70,13 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralInfo &
 const CollateralStats = ({ address }: { address?: Address }) => {
   const { name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, shares, totalAssets } = useCollateralInfo({ address })
   return <Box>
-    <Text>{name} {symbol} {decimals}</Text>
-    <Text>Underlying: {tokenAddress}</Text>
-    <Text>{poolAssets.toString()}</Text>
-    <Text>{inAmm.toString()}</Text>
-    <Text>{utilization}</Text>
-    <Text>{shares?.toString()}</Text>
-    <Text>{totalAssets?.toString()}</Text>
+    <Text>{name} {symbol} {decimals}</Text><Newline />
+    <Text>Underlying: {tokenAddress}</Text><Newline />
+    <Text>{poolAssets.toString()}</Text><Newline />
+    <Text>{inAmm.toString()}</Text><Newline />
+    <Text>{utilization}</Text><Newline />
+    <Text>{shares?.toString()}</Text><Newline />
+    <Text>{totalAssets?.toString()}</Text><Newline />
   </Box>
 }
 
@@ -123,9 +123,9 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
   }, [panopticPool])
 
   return <Box>
-    <Text>{token0} {token1}</Text>
-    <Text>{price}</Text>
-    <Text>{recentPrices}</Text>
+    <Text>{token0} {token1}</Text><Newline />
+    <Text>{price}</Text><Newline />
+    <Text>{recentPrices}</Text><Newline />
     <CollateralStats address={token0}/>
     <CollateralStats address={token1}/>
   </Box>
@@ -173,7 +173,7 @@ const Stats = () => {
     init().catch(console.error)
   }, [client, panopticFactory, uniswapFactory, network])
   return <Box>
-    <Text>Pairs</Text>
+    <Text>Pairs</Text><Newline />
     {pairs.map(pair => {
       return <PoolStats key={pair.panopticPoolAddress} pair={pair}/>
     })}

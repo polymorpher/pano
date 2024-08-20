@@ -22,7 +22,7 @@ interface PublicClientContextProps {
   network: Network
 }
 
-const initialNetwork = parseInitialNetwork()
+export const initialNetwork = parseInitialNetwork()
 
 const PublicClientContext = createContext<PublicClientContextProps>({ network: initialNetwork })
 
