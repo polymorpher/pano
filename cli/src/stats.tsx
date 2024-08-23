@@ -129,7 +129,7 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
         return
       }
       const [priceArray, medianTick] = await panopticPool.read.getPriceArray()
-      setPriceTickInfo({ priceTick: medianTick as number, recentPriceTicks: priceArray as number[] })
+      setPriceTickInfo({ priceTick: medianTick, recentPriceTicks: priceArray as number[] })
     }
     getStats().catch(writeErr)
   }, [panopticPool, writeErr])
@@ -174,7 +174,7 @@ const Stats = () => {
           writeErr(`Cannot find Uniswap pool address for pair ${pairToStr(token0, token1, fee, network)} `)
           continue
         }
-        const panopticPoolAddress = await panopticFactory.read.getPanopticPool([uniswapPoolAddress]) as Address
+        const panopticPoolAddress = await panopticFactory.read.getPanopticPool([uniswapPoolAddress])
         if (panopticPoolAddress === zeroAddress) {
           writeErr(`Panoptic pool is not created for pair ${pairToStr(token0, token1, fee, network)}`)
           continue

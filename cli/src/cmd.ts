@@ -1,4 +1,4 @@
-import {type Network, networks, defaultPanopticfactoryAddress, defaultUniswapFactoryAddress} from './config.js'
+import { type Network, networks, defaultPanopticfactoryAddress, defaultUniswapFactoryAddress } from './config.js'
 import yargs from 'yargs/yargs'
 import { hideBin } from 'yargs/helpers'
 import process from 'process'

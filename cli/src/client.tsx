@@ -43,7 +43,7 @@ const usePublicClientHook = () => {
   return { network, setNetwork, client: publicClient }
 }
 
-export const PublicClientProvider = ({ children }: { children: any }) => {
+export const PublicClientProvider = ({ children }: { children?: any }) => {
   const { client, network } = usePublicClientHook()
   return <PublicClientContext.Provider value={{ client, network }}>
     {children}
