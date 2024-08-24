@@ -1,5 +1,7 @@
 import { knownAssets, type Network } from './config.js'
-import { type Address, isAddress, zeroAddress } from 'viem'
+import { type Address, type Hex, isAddress, zeroAddress } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import type { PrivateKeyAccount } from 'viem/accounts'
 
 export const getTokenAddress = (token: string, network: Network): Address | undefined => {
   return knownAssets[network?.id ?? '']?.[token]
@@ -25,4 +27,13 @@ export const tickToPrice = (tick: number, decimals: number, precision: number = 
     return Infinity
   }
   return scaled
+}
+
+export const tryPrivateKeyToAccount = (pk: Hex): PrivateKeyAccount | undefined => {
+  try {
+    return privateKeyToAccount(pk)
+  } catch (ex: any) {
+    console.error(ex)
+    return undefined
+  }
 }

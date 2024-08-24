@@ -1,8 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { type Address } from 'viem'
+import { type Address, type Hex } from 'viem'
 import { type ProviderProps } from './common.js'
 import TextInput from 'ink-text-input'
 import { Newline, Box, Text } from 'ink'
+import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
+import { NotificationContext } from './notification.js'
 
 export enum WalletType {
   Unloaded = 'unloaded',
@@ -13,29 +15,23 @@ export enum WalletType {
 
 export interface Wallet {
   type: WalletType
-  pk: string
-  address: Address
+  address?: Address
+  privateKeyAccount?: PrivateKeyAccount
 }
 
-export const EmptyWallet: Wallet = { type: WalletType.Unloaded, pk: '', address: '' }
+export const EmptyWallet: Wallet = { type: WalletType.Unloaded }
 
 export const WalletContext = createContext<Wallet>(EmptyWallet)
-
-export const WalletProvider = ({ children }: ProviderProps) => {
-  const [wallet, setWallet] = useState<Wallet>(EmptyWallet)
-  return <WalletContext.Provider value={wallet}>
-    {children}
-  </WalletContext.Provider>
-}
 
 interface WalletSelectorProps {
   updateWallet: (w: Wallet) => any
 }
 
 export const WalletSelector = ({ updateWallet }: WalletSelectorProps) => {
-  const [pkInput, setPkInput] = useState<string>()
+  const [pkInput, setPkInput] = useState<string>('')
   const [mode, setMode] = useState<WalletType | undefined>()
   const [textInput, setTextInput] = useState<string>('')
+  const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
     if (textInput.startsWith('0')) {
       setMode(WalletType.Unloaded)
@@ -46,6 +42,26 @@ export const WalletSelector = ({ updateWallet }: WalletSelectorProps) => {
     }
   }, [textInput])
 
+  const onPkSubmit = useCallback((pk: string) => {
+    if (!pk) {
+      return
+    }
+    const hexInput: Hex = (pk.startsWith('0x') ? pk : ('0x' + pk)) as Hex
+    try {
+      const account = privateKeyToAccount(hexInput)
+      const w: Wallet = {
+        address: account.address,
+        type: WalletType.Hot,
+        privateKeyAccount: account
+      }
+      updateWallet(w)
+      setMode(undefined)
+      addMessage('Hot wallet was loaded successfully', { color: 'green' })
+    } catch (ex: any) {
+      addMessage(`ERROR - Hot wallet cannot be loaded. Cannot parse key. ${(ex as Error).toString()}`, { color: 'red' })
+      setPkInput('')
+    }
+  }, [addMessage, updateWallet])
   const wallet = useContext(WalletContext)
   return <>
     {!mode && <>
@@ -57,7 +73,27 @@ export const WalletSelector = ({ updateWallet }: WalletSelectorProps) => {
       <TextInput showCursor value={textInput} onChange={setTextInput} />
     </>}
     {mode === WalletType.Hot && <>
-      
+      <Box>
+        <Text color={'grey'}>Please paste your private key: </Text>
+        <TextInput showCursor value={pkInput} onSubmit={onPkSubmit} onChange={setPkInput} />
+      </Box>
     </>}
   </>
+}
+
+export const ShowWallet = () => {
+  const wallet = useContext(WalletContext)
+  return <>
+    {wallet.type === WalletType.Unloaded && <Text>No wallet is configured</Text>}
+    {wallet.type === WalletType.Hot && <Text>Loaded Hot Wallet: {wallet.address}</Text>}
+  </>
+}
+
+export const WalletProvider = ({ children }: ProviderProps) => {
+  const [wallet, setWallet] = useState<Wallet>(EmptyWallet)
+  return <WalletContext.Provider value={wallet}>
+    <ShowWallet/>
+    <WalletSelector updateWallet={setWallet}/>
+    {children}
+  </WalletContext.Provider>
 }
