@@ -4,6 +4,7 @@ import { PublicClientProvider } from './client.js'
 import Stats from './stats.js'
 import process from 'process'
 import TextInput from 'ink-text-input'
+import { type ProviderProps } from './common.js'
 
 interface Command {
   short: string
@@ -107,7 +108,7 @@ const UserInput = ({ updateInput }: UserInputProps) => {
   </Box>
 }
 
-const CommandProvider = ({ children }: { children?: any }) => {
+const CommandProvider = ({ children }: ProviderProps) => {
   const [command, setCommand] = useState<string>(CommandKeys.Help)
   // useEffect(() => {
   //   console.log('CommandProvider', { command })
