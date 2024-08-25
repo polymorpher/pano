@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
-import { render, Text } from 'ink'
-import { PublicClientProvider } from './client.js'
+import { render } from 'ink'
+import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
 import { CommandControl, CommandKeys, CommandProvider, matchCommand, UserInputContext } from './commands.js'
 import { HelpMessage } from './help.js'
@@ -21,11 +21,13 @@ const Mainframe = () => {
   return <NotificationProvider>
     <PublicClientProvider>
       <WalletProvider>
-        <CommandProvider>
-          <Router/>
-          <CommandControl/>
-          <NotificationBar/>
-        </CommandProvider>
+        <WalletClientProvider>
+          <CommandProvider>
+            <Router/>
+            <CommandControl/>
+            <NotificationBar/>
+          </CommandProvider>
+        </WalletClientProvider>
       </WalletProvider>
     </PublicClientProvider>
   </NotificationProvider>
