@@ -82,7 +82,7 @@ export const buildWalletClient = (network: Network, wallet: Wallet): WalletClien
   })
 }
 
-export const useWalletClient = () => {
+export const useWalletClientHook = () => {
   const { wallet } = useContext(WalletContext)
   const [network, setNetwork] = useState<Network>(initialNetwork)
   const [client, setClient] = useState<WalletClient>()
@@ -100,8 +100,10 @@ export const useWalletClient = () => {
 }
 
 export const WalletClientProvider = ({ children }: PropsWithChildren) => {
-  const { client, network, setNetwork } = useWalletClient()
+  const { client, network, setNetwork } = useWalletClientHook()
   return <WalletClientContext.Provider value={{ client, network, setNetwork }}>
     {children}
   </WalletClientContext.Provider>
 }
+
+export const useWalletClient = () => useContext(WalletClientContext)

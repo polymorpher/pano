@@ -5,6 +5,7 @@ import { Box, Text } from 'ink'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
+import { SectionTitle } from './common.js'
 
 export enum WalletType {
   Unloaded = 'unloaded',
@@ -87,9 +88,7 @@ export const WalletSelector = () => {
 
   return <>
     {!mode && <>
-      <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}>
-        <Text color={'yellow'}>Wallet Controller</Text>
-      </Box>
+      <SectionTitle>Wallet Controller</SectionTitle>
       {wallet.type !== WalletType.Unloaded && <Text>[0] unload and erase current wallet ({wallet.address}) </Text>}
       {<Text>[1] hot wallet (provide your private key) </Text>}
       {<Text color={'grey'}>[2] (Coming soon) MetaMask (connect and sign transactions via a browser window)</Text>}
@@ -109,7 +108,7 @@ export const WalletSelector = () => {
 export const ShowWallet = () => {
   const { wallet } = useContext(WalletContext)
   return <>
-    <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>Current Wallet</Text></Box>
+    <SectionTitle>Current Wallet</SectionTitle>
     {wallet.type === WalletType.Unloaded && <Text color={'red'}>No wallet is configured</Text>}
     {wallet.type === WalletType.Hot && <Text color={'green'} >Loaded Hot Wallet: {wallet.address}</Text>}
   </>
