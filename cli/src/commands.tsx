@@ -86,6 +86,7 @@ const UserInput = () => {
     const m = matchCommand(v)
     if (!m) {
       setInputCommand(CommandKeys.Help)
+      addMessage(`Invalid command [${v}]`, { color: 'red' })
       return
     }
     if (m.full === CommandKeys.Quit) {

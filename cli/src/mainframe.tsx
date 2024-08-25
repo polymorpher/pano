@@ -7,18 +7,10 @@ import { HelpMessage } from './help.js'
 import { NotificationBar, NotificationProvider } from './notification.js'
 import { WalletControl, WalletProvider } from './wallet.js'
 
-const InvalidCommandMessage = ({ command }: { command: string }) => {
-  return <>
-    <Text>Invalid Command [{command}].</Text>
-  </>
-}
-
 const Router = () => {
   const { input } = useContext(UserInputContext)
   const m = matchCommand(input)?.full
   return <>
-    <Text color={'green'}>========================================</Text>
-    {!m && <InvalidCommandMessage command={input}/>}
     {m === CommandKeys.Help && <HelpMessage/>}
     {m === CommandKeys.List && <Stats/>}
     {m === CommandKeys.Wallet && <WalletControl/>}

@@ -1,7 +1,7 @@
 import React, { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useState } from 'react'
 import { type Address, type Hex } from 'viem'
 import TextInput from 'ink-text-input'
-import { Newline, Box, Text } from 'ink'
+import { Box, Text } from 'ink'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
@@ -48,17 +48,18 @@ export const WalletSelector = () => {
   }, [userCommandDisabled])
 
   useEffect(() => {
+    if (textInput) {
+      addMessage(`You selected: ${textInput}`)
+    }
     if (textInput.startsWith('0')) {
       setMode(WalletType.Unloaded)
-      addMessage(`You selected: ${textInput}`)
     } else if (textInput.startsWith('1')) {
       setMode(WalletType.Hot)
-      addMessage(`You selected: ${textInput}`)
     } else if (textInput.startsWith('x')) {
       setMode(undefined)
       setUserCommandDisabled(false)
-      addMessage(`You selected: ${textInput}`)
     }
+    setTextInput('')
   }, [addMessage, setUserCommandDisabled, textInput])
 
   const onPkSubmit = useCallback((pk: string) => {
