@@ -11,7 +11,7 @@ interface NotificationOptions {
 }
 
 interface NotificationContextProps {
-  addMessage: (message: string, options: NotificationOptions) => void
+  addMessage: (message: string, options?: NotificationOptions) => void
   clear: () => void
   remove: (id: string) => void
   stickyMessages: NotificationMessage[]
@@ -25,7 +25,7 @@ export interface NotificationMessage {
 }
 
 export const NotificationContext = createContext<NotificationContextProps>({
-  addMessage: (message: string, options: NotificationOptions) => {},
+  addMessage: (message: string, options: NotificationOptions = {}) => {},
   clear: () => {},
   remove: (id: string) => {},
   stickyMessages: [],
@@ -37,7 +37,7 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
   const [stickyMessages, setStickyMessages] = useState<NotificationMessage[]>([])
   const [messageStore, setMessageStore] = useState<Map<string, NotificationMessage>>(new Map())
   const [expiredMessages, setExpiredMessages] = useState<NotificationMessage[]>([])
-  const addMessage = useCallback((message: string, options: NotificationOptions) => {
+  const addMessage = useCallback((message: string, options: NotificationOptions = {}) => {
     const id = options.id ?? Math.random().toString(36).slice(2)
     const duration = options.duration && options.duration > 0 ? options.duration : 10_000
     const time = Date.now()
@@ -47,25 +47,16 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
     }
     if (!options.sticky) {
       setTimeout(() => {
-        setMessageStore(ms => {
-          ms.set(id, { message, options })
-          return ms
-        })
+        setMessageStore(ms => new Map([...ms, [id, { message, options }]]))
       }, options.delay ?? 0)
       setTimeout(() => {
-        setMessageStore(ms => {
-          ms.delete(id)
-          return ms
-        })
+        setMessageStore(ms => new Map([...ms].filter(e => e[0] !== id)))
         setExpiredMessages(em => [...em, { message, options }])
       }, duration)
     }
   }, [])
   const clear = useCallback(() => {
-    setMessageStore(ms => {
-      ms.clear()
-      return ms
-    })
+    setMessageStore(new Map())
     setStickyMessages([])
   }, [])
   const remove = useCallback((id: string) => {
@@ -84,10 +75,10 @@ export const NotificationBar = () => {
   const { stickyMessages, messageStore } = useContext(NotificationContext)
   return <Box flexDirection={'column'} marginTop={1} marginBottom={1}>
     {stickyMessages.map((message) => {
-      return <Text key={message.options.id} color={message.options.color ?? 'black'}>[*] {message.message}</Text>
+      return <Text key={message.options.id} color={message.options.color ?? 'greenBright'}>[!] {message.message}</Text>
     })}
     {[...messageStore.values()].map((message) => {
-      return <Text key={message.options.id} color={message.options.color ?? 'black'}>{message.message}</Text>
+      return <Text key={message.options.id} color={message.options.color ?? 'grey'}>[*] {message.message}</Text>
     })}
   </Box>
 }

@@ -188,7 +188,7 @@ const Stats = () => {
     init().catch(writeErr)
   }, [write, writeErr, client, panopticFactory, uniswapFactory, network])
   return <Box flexDirection='column'>
-    <Text>Pairs</Text>
+    <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>Option Trading Pools Listings</Text></Box>
     {pairs.map(pair => {
       return <PoolStats key={pair.panopticPoolAddress} pair={pair}/>
     })}

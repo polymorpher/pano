@@ -1,9 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, type PropsWithChildren, useContext, useEffect, useState } from 'react'
 import { type Network } from 'src/config.js'
 import { createPublicClient, http } from 'viem'
 import { type PublicClient } from 'viem'
 import { parseInitialNetwork } from './cmd.js'
-import { type ProviderProps } from './common.js'
 
 // use outside of hooks and react components, such as main
 const buildPublicClient = (network: Network): PublicClient => {
@@ -44,7 +43,7 @@ const usePublicClientHook = () => {
   return { network, setNetwork, client: publicClient }
 }
 
-export const PublicClientProvider = ({ children }: ProviderProps) => {
+export const PublicClientProvider = ({ children }: PropsWithChildren) => {
   const { client, network } = usePublicClientHook()
   return <PublicClientContext.Provider value={{ client, network }}>
     {children}

@@ -1,12 +1,12 @@
 import React from 'react'
-import { Newline, Text } from 'ink'
+import { Text, Box } from 'ink'
 import { Commands } from './commands.js'
 
 export const HelpMessage = () => {
   return <>
-    <Text>Available commands:<Newline/></Text>
+    <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1} marginY={1}><Text color={'yellow'}>Help Menu</Text></Box>
     {Object.values(Commands).map(c => {
-      return <Text key={c.full}>({c.short}) {c.full} - {c.tbd ? '[Coming soon] ' : ''}{c.wallet ? '[wallet required] ' : ''}{c.desc} </Text>
+      return <Text color={c.tbd ? 'gray' : undefined } key={c.full}>({c.short}) {c.full} - {c.tbd ? '[Coming soon] ' : ''}{c.wallet ? '[wallet required] ' : ''}{c.desc} </Text>
     })}
     <Text/>
   </>

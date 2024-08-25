@@ -2,14 +2,14 @@ import React, { useContext } from 'react'
 import { render, Text } from 'ink'
 import { PublicClientProvider } from './client.js'
 import Stats from './stats.js'
-import { CommandKeys, CommandProvider, matchCommand, UserInputContext } from './commands.js'
+import { CommandControl, CommandKeys, CommandProvider, matchCommand, UserInputContext } from './commands.js'
 import { HelpMessage } from './help.js'
 import { NotificationBar, NotificationProvider } from './notification.js'
+import { WalletControl, WalletProvider } from './wallet.js'
 
 const InvalidCommandMessage = ({ command }: { command: string }) => {
   return <>
     <Text>Invalid Command [{command}].</Text>
-    <Text>Available commands: {Object.values(CommandKeys).join(', ')}</Text>
   </>
 }
 
@@ -21,16 +21,20 @@ const Router = () => {
     {!m && <InvalidCommandMessage command={input}/>}
     {m === CommandKeys.Help && <HelpMessage/>}
     {m === CommandKeys.List && <Stats/>}
+    {m === CommandKeys.Wallet && <WalletControl/>}
   </>
 }
 
 const Mainframe = () => {
   return <NotificationProvider>
     <PublicClientProvider>
-      <CommandProvider>
-        <Router/>
-        <NotificationBar/>
-      </CommandProvider>
+      <WalletProvider>
+        <CommandProvider>
+          <Router/>
+          <CommandControl/>
+          <NotificationBar/>
+        </CommandProvider>
+      </WalletProvider>
     </PublicClientProvider>
   </NotificationProvider>
 }
