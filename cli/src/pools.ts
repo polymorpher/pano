@@ -110,7 +110,7 @@ export const usePools = () => {
   return { pairs }
 }
 
-export const usePoolStats = (pool: ValidatedPair) => {
+export const usePoolStats = (pool?: ValidatedPair) => {
   const { addMessage } = useContext(NotificationContext)
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
@@ -130,7 +130,7 @@ export const usePoolStats = (pool: ValidatedPair) => {
 
   useEffect(() => {
     async function init () {
-      if (!client) {
+      if (!client || !pool) {
         return
       }
       const pp = getContract({ address: pool.panopticPoolAddress, abi: PanopticPoolAbi, client })
