@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { useWallet, WalletContext } from './wallet.js'
+import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
-import { Box, Text, Newline } from 'ink'
+import { Box, Text } from 'ink'
 import { SectionTitle, type ValidatedPair } from './common.js'
 import { type CollateralFullInfo, useCollateralBalance, usePools, usePoolStats } from './pools.js'
 import { NotificationContext } from './notification.js'
@@ -23,7 +23,8 @@ const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
 enum Stage {
   PoolSelection = 1,
   CollateralSelection = 2,
-  AmountInput = 3
+  AmountInput = 3,
+  Confirm = 4
 }
 
 export const DepositControl = () => {
@@ -147,6 +148,9 @@ export const DepositControl = () => {
         <Text>How much do you want to deposit? (Enter 0 or x to go back)</Text>
         <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmiited} />
       </Box>
+    </Box>}
+    {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
+      <Text>Confirm deposit request</Text>
     </Box>}
 
   </Box>
