@@ -29,11 +29,13 @@ interface WalletContextProps {
 
 export const WalletContext = createContext<WalletContextProps>({ wallet: EmptyWallet, setWallet: () => {} })
 
+export const useWallet = () => useContext(WalletContext)
+
 export const WalletSelector = () => {
   const [pkInput, setPkInput] = useState<string>('')
   const [mode, setMode] = useState<WalletType | undefined>()
   const [textInput, setTextInput] = useState<string>('')
-  const { wallet, setWallet } = useContext(WalletContext)
+  const { wallet, setWallet } = useWallet()
   const { addMessage } = useContext(NotificationContext)
   const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
 
@@ -106,7 +108,7 @@ export const WalletSelector = () => {
 }
 
 export const ShowWallet = () => {
-  const { wallet } = useContext(WalletContext)
+  const { wallet } = useWallet()
   return <>
     <SectionTitle>Current Wallet</SectionTitle>
     {wallet.type === WalletType.Unloaded && <Text color={'red'}>No wallet is configured</Text>}

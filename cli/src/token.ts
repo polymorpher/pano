@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { type Address, getContract, type GetContractReturnType, type PublicClient } from 'viem'
 
 import {
@@ -6,6 +6,8 @@ import {
   IERC20MetadataAbi
 } from './constants.js'
 import { usePublicClient } from './client.js'
+import { useWallet } from './wallet.js'
+import { NotificationContext } from './notification.js'
 
 type IERC20Metadata = GetContractReturnType<typeof IERC20MetadataAbi, PublicClient>
 type IERC20 = GetContractReturnType<typeof IERC20Abi, PublicClient>
@@ -16,7 +18,7 @@ export interface ERC20Metadata {
   decimals: number
 }
 
-export const useERC20 = ({ address }: { address?: Address }): ERC20Metadata & { contract?: IERC20, metadataContract?: IERC20Metadata } => {
+export const useERC20 = (address?: Address): ERC20Metadata & { contract?: IERC20, metadataContract?: IERC20Metadata } => {
   const { client } = usePublicClient()
   const [name, setName] = useState<string>('')
   const [decimals, setDecimals] = useState<number>(0)
@@ -43,4 +45,28 @@ export const useERC20 = ({ address }: { address?: Address }): ERC20Metadata & { 
     init().catch(console.error)
   }, [address, client])
   return { name, decimals, symbol, contract, metadataContract }
+}
+
+export const useERC20WithBalance = (contract: IERC20) => {
+  const [balance, setBalance] = useState<bigint>(0n)
+  const wallet = useWallet()
+  const { addMessage } = useContext(NotificationContext)
+  const allowanceOf = useCallback(async (spender: Address): Promise<bigint> => {
+    if (!contract || !wallet.wallet.address) {
+      return 0n
+    }
+    return await contract.read.allowance([wallet.wallet.address, spender])
+  }, [wallet.wallet.address, contract])
+
+  useEffect(() => {
+    async function init () {
+      if (!contract || !wallet.wallet.address) {
+        return
+      }
+      const balance = await contract.read.balanceOf([wallet.wallet.address])
+      setBalance(balance)
+    }
+    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [wallet.wallet.address, addMessage, contract])
+  return { balance, allowanceOf }
 }

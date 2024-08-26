@@ -4,7 +4,7 @@ import { createPublicClient, createWalletClient, http } from 'viem'
 import { type PublicClient, type WalletClient } from 'viem'
 import { parseInitialNetwork } from './cmd.js'
 import { NotificationContext } from './notification.js'
-import { type Wallet, WalletContext } from './wallet.js'
+import {useWallet, type Wallet, WalletContext} from './wallet.js'
 
 // use outside of hooks and react components, such as main
 export const buildPublicClient = (network: Network): PublicClient => {
@@ -83,7 +83,7 @@ export const buildWalletClient = (network: Network, wallet: Wallet): WalletClien
 }
 
 export const useWalletClientHook = () => {
-  const { wallet } = useContext(WalletContext)
+  const { wallet } = useWallet()
   const [network, setNetwork] = useState<Network>(initialNetwork)
   const [client, setClient] = useState<WalletClient>()
   const { addMessage } = useContext(NotificationContext)

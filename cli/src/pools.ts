@@ -8,6 +8,7 @@ import { NotificationContext } from './notification.js'
 import { type ValidatedPair } from './common.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from './constants.js'
 import { type ERC20Metadata, useERC20 } from './token.js'
+import { useWallet } from './wallet.js'
 
 type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
 type CollateralTracker = GetContractReturnType<typeof CollateralTrackerAbi, PublicClient>
@@ -33,7 +34,7 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralFullIn
   const [tracker, setTracker] = useState<CollateralTracker>()
   const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
   const [tokenAddress, setTokenAddress] = useState<Address | undefined>()
-  const { name, symbol, decimals } = useERC20({ address: tokenAddress })
+  const { name, symbol, decimals } = useERC20(tokenAddress)
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
     async function init () {
@@ -162,4 +163,24 @@ export const usePoolStats = (pool?: ValidatedPair) => {
   }, [panopticPool, addMessage])
 
   return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse }
+}
+
+export const useCollateralBalance = (collateralTracker: CollateralTracker) => {
+  const [shares, setShares] = useState<bigint>(0n)
+  const [value, setValue] = useState<bigint>(0n)
+  const wallet = useWallet()
+  const { addMessage } = useContext(NotificationContext)
+  useEffect(() => {
+    async function init () {
+      if (!collateralTracker || !wallet.wallet.address) {
+        return
+      }
+      const balance = await collateralTracker.read.balanceOf([wallet.wallet.address])
+      setShares(balance)
+      const shareValue = await collateralTracker.read.convertToAssets([balance])
+      setValue(shareValue)
+    }
+    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [addMessage, collateralTracker, wallet.wallet.address])
+  return { shares, value }
 }
