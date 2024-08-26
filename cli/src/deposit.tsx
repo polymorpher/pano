@@ -9,6 +9,7 @@ import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
 import { formatUnits } from 'viem'
 import { useERC20Balance } from './token.js'
+import { tryParseBigInt } from './util.js'
 
 const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
   const { c0Info, c1Info, price, priceInverse } = usePoolStats(pair)
@@ -44,6 +45,7 @@ export const DepositControl = () => {
   const choseC0 = chosenCollateral?.address === chosenPairInfo?.c0Info?.address
   const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / (chosenCollateral?.shares ?? 1n)) / 1_000_000
+  const [amount, setAmount] = useState<bigint>(0)
 
   useEffect(() => {
     setUserCommandDisabled(true)
@@ -105,11 +107,33 @@ export const DepositControl = () => {
     if (input === '0' || input.toLowerCase() === 'x') {
       setStage(Stage.CollateralSelection)
       setTextInput('')
+
       return
     }
-    // TODO: approve contract to use asset, then call deposit on contract, catch error
-    setStage(Stage.PoolSelection)
+    setStage(Stage.Confirm)
     setTextInput('')
+    const parsed = tryParseBigInt(input)
+    if (parsed) {
+      setAmount(parsed)
+    } else {
+      addMessage(`Malformed value [${input}]`, { color: 'red' })
+    }
+  }, [])
+
+  const onConfirm = useCallback((input: string) => {
+    input = input.toLowerCase()
+    setTextInput('')
+    if (input === 'n' || input === 'no') {
+      setStage(Stage.AmountInput)
+    } else if (input === 'y' || input === 'yes') {
+      // TODO: approve collateralTracker as spender for the underlying asset, and call deposit on collateralTracker
+    } else if (input === 'a' || input === 'abort') {
+      setStage(Stage.PoolSelection)
+      setUserCommandDisabled(false)
+      addMessage('Deposit operation aborted', { color: 'red' })
+    } else {
+      addMessage(`Unrecognized input [${input}]`, { color: 'red' })
+    }
   }, [])
 
   return <Box flexDirection={'column'}>
@@ -149,8 +173,13 @@ export const DepositControl = () => {
         <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmiited} />
       </Box>
     </Box>}
-    {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
+    {stage === Stage.Confirm && <Box marginTop={1} flexDirection={'column'}>
       <Text>Confirm deposit request</Text>
+      <Text>Amount: {formatUnits(amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+      <Box marginY={1}>
+        <Text>Continue? (y) yes / (n) no / (a) abort: </Text>
+        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onConfirm} />
+      </Box>
     </Box>}
 
   </Box>
