@@ -9,7 +9,7 @@ import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
-import { type AnnotatedTransaction, tryParseBigInt } from './util.js'
+import { type AnnotatedTransaction, toFixed, tryParseBigInt } from './util.js'
 
 const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
   const { c0Info, c1Info, price, priceInverse } = usePoolStats(pair)
@@ -17,7 +17,7 @@ const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
     return <Box><Text>Loading...</Text></Box>
   }
   return <Box>
-    <Text>{c0Info.symbol}/{c1Info.symbol} | price: ${price.toFixed()} | inverse: ${priceInverse})</Text>
+    <Text>{c0Info.symbol}/{c1Info.symbol} | price: ${toFixed(price)} ${c1Info.symbol} for each ${c0Info.symbol} | inverse: ${toFixed(priceInverse)})</Text>
   </Box>
 }
 
@@ -71,11 +71,11 @@ export const DepositControl = () => {
       return
     }
     const index = Number(input)
-    if (!index || !(index < pairs.length)) {
+    if (!index || !(index <= pairs.length)) {
       addMessage(`Unrecognized selection [${input}]`, { color: 'red' })
       return
     }
-    const p = pairs[index]
+    const p = pairs[index - 1]
     setChosenPair(p)
     setStage(Stage.CollateralSelection)
     setTextInput('')
@@ -189,11 +189,11 @@ export const DepositControl = () => {
       <Box marginBottom={1}>
         <Text>Choose from an existing pool</Text>
       </Box>
-      {pairs.map((pair, i) => <Box key={`pair-${i}`}><Text>[{i}] </Text><SimplePoolInfo pair={pair}/></Box>)}
+      {pairs.map((pair, i) => <Box key={`pair-${i}`}><Text>[{i + 1}] </Text><SimplePoolInfo pair={pair}/></Box>)}
       <Text color={'red'}>[x] Back to main menu</Text>
       <Box marginTop={1}>
         <Text>Select a pool: </Text>
-        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onPoolSelection} />
+        <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onPoolSelection} />
       </Box>
     </Box>}
     {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
@@ -207,7 +207,7 @@ export const DepositControl = () => {
         <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onCollateralSelection} />
       </Box>
     </Box>}
-    {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
+    {stage === Stage.AmountInput && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1} flexDirection={'column'}>
         <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
         <Text>Pool issued shares: {chosenCollateral?.shares.toString()}  </Text>
@@ -217,7 +217,7 @@ export const DepositControl = () => {
       </Box>
       <Box>
         <Text>How much do you want to deposit? (Enter 0 or x to go back)</Text>
-        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmitted} />
+        <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmitted} />
       </Box>
     </Box>}
     {stage === Stage.Confirm && <Box marginTop={1} flexDirection={'column'}>
@@ -228,7 +228,7 @@ export const DepositControl = () => {
       <Text>Token contract: {chosenCollateral?.tokenAddress}</Text>
       <Box marginY={1}>
         <Text>Continue? (y) yes / (n) no / (a) abort: </Text>
-        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onConfirm} />
+        <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onConfirm} />
       </Box>
     </Box>}
 

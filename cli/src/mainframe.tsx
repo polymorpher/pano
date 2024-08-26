@@ -6,6 +6,7 @@ import { CommandControl, CommandKeys, CommandProvider, matchCommand, UserInputCo
 import { HelpMessage } from './help.js'
 import { NotificationBar, NotificationProvider } from './notification.js'
 import { WalletControl, WalletProvider } from './wallet.js'
+import { DepositControl } from './deposit.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
@@ -14,6 +15,7 @@ const Router = () => {
     {m === CommandKeys.Help && <HelpMessage/>}
     {m === CommandKeys.List && <Stats/>}
     {m === CommandKeys.Wallet && <WalletControl/>}
+    {m === CommandKeys.Deposit && <DepositControl/>}
   </>
 }
 

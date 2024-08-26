@@ -99,12 +99,14 @@ export const WalletSelector = () => {
       {<Text color={'grey'}>[2] (Coming soon) MetaMask (connect and sign transactions via a browser window)</Text>}
       {<Text color={'grey'}>[3] (Coming soon) Ledger</Text>}
       {<Text color={'red'}>[x] Exit to main menu </Text>}
-      {userCommandDisabled && <Box marginY={1}><Text>Your selection: </Text><TextInput showCursor value={textInput} onChange={setTextInput} /></Box>}
+      {userCommandDisabled && <Box marginY={1}>
+        <Text>Your selection: </Text><TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} />
+      </Box>}
     </>}
     {mode === WalletType.Hot && <>
       <Box>
         <Text color={'grey'}>Please paste your private key: </Text>
-        {userCommandDisabled && <TextInput showCursor value={pkInput} onSubmit={onPkSubmit} onChange={setPkInput} />}
+        {userCommandDisabled && <TextInput focus={userCommandDisabled} showCursor value={pkInput} onSubmit={onPkSubmit} onChange={setPkInput} />}
       </Box>
     </>}
   </>

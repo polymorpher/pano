@@ -54,3 +54,10 @@ export interface AnnotatedTransaction {
   hash: Hex
   annotation: string
 }
+
+export const toFixed = (n: number, a: number = 4, b: number = 8): string => {
+  if (n > 1) {
+    return n.toFixed(a)
+  }
+  return String(Math.round(n * (10 ** b)) / (10 ** b))
+}
