@@ -51,19 +51,22 @@ export const WalletSelector = () => {
   }, [userCommandDisabled])
 
   useEffect(() => {
-    if (textInput) {
-      addMessage(`You selected: ${textInput}`)
-    }
     if (textInput.startsWith('0')) {
       setMode(WalletType.Unloaded)
+      setWallet(EmptyWallet)
+      addMessage('Wallet unloaded. Key is erased', { color: 'green' })
     } else if (textInput.startsWith('1')) {
       setMode(WalletType.Hot)
+      addMessage('Hot wallet is selected')
     } else if (textInput.startsWith('x')) {
       setMode(undefined)
       setUserCommandDisabled(false)
+      addMessage('Exited to main menu')
+    } else if (textInput) {
+      addMessage(`Unrecognized input ${textInput}`, { color: 'red' })
     }
     setTextInput('')
-  }, [addMessage, setUserCommandDisabled, textInput])
+  }, [setWallet, addMessage, setUserCommandDisabled, textInput])
 
   const onPkSubmit = useCallback((pk: string) => {
     if (!pk) {

@@ -90,6 +90,7 @@ export const useWalletClientHook = () => {
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
     if (!wallet.privateKeyAccount) {
+      addMessage(`Wallet is not initialized`)
       return
     }
     const c = buildWalletClient(network, wallet)

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "help": "tsx src/index.ts --help",
     "genTypes": "tsx scripts/genTypes.ts; eslint types-contract --fix"
   },
   "dependencies": {

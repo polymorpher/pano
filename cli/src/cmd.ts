@@ -11,7 +11,7 @@ export const cmd = await yargs(hideBin(process.argv))
   .help('Interactively communicate with a Panoptic option pool deployment. Configuration parameters (network, contract address, wallet...) can be set using command line arguments, or inside the interactive interface')
   .options(options)
   .strict()
-  .demandCommand()
+  // .demandCommand()
   .showHelp()
   .argv
 export const isCommand = (command: string) => cmd._[0] === command
