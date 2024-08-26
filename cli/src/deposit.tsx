@@ -1,13 +1,14 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
-import { WalletContext } from './wallet.js'
+import { useWallet, WalletContext } from './wallet.js'
 import { useWalletClient } from './client.js'
 import { Box, Text, Newline } from 'ink'
 import { SectionTitle, type ValidatedPair } from './common.js'
-import { type CollateralFullInfo, usePools, usePoolStats } from './pools.js'
+import { type CollateralFullInfo, useCollateralBalance, usePools, usePoolStats } from './pools.js'
 import { NotificationContext } from './notification.js'
 import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
 import { formatUnits } from 'viem'
+import { useERC20Balance } from './token.js'
 
 const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
   const { c0Info, c1Info, price, priceInverse } = usePoolStats(pair)
@@ -26,7 +27,7 @@ enum Stage {
 }
 
 export const DepositControl = () => {
-  const { wallet } = useContext(WalletContext)
+  const { wallet } = useWallet()
   const { client } = useWalletClient()
   const { pairs } = usePools()
   const { addMessage } = useContext(NotificationContext)
@@ -35,16 +36,24 @@ export const DepositControl = () => {
   const chosenPairInfo = usePoolStats(chosenPair)
   const [chosenCollateral, setChosenCollateral] = useState<CollateralFullInfo>()
   const [stage, setStage] = useState<Stage>(Stage.PoolSelection)
-  const [c0Balance, setC0Balance] = useState<bigint>(0n)
-  const [c1Balance, setC1Balance] = useState<bigint>(0n)
-  const [c0TokenBalance, setC0TokenBalance] = useState<bigint>(0n)
-  const [c1TokenBalance, setC1TokenBalance] = useState<bigint>(0n)
+  const { shares: shareBalance0, value: valueBalance0 } = useCollateralBalance(chosenPairInfo.c0Info.tracker)
+  const { shares: shareBalance1, value: valueBalance1 } = useCollateralBalance(chosenPairInfo.c1Info.tracker)
+  const { balance: tokenBalance0, allowanceOf: allowanceOf0 } = useERC20Balance(chosenPairInfo.c0Info.tokenContract)
+  const { balance: tokenBalance1, allowanceOf: allowanceOf1 } = useERC20Balance(chosenPairInfo.c1Info.tokenContract)
   const choseC0 = chosenCollateral?.address === chosenPairInfo?.c0Info?.address
   const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
+  const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / (chosenCollateral?.shares ?? 1n)) / 1_000_000
 
   useEffect(() => {
     setUserCommandDisabled(true)
   }, [setUserCommandDisabled])
+
+  useEffect(() => {
+    if (userCommandDisabled) {
+      setTextInput('')
+      setStage(Stage.PoolSelection)
+    }
+  }, [userCommandDisabled])
 
   const onPoolSelection = useCallback((input: string) => {
     if (!input) {
@@ -118,8 +127,8 @@ export const DepositControl = () => {
     {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1}><Text>You selected: </Text><SimplePoolInfo pair={chosenPair}/></Box>
       <Text>Which collateral are you depositing into?</Text>
-      <Text>[1] {chosenPairInfo?.c0Info?.symbol} (Your deposit balance: {formatUnits(c0Balance, chosenPairInfo.c0Info.decimals)} | Token balance: {formatUnits(c0TokenBalance, chosenPairInfo.c0Info.decimals)})</Text>
-      <Text>[2] {chosenPairInfo?.c1Info?.symbol} (Your deposit balance: {formatUnits(c1Balance, chosenPairInfo.c1Info.decimals)} | Token balance: {formatUnits(c1TokenBalance, chosenPairInfo.c1Info.decimals)})</Text>
+      <Text>[1] {chosenPairInfo?.c0Info?.symbol} (Your deposit balance: {formatUnits(valueBalance0, chosenPairInfo.c0Info.decimals)} | Token balance: {formatUnits(tokenBalance0, chosenPairInfo.c0Info.decimals)})</Text>
+      <Text>[2] {chosenPairInfo?.c1Info?.symbol} (Your deposit balance: {formatUnits(valueBalance1, chosenPairInfo.c1Info.decimals)} | Token balance: {formatUnits(tokenBalance1, chosenPairInfo.c1Info.decimals)})</Text>
       <Text color={'red'}>[x] Back to pool selection</Text>
       <Box>
         <Text>Choose a collateral: </Text>
@@ -128,9 +137,11 @@ export const DepositControl = () => {
     </Box>}
     {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1} flexDirection={'column'}>
-        <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} | Utilization: {chosenCollateral?.utilization}</Text>
-        <Text>Your current deposit balance: {formatUnits(choseC0 ? c0Balance : c1Balance, chosenPairInfo.c0Info.decimals)} </Text>
-        <Text>Your token total balance: {formatUnits(choseC0 ? c0TokenBalance : c1TokenBalance, chosenPairInfo.c1Info.decimals)} </Text>
+        <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
+        <Text>Pool issued shares: {chosenCollateral?.shares.toString()}  </Text>
+        <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenPairInfo.c0Info.decimals)} </Text>
+        <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenPairInfo.c1Info.decimals)} </Text>
+        <Text>Your shares: {choseC0 ? shareBalance0.toString() : shareBalance1.toString()} ({(equity * 100).toFixed(4)}) </Text>
       </Box>
       <Box>
         <Text>How much do you want to deposit? (Enter 0 or x to go back)</Text>

@@ -9,8 +9,8 @@ import { usePublicClient } from './client.js'
 import { useWallet } from './wallet.js'
 import { NotificationContext } from './notification.js'
 
-type IERC20Metadata = GetContractReturnType<typeof IERC20MetadataAbi, PublicClient>
-type IERC20 = GetContractReturnType<typeof IERC20Abi, PublicClient>
+export type IERC20Metadata = GetContractReturnType<typeof IERC20MetadataAbi, PublicClient>
+export type IERC20 = GetContractReturnType<typeof IERC20Abi, PublicClient>
 
 export interface ERC20Metadata {
   name: string
@@ -47,7 +47,7 @@ export const useERC20 = (address?: Address): ERC20Metadata & { contract?: IERC20
   return { name, decimals, symbol, contract, metadataContract }
 }
 
-export const useERC20WithBalance = (contract: IERC20) => {
+export const useERC20Balance = (contract?: IERC20) => {
   const [balance, setBalance] = useState<bigint>(0n)
   const wallet = useWallet()
   const { addMessage } = useContext(NotificationContext)

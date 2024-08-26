@@ -7,7 +7,7 @@ import { useFactories } from './uniswap.js'
 import { NotificationContext } from './notification.js'
 import { type ValidatedPair } from './common.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from './constants.js'
-import { type ERC20Metadata, useERC20 } from './token.js'
+import { type ERC20Metadata, useERC20, type IERC20 } from './token.js'
 import { useWallet } from './wallet.js'
 
 type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
@@ -23,6 +23,7 @@ export interface CollateralInfo {
   totalAssets: bigint
   shares: bigint
   tokenAddress?: Address
+  tokenContract?: IERC20
 }
 
 export type CollateralFullInfo = CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker, address?: Address }
@@ -34,7 +35,7 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralFullIn
   const [tracker, setTracker] = useState<CollateralTracker>()
   const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
   const [tokenAddress, setTokenAddress] = useState<Address | undefined>()
-  const { name, symbol, decimals } = useERC20(tokenAddress)
+  const { name, symbol, decimals, contract: tokenContract } = useERC20(tokenAddress)
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
     async function init () {
@@ -63,7 +64,7 @@ const useCollateralInfo = ({ address }: { address?: Address }): CollateralFullIn
     }
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, tracker])
-  return { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets }
+  return { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets, tokenContract }
 }
 
 export const usePools = () => {
@@ -165,7 +166,7 @@ export const usePoolStats = (pool?: ValidatedPair) => {
   return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse }
 }
 
-export const useCollateralBalance = (collateralTracker: CollateralTracker) => {
+export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
   const [shares, setShares] = useState<bigint>(0n)
   const [value, setValue] = useState<bigint>(0n)
   const wallet = useWallet()
