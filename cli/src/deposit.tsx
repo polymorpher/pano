@@ -45,7 +45,8 @@ export const DepositControl = () => {
   const choseC0 = chosenCollateral?.address === chosenPairInfo?.c0Info?.address
   const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / (chosenCollateral?.shares ?? 1n)) / 1_000_000
-  const [amount, setAmount] = useState<bigint>(0)
+  const [amount, setAmount] = useState<bigint>(0n)
+  const [newShares, setNewShares] = useState<bigint>(0n)
 
   useEffect(() => {
     setUserCommandDisabled(true)
@@ -103,7 +104,10 @@ export const DepositControl = () => {
     setTextInput('')
   }, [chosenPairInfo, addMessage])
 
-  const onAmountSubmiited = useCallback((input: string) => {
+  const onAmountSubmitted = useCallback(async (input: string) => {
+    if (!chosenCollateral?.tracker) {
+      return
+    }
     if (input === '0' || input.toLowerCase() === 'x') {
       setStage(Stage.CollateralSelection)
       setTextInput('')
@@ -113,12 +117,14 @@ export const DepositControl = () => {
     setStage(Stage.Confirm)
     setTextInput('')
     const parsed = tryParseBigInt(input)
-    if (parsed) {
-      setAmount(parsed)
-    } else {
+    if (!parsed) {
       addMessage(`Malformed value [${input}]`, { color: 'red' })
+      return
     }
-  }, [])
+    setAmount(parsed)
+    const ns = await chosenCollateral?.tracker?.read.previewDeposit([parsed])
+    setNewShares(ns)
+  }, [addMessage, chosenCollateral])
 
   const onConfirm = useCallback((input: string) => {
     input = input.toLowerCase()
@@ -134,7 +140,7 @@ export const DepositControl = () => {
     } else {
       addMessage(`Unrecognized input [${input}]`, { color: 'red' })
     }
-  }, [])
+  }, [setUserCommandDisabled, addMessage])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Deposit Collateral</SectionTitle>
@@ -170,12 +176,15 @@ export const DepositControl = () => {
       </Box>
       <Box>
         <Text>How much do you want to deposit? (Enter 0 or x to go back)</Text>
-        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmiited} />
+        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmitted} />
       </Box>
     </Box>}
     {stage === Stage.Confirm && <Box marginTop={1} flexDirection={'column'}>
-      <Text>Confirm deposit request</Text>
-      <Text>Amount: {formatUnits(amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+      <Box marginY={1}><Text>Please verify and confirm</Text></Box>
+      <Text>Deposit Amount: {formatUnits(amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+      <Text>Earning Pool Shares: {newShares.toString()}</Text>
+      <Text>Collateral contract: {chosenCollateral?.address}</Text>
+      <Text>Token contract: {chosenCollateral?.tokenAddress}</Text>
       <Box marginY={1}>
         <Text>Continue? (y) yes / (n) no / (a) abort: </Text>
         <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onConfirm} />

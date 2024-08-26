@@ -38,10 +38,10 @@ export const tryPrivateKeyToAccount = (pk: Hex): PrivateKeyAccount | undefined =
   }
 }
 
-export const tryParseBigInt = (s: string): bigint | null => {
+export const tryParseBigInt = (s: string): bigint | undefined => {
   try {
     return BigInt(s)
   } catch (ex: any) {
-    return null
+    return undefined
   }
 }
