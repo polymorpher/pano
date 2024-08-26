@@ -1,10 +1,11 @@
 import React, { createContext, type PropsWithChildren, useContext, useEffect, useState } from 'react'
 import { type Network } from 'src/config.js'
-import { createPublicClient, createWalletClient, http } from 'viem'
-import { type PublicClient, type WalletClient } from 'viem'
+import { type PublicClient, type WalletClient, type Account, type Chain, createPublicClient, createWalletClient, http, type Transport } from 'viem'
 import { parseInitialNetwork } from './cmd.js'
 import { NotificationContext } from './notification.js'
-import {useWallet, type Wallet, WalletContext} from './wallet.js'
+import { useWallet, type Wallet } from './wallet.js'
+
+type ConnectedWalletClient = WalletClient<Transport, Chain, Account>
 
 // use outside of hooks and react components, such as main
 export const buildPublicClient = (network: Network): PublicClient => {
@@ -60,7 +61,7 @@ export const usePublicClient = () => useContext(PublicClientContext)
 
 interface WalletClientContextProps {
   network: Network
-  client?: WalletClient
+  client?: ConnectedWalletClient
   setNetwork: (network: Network) => void
 }
 
@@ -69,9 +70,9 @@ const WalletClientContext = createContext<WalletClientContextProps>({
   setNetwork: (network: Network) => {}
 })
 
-export const buildWalletClient = (network: Network, wallet: Wallet): WalletClient => {
+export const buildWalletClient = (network: Network, wallet: Wallet): ConnectedWalletClient => {
   return createWalletClient({
-    account: wallet.privateKeyAccount,
+    account: wallet.privateKeyAccount!,
     chain: {
       rpcUrls: { default: { http: [network.rpc] } },
       nativeCurrency: network.nativeCurrency,
@@ -85,7 +86,7 @@ export const buildWalletClient = (network: Network, wallet: Wallet): WalletClien
 export const useWalletClientHook = () => {
   const { wallet } = useWallet()
   const [network, setNetwork] = useState<Network>(initialNetwork)
-  const [client, setClient] = useState<WalletClient>()
+  const [client, setClient] = useState<ConnectedWalletClient>()
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
     if (!wallet.privateKeyAccount) {

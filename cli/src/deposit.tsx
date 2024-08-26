@@ -7,9 +7,9 @@ import { type CollateralFullInfo, useCollateralBalance, usePools, usePoolStats }
 import { NotificationContext } from './notification.js'
 import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
-import { formatUnits } from 'viem'
+import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
-import { tryParseBigInt } from './util.js'
+import { type AnnotatedTransaction, tryParseBigInt } from './util.js'
 
 const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
   const { c0Info, c1Info, price, priceInverse } = usePoolStats(pair)
@@ -47,6 +47,7 @@ export const DepositControl = () => {
   const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / (chosenCollateral?.shares ?? 1n)) / 1_000_000
   const [amount, setAmount] = useState<bigint>(0n)
   const [newShares, setNewShares] = useState<bigint>(0n)
+  const allowanceOf = choseC0 ? allowanceOf0 : allowanceOf1
 
   useEffect(() => {
     setUserCommandDisabled(true)
@@ -126,21 +127,61 @@ export const DepositControl = () => {
     setNewShares(ns)
   }, [addMessage, chosenCollateral])
 
-  const onConfirm = useCallback((input: string) => {
+  const onConfirm = useCallback(async (input: string) => {
     input = input.toLowerCase()
     setTextInput('')
     if (input === 'n' || input === 'no') {
       setStage(Stage.AmountInput)
-    } else if (input === 'y' || input === 'yes') {
-      // TODO: approve collateralTracker as spender for the underlying asset, and call deposit on collateralTracker
     } else if (input === 'a' || input === 'abort') {
       setStage(Stage.PoolSelection)
       setUserCommandDisabled(false)
       addMessage('Deposit operation aborted', { color: 'red' })
+    } else if (input === 'y' || input === 'yes') {
+      if (!chosenCollateral?.tokenContract || !chosenCollateral.tracker?.abi || !chosenCollateral.address) {
+        addMessage('Unexpected error: collateral or token contract is uninitialized', { color: 'red' })
+        return
+      }
+      if (!client || !wallet.address) {
+        addMessage('Unexpected error: wallet is uninitialized', { color: 'red' })
+        return
+      }
+
+      const tokenContractWritable = getContract({
+        address: chosenCollateral.tokenContract.address,
+        abi: chosenCollateral?.tokenContract?.abi,
+        client
+      })
+
+      const allowance = await allowanceOf(chosenCollateral.address)
+      const transactions: AnnotatedTransaction[] = []
+      if (allowance < amount) {
+        // TODO: use max int?
+        const h1 = await tokenContractWritable.write.approve([chosenCollateral.address, amount])
+        transactions.push({
+          hash: h1,
+          annotation: `Approve collateral contract to move your ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol}`
+        })
+      }
+      // collateralContractWritable
+      const ccw = getContract({
+        address: chosenCollateral.address,
+        abi: chosenCollateral.tracker?.abi,
+        client
+      })
+      const h2 = await ccw.write.deposit([amount, wallet.address])
+      transactions.push({
+        hash: h2,
+        annotation: `Deposit ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} to collateral contract`
+      })
+      transactions.forEach(t => {
+        addMessage(`Executed transaction [${t.hash}]: ${t.annotation}`, { color: 'green' })
+      })
+      addMessage('Deposit operation completed!', { color: 'green' })
+      setUserCommandDisabled(false)
     } else {
       addMessage(`Unrecognized input [${input}]`, { color: 'red' })
     }
-  }, [setUserCommandDisabled, addMessage])
+  }, [wallet.address, allowanceOf, amount, client, chosenCollateral, setUserCommandDisabled, addMessage])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Deposit Collateral</SectionTitle>

@@ -1,5 +1,9 @@
 import { knownAssets, type Network } from './config.js'
-import { type Address, type Hex, isAddress, zeroAddress } from 'viem'
+import {
+  type Address, type Hex,
+  isAddress,
+  zeroAddress
+} from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import type { PrivateKeyAccount } from 'viem/accounts'
 
@@ -44,4 +48,9 @@ export const tryParseBigInt = (s: string): bigint | undefined => {
   } catch (ex: any) {
     return undefined
   }
+}
+
+export interface AnnotatedTransaction {
+  hash: Hex
+  annotation: string
 }

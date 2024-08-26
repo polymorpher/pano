@@ -1,5 +1,13 @@
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { type Address, getContract, type GetContractReturnType, type PublicClient } from 'viem'
+import {
+  type Account,
+  type Address, type Chain,
+  getContract,
+  type GetContractReturnType,
+  type PublicClient,
+  type Transport,
+  type WalletClient
+} from 'viem'
 
 import {
   IERC20Abi,
@@ -11,6 +19,7 @@ import { NotificationContext } from './notification.js'
 
 export type IERC20Metadata = GetContractReturnType<typeof IERC20MetadataAbi, PublicClient>
 export type IERC20 = GetContractReturnType<typeof IERC20Abi, PublicClient>
+// export type IERC20Writable = GetContractReturnType<typeof IERC20Abi, WalletClient<Transport, Chain, Account >>
 
 export interface ERC20Metadata {
   name: string
