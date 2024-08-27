@@ -124,7 +124,6 @@ export const DepositControl = () => {
       setChosenCollateral(undefined)
       return
     }
-    setStage(Stage.Confirm)
     setTextInput('')
     // input is decimal amount, convert to atomic amount in bigint
     const atomicAmount = tryParseUnits(input, chosenCollateral.decimals)
@@ -140,6 +139,7 @@ export const DepositControl = () => {
       addMessage(`Amount [${formatUnits(-atomicAmount, chosenCollateral.decimals)}] exceeds maximum withdrawable amount [${formatUnits(maxWithdrawable, chosenCollateral.decimals)}]`, { color: 'red' })
       return
     }
+    setStage(Stage.Confirm)
     setAmount(atomicAmount)
     if (atomicAmount > 0n) {
       const ns = await chosenCollateral?.tracker?.read.previewDeposit([atomicAmount])
@@ -148,7 +148,7 @@ export const DepositControl = () => {
       const ns = await chosenCollateral?.tracker?.read.previewWithdraw([-atomicAmount])
       setNewShares(ns)
     }
-  }, [addMessage, chosenCollateral])
+  }, [numOpenPositions, maxWithdrawable, addMessage, chosenCollateral])
 
   const onConfirm = useCallback(async (input: string) => {
     input = input.toLowerCase()
@@ -246,13 +246,13 @@ export const DepositControl = () => {
       <Box marginY={1} flexDirection={'column'}>
         <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
         <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()} </Text>
-        <Text> ----- </Text>
+        <Text>---------------</Text>
         <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenPairInfo.c0Info.decimals)} {chosenCollateral?.symbol}</Text>
         <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenPairInfo.c1Info.decimals)} {chosenCollateral?.symbol}</Text>
         <Text>Your shares: {choseC0 ? shareBalance0.toLocaleString() : shareBalance1.toLocaleString()} ({(equity * 100).toFixed(4)}%) </Text>
         <Text>Your maximum withdrawable amount: {formatUnits(maxWithdrawable, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
         <Text>Your open positions: {numOpenPositions}</Text>
-        <Text> ----- </Text>
+        <Text>---------------</Text>
         <Text>Withdraw is only allowed when there is no open position. Deposit has no restriction </Text>
       </Box>
       <Box>
