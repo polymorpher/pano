@@ -7,7 +7,7 @@ import { type CollateralFullInfo, useCollateralBalance, usePools, usePoolStats }
 import { NotificationContext } from './notification.js'
 import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
-import { type Address, formatUnits, getContract } from 'viem'
+import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, toFixed, tryParseUnits } from './util.js'
 
@@ -49,6 +49,8 @@ export const DepositControl = () => {
   const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / sharesDenominator) / 1_000_000
   const [amount, setAmount] = useState<bigint>(0n)
   const [newShares, setNewShares] = useState<bigint>(0n)
+  const [maxWithdrawable, setMaxWithdrawable] = useState<bigint>(0n)
+  const [numOpenPositions, setNumOpenPositions] = useState<number>(0)
 
   const allowanceOf = choseC0 ? allowanceOf0 : allowanceOf1
 
@@ -85,8 +87,8 @@ export const DepositControl = () => {
     addMessage(`Your selected [${input}]`, { color: 'grey' })
   }, [setUserCommandDisabled, pairs, addMessage])
 
-  const onCollateralSelection = useCallback((input: string) => {
-    if (!input) {
+  const onCollateralSelection = useCallback(async (input: string) => {
+    if (!input || !wallet.address) {
       return
     }
     if (input.toLowerCase() === 'x') {
@@ -106,7 +108,11 @@ export const DepositControl = () => {
     addMessage(`You selected [${input}] ${cc.symbol}`, { color: 'grey' })
     setStage(Stage.AmountInput)
     setTextInput('')
-  }, [chosenPairInfo, addMessage])
+    const mw = await cc.tracker!.read.maxWithdraw([wallet.address])
+    setMaxWithdrawable(mw)
+    const op = await chosenPairInfo.panopticPool!.read.numberOfPositions([wallet.address])
+    setNumOpenPositions(Number(op))
+  }, [wallet.address, chosenPairInfo, addMessage])
 
   const onAmountSubmitted = useCallback(async (input: string) => {
     if (!chosenCollateral?.tracker) {
@@ -126,9 +132,22 @@ export const DepositControl = () => {
       addMessage(`Malformed value [${input}]`, { color: 'red' })
       return
     }
+    if (atomicAmount < 0n && numOpenPositions > 0) {
+      addMessage(`Cannot withdraw when there are still open positions [${numOpenPositions} left]`, { color: 'red' })
+      return
+    }
+    if (atomicAmount < 0n && -atomicAmount > maxWithdrawable) {
+      addMessage(`Amount [${formatUnits(-atomicAmount, chosenCollateral.decimals)}] exceeds maximum withdrawable amount [${formatUnits(maxWithdrawable, chosenCollateral.decimals)}]`, { color: 'red' })
+      return
+    }
     setAmount(atomicAmount)
-    const ns = await chosenCollateral?.tracker?.read.previewDeposit([atomicAmount])
-    setNewShares(ns)
+    if (atomicAmount > 0n) {
+      const ns = await chosenCollateral?.tracker?.read.previewDeposit([atomicAmount])
+      setNewShares(ns)
+    } else {
+      const ns = await chosenCollateral?.tracker?.read.previewWithdraw([-atomicAmount])
+      setNewShares(ns)
+    }
   }, [addMessage, chosenCollateral])
 
   const onConfirm = useCallback(async (input: string) => {
@@ -158,7 +177,8 @@ export const DepositControl = () => {
 
       const allowance = await allowanceOf(chosenCollateral.address)
       const transactions: AnnotatedTransaction[] = []
-      if (allowance < amount) {
+
+      if (amount > 0n && allowance < amount) {
         // TODO: use max int?
         const h1 = await tokenContractWritable.write.approve([chosenCollateral.address, amount])
         transactions.push({
@@ -172,11 +192,19 @@ export const DepositControl = () => {
         abi: chosenCollateral.tracker?.abi,
         client
       })
-      const h2 = await ccw.write.deposit([amount, wallet.address])
-      transactions.push({
-        hash: h2,
-        annotation: `Deposit ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} to collateral contract ${chosenCollateral.address}. Received new pool shares ${newShares.toLocaleString()}`
-      })
+      if (amount > 0n) {
+        const h2 = await ccw.write.deposit([amount, wallet.address])
+        transactions.push({
+          hash: h2,
+          annotation: `Deposit ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} to collateral contract ${chosenCollateral.address}. Received new pool shares ${newShares.toLocaleString()}`
+        })
+      } else {
+        const h2 = await ccw.write.withdraw([-amount, wallet.address, wallet.address])
+        transactions.push({
+          hash: h2,
+          annotation: `Withdraw ${formatUnits(-amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} from collateral contract ${chosenCollateral.address}. Burned pool shares ${newShares.toLocaleString()}`
+        })
+      }
       transactions.forEach(t => {
         addMessage(`Executed transaction [${t.hash}]: ${t.annotation}`, { color: 'green' })
       })
@@ -205,7 +233,7 @@ export const DepositControl = () => {
     </Box>}
     {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1}><Text>You selected: </Text><SimplePoolInfo pair={chosenPair}/></Box>
-      <Text>Which collateral are you depositing into?</Text>
+      <Text>Which collateral are you depositing into or withdrawing from?</Text>
       <Text>[1] {chosenPairInfo?.c0Info?.symbol} (Your deposit balance: {formatUnits(valueBalance0, chosenPairInfo.c0Info.decimals)} | Token balance: {formatUnits(tokenBalance0, chosenPairInfo.c0Info.decimals)})</Text>
       <Text>[2] {chosenPairInfo?.c1Info?.symbol} (Your deposit balance: {formatUnits(valueBalance1, chosenPairInfo.c1Info.decimals)} | Token balance: {formatUnits(tokenBalance1, chosenPairInfo.c1Info.decimals)})</Text>
       <Text color={'red'}>[x] Back to pool selection</Text>
@@ -217,20 +245,25 @@ export const DepositControl = () => {
     {stage === Stage.AmountInput && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1} flexDirection={'column'}>
         <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
-        <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()}  </Text>
-        <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenPairInfo.c0Info.decimals)} </Text>
-        <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenPairInfo.c1Info.decimals)} </Text>
+        <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()} </Text>
+        <Text> ----- </Text>
+        <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenPairInfo.c0Info.decimals)} {chosenCollateral?.symbol}</Text>
+        <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenPairInfo.c1Info.decimals)} {chosenCollateral?.symbol}</Text>
         <Text>Your shares: {choseC0 ? shareBalance0.toLocaleString() : shareBalance1.toLocaleString()} ({(equity * 100).toFixed(4)}%) </Text>
+        <Text>Your maximum withdrawable amount: {formatUnits(maxWithdrawable, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+        <Text>Your open positions: {numOpenPositions}</Text>
+        <Text> ----- </Text>
+        <Text>Withdraw is only allowed when there is no open position. Deposit has no restriction </Text>
       </Box>
       <Box>
-        <Text>How much do you want to deposit? (To go back, enter 0 or x): </Text>
+        <Text>How much do you want to deposit / withdraw? (Use negative value for withdraw. To go back, enter 0 or x): </Text>
         <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmitted} />
       </Box>
     </Box>}
     {stage === Stage.Confirm && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1}><Text>Please verify and confirm</Text></Box>
-      <Text>Deposit Amount: {formatUnits(amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
-      <Text>Earning Pool Shares: {newShares.toLocaleString()}</Text>
+      <Text>{amount > 0 ? 'Deposit' : 'Withdraw'} Amount: {formatUnits(amount > 0 ? amount : -amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+      <Text>{amount > 0 ? 'Earning' : 'Burning'} Pool Shares: {newShares.toLocaleString()}</Text>
       <Text>Collateral contract: {chosenCollateral?.address}</Text>
       <Text>Token contract: {chosenCollateral?.tokenAddress}</Text>
       <Box marginY={1}>

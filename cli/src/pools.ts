@@ -169,7 +169,7 @@ export const usePoolStats = (pool?: ValidatedPair) => {
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [panopticPool, addMessage])
 
-  return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse }
+  return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse, panopticPool }
 }
 
 export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
