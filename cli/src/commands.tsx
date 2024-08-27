@@ -3,6 +3,7 @@ import process from 'process'
 import { Box, Text } from 'ink'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
+import { useWallet } from './wallet.js'
 
 export interface Command {
   short: string
@@ -18,8 +19,8 @@ export enum CommandKeys {
   Wallet = 'wallet',
   Deposit = 'deposit',
   Portfolio = 'portfolio',
-  Mint = 'mint',
-  Options = 'options',
+  Sell = 'sell',
+  Market = 'market',
   Buy = 'buy',
   Admin = 'admin',
   Quit = 'quit',
@@ -29,10 +30,10 @@ export const Commands: Record<CommandKeys, Command> = {
   help: { short: 'h', full: 'help', desc: 'show all commands' },
   list: { short: 'l', full: 'list', desc: 'list all available pools, and show their pool and collateral statistics' },
   wallet: { short: 'w', full: 'wallet', desc: 'set private key for wallet (if not already set through .env, environment variable, or command line)', submenu: true },
-  deposit: { short: 'd', full: 'deposit', desc: 'deposit funds as collateral in one of the trading pools', submenu: true },
+  deposit: { short: 'd', full: 'deposit', desc: 'deposit or withdraw funds as collateral in one of the trading pools', submenu: true, wallet: true },
   portfolio: { short: 'p', full: 'portfolio', desc: 'show your deposited assets, option positions, estimated profit and loss', wallet: true, tbd: true },
-  mint: { short: 'm', full: 'mint', desc: 'mint (i.e. sell) an option', wallet: true, tbd: true },
-  options: { short: 'o', full: 'options', desc: 'show available minted options for buying', tbd: true },
+  sell: { short: 's', full: 'sell', desc: 'sell (i.e. mint) an option', wallet: true, tbd: true },
+  market: { short: 'm', full: 'market', desc: 'show available options in the market for buying', tbd: true },
   buy: { short: 'b', full: 'buy', desc: 'buy a minted option', wallet: true, tbd: true },
   admin: { short: 'a', full: 'admin', desc: 'enter admin mode to perform management operations (liquidation, forced exercise)', wallet: true, tbd: true },
   quit: { short: 'q', full: 'quit', desc: 'exit the program' }
@@ -78,6 +79,7 @@ const UserInput = () => {
   const [queries, setQueries] = useState<InputCommandWithTime[]>([])
   const { setInput: setInputCommand, setDisabled } = useContext(UserInputContext)
   const { addMessage } = useContext(NotificationContext)
+  const { wallet } = useWallet()
   const onSubmit = useCallback((v: string) => {
     if (!v) {
       return
@@ -94,6 +96,10 @@ const UserInput = () => {
     if (m.full === CommandKeys.Quit) {
       process.exit(0)
     }
+    if (m.submenu && m.wallet && !wallet.address) {
+      addMessage('[ERROR] A wallet is required to do this. Please load a wallet first', { color: 'red' })
+      return
+    }
     if (m.submenu) {
       setDisabled(true)
     }
@@ -101,7 +107,7 @@ const UserInput = () => {
       addMessage(`You are already at menu [${v}]`)
     }
     setInputCommand(v)
-  }, [addMessage, setDisabled, input, setInputCommand])
+  }, [wallet.address, addMessage, setDisabled, input, setInputCommand])
 
   return <Box marginTop={1} flexDirection={'column'}>
     {queries?.length > 0 && queries.map((q) => {
@@ -123,14 +129,19 @@ export const CommandProvider = ({ children }: PropsWithChildren) => {
   </UserInputContext.Provider>
 }
 
+const numCommands = Object.values(CommandKeys).length
 export const CommandControl = () => {
   const { disabled } = useContext(UserInputContext)
   if (disabled) {
     return <></>
   }
+
   return <Box marginY={1} flexDirection={'column'}>
     <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1} marginY={1}><Text color={'yellow'}>Main menu</Text></Box>
-    <Text>Available commands: {Object.values(CommandKeys).map(k => `(${k[0]}) ${k}`).join(', ')}</Text>
+    <Box>
+      <Text>Available commands: </Text>
+      {Object.values(CommandKeys).map((k, i) => <Text key={k} color={Commands[k].tbd ? 'gray' : undefined }>({k[0]}) {k}{i !== numCommands - 1 ? ', ' : ''} </Text>) }
+    </Box>
     <UserInput/>
   </Box>
 }

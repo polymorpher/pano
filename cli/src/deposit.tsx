@@ -17,7 +17,7 @@ const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
     return <Box><Text>Loading...</Text></Box>
   }
   return <Box>
-    <Text>{c0Info.symbol}/{c1Info.symbol} | price: ${toFixed(price)} ${c1Info.symbol} for each ${c0Info.symbol} | inverse: ${toFixed(priceInverse)})</Text>
+    <Text>{c0Info.symbol}/{c1Info.symbol} | price: {toFixed(price)} ${c1Info.symbol} for each ${c0Info.symbol} | inverse: {toFixed(priceInverse)})</Text>
   </Box>
 }
 
@@ -44,7 +44,8 @@ export const DepositControl = () => {
   const { balance: tokenBalance1, allowanceOf: allowanceOf1 } = useERC20Balance(chosenPairInfo.c1Info.tokenContract)
   const choseC0 = chosenCollateral?.address === chosenPairInfo?.c0Info?.address
   const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
-  const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / (chosenCollateral?.shares ?? 1n)) / 1_000_000
+  const sharesDenominator = chosenCollateral?.shares ? chosenCollateral?.shares : 1n
+  const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / sharesDenominator) / 1_000_000
   const [amount, setAmount] = useState<bigint>(0n)
   const [newShares, setNewShares] = useState<bigint>(0n)
   const allowanceOf = choseC0 ? allowanceOf0 : allowanceOf1
@@ -216,7 +217,7 @@ export const DepositControl = () => {
         <Text>Your shares: {choseC0 ? shareBalance0.toString() : shareBalance1.toString()} ({(equity * 100).toFixed(4)}) </Text>
       </Box>
       <Box>
-        <Text>How much do you want to deposit? (Enter 0 or x to go back)</Text>
+        <Text>How much do you want to deposit? (To go back, enter 0 or x): </Text>
         <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmitted} />
       </Box>
     </Box>}

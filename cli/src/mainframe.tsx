@@ -5,12 +5,18 @@ import Stats from './stats.js'
 import { CommandControl, CommandKeys, CommandProvider, matchCommand, UserInputContext } from './commands.js'
 import { HelpMessage } from './help.js'
 import { NotificationBar, NotificationProvider } from './notification.js'
-import { WalletControl, WalletProvider } from './wallet.js'
+import { useWallet, WalletControl, WalletProvider } from './wallet.js'
 import { DepositControl } from './deposit.js'
+import { WalletRequired } from './errors.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
-  const m = matchCommand(input)?.full
+  const { wallet } = useWallet()
+  const matched = matchCommand(input)
+  if (matched?.wallet && !wallet.address) {
+    return <WalletRequired/>
+  }
+  const m = matched?.full
   return <>
     {m === CommandKeys.Help && <HelpMessage/>}
     {m === CommandKeys.List && <Stats/>}
