@@ -61,6 +61,9 @@ export const toFixed = (n: number, a: number = ClientPrecision / 2, b: number = 
   if (n > 1) {
     return n.toFixed(a)
   }
+  if (n > 10 ** (-a / 2)) {
+    return String(Math.round(n * (10 ** a)) / (10 ** a))
+  }
   return String(Math.round(n * (10 ** b)) / (10 ** b))
 }
 

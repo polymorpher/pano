@@ -7,7 +7,7 @@ import { type CollateralFullInfo, useCollateralBalance, usePools, usePoolStats }
 import { NotificationContext } from './notification.js'
 import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
-import { formatUnits, getContract } from 'viem'
+import { type Address, formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, toFixed, tryParseUnits } from './util.js'
 
@@ -25,7 +25,8 @@ enum Stage {
   PoolSelection = 1,
   CollateralSelection = 2,
   AmountInput = 3,
-  Confirm = 4
+  Confirm = 4,
+  Empty = 5
 }
 
 export const DepositControl = () => {
@@ -48,6 +49,7 @@ export const DepositControl = () => {
   const equity = Number((choseC0 ? shareBalance0 : shareBalance1) * 1_000_000n / sharesDenominator) / 1_000_000
   const [amount, setAmount] = useState<bigint>(0n)
   const [newShares, setNewShares] = useState<bigint>(0n)
+
   const allowanceOf = choseC0 ? allowanceOf0 : allowanceOf1
 
   useEffect(() => {
@@ -113,7 +115,7 @@ export const DepositControl = () => {
     if (input === '0' || input.toLowerCase() === 'x') {
       setStage(Stage.CollateralSelection)
       setTextInput('')
-
+      setChosenCollateral(undefined)
       return
     }
     setStage(Stage.Confirm)
@@ -161,7 +163,7 @@ export const DepositControl = () => {
         const h1 = await tokenContractWritable.write.approve([chosenCollateral.address, amount])
         transactions.push({
           hash: h1,
-          annotation: `Approve collateral contract to move your ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol}`
+          annotation: `Approve collateral contract to move your ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} (asset contract ${chosenCollateral.tokenAddress})`
         })
       }
       // collateralContractWritable
@@ -173,17 +175,20 @@ export const DepositControl = () => {
       const h2 = await ccw.write.deposit([amount, wallet.address])
       transactions.push({
         hash: h2,
-        annotation: `Deposit ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} to collateral contract`
+        annotation: `Deposit ${formatUnits(amount, chosenCollateral.decimals)} ${chosenCollateral.symbol} to collateral contract ${chosenCollateral.address}. Received new pool shares ${newShares.toLocaleString()}`
       })
       transactions.forEach(t => {
         addMessage(`Executed transaction [${t.hash}]: ${t.annotation}`, { color: 'green' })
       })
       addMessage('Deposit operation completed!', { color: 'green' })
       setUserCommandDisabled(false)
+      setChosenCollateral(undefined)
+      setChosenPair(undefined)
+      setStage(Stage.Empty)
     } else {
       addMessage(`Unrecognized input [${input}]`, { color: 'red' })
     }
-  }, [wallet.address, allowanceOf, amount, client, chosenCollateral, setUserCommandDisabled, addMessage])
+  }, [newShares, wallet.address, allowanceOf, amount, client, chosenCollateral, setUserCommandDisabled, addMessage])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Deposit Collateral</SectionTitle>
@@ -212,10 +217,10 @@ export const DepositControl = () => {
     {stage === Stage.AmountInput && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1} flexDirection={'column'}>
         <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
-        <Text>Pool issued shares: {chosenCollateral?.shares.toString()}  </Text>
+        <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()}  </Text>
         <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenPairInfo.c0Info.decimals)} </Text>
         <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenPairInfo.c1Info.decimals)} </Text>
-        <Text>Your shares: {choseC0 ? shareBalance0.toString() : shareBalance1.toString()} ({(equity * 100).toFixed(4)}) </Text>
+        <Text>Your shares: {choseC0 ? shareBalance0.toLocaleString() : shareBalance1.toLocaleString()} ({(equity * 100).toFixed(4)}%) </Text>
       </Box>
       <Box>
         <Text>How much do you want to deposit? (To go back, enter 0 or x): </Text>
@@ -225,7 +230,7 @@ export const DepositControl = () => {
     {stage === Stage.Confirm && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1}><Text>Please verify and confirm</Text></Box>
       <Text>Deposit Amount: {formatUnits(amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
-      <Text>Earning Pool Shares: {newShares.toString()}</Text>
+      <Text>Earning Pool Shares: {newShares.toLocaleString()}</Text>
       <Text>Collateral contract: {chosenCollateral?.address}</Text>
       <Text>Token contract: {chosenCollateral?.tokenAddress}</Text>
       <Box marginY={1}>
@@ -233,6 +238,5 @@ export const DepositControl = () => {
         <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onConfirm} />
       </Box>
     </Box>}
-
   </Box>
 }

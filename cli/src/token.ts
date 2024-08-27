@@ -70,6 +70,7 @@ export const useERC20Balance = (contract?: IERC20) => {
   useEffect(() => {
     async function init () {
       if (!contract || !wallet.wallet.address) {
+        setBalance(0n)
         return
       }
       const balance = await contract.read.balanceOf([wallet.wallet.address])

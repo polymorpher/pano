@@ -112,16 +112,20 @@ export const usePools = () => {
   return { pairs }
 }
 
+const EmptyPriceTickInfo = {
+  priceTick: 1e-36,
+  recentPriceTicks: []
+}
+
+const EmptyTokenPair: [Address | undefined, Address | undefined] = [undefined, undefined]
+
 export const usePoolStats = (pool?: ValidatedPair) => {
   const { addMessage } = useContext(NotificationContext)
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
-  const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>([undefined, undefined])
+  const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>(EmptyTokenPair)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>({
-    priceTick: 1e-36,
-    recentPriceTicks: []
-  })
+  const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>(EmptyPriceTickInfo)
   const c0Info = useCollateralInfo({ address: token0 })
   const c1Info = useCollateralInfo({ address: token1 })
   const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
@@ -133,6 +137,8 @@ export const usePoolStats = (pool?: ValidatedPair) => {
   useEffect(() => {
     async function init () {
       if (!client || !pool) {
+        setTokens(EmptyTokenPair)
+        setPriceTickInfo(EmptyPriceTickInfo)
         return
       }
       const pp = getContract({ address: pool.panopticPoolAddress, abi: PanopticPoolAbi, client })
@@ -174,6 +180,8 @@ export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
   useEffect(() => {
     async function init () {
       if (!collateralTracker || !wallet.wallet.address) {
+        setShares(0n)
+        setValue(0n)
         return
       }
       const balance = await collateralTracker.read.balanceOf([wallet.wallet.address])
