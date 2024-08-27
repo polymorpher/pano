@@ -1,9 +1,15 @@
-import { type Network, networks, defaultPanopticfactoryAddress, defaultUniswapFactoryAddress } from './config.js'
+import {
+  type Network,
+  networks,
+  defaultPanopticfactoryAddress,
+  defaultUniswapFactoryAddress,
+  defaultWalletPrivateKey
+} from './config.js'
 import yargs from 'yargs/yargs'
 import { hideBin } from 'yargs/helpers'
 import process from 'process'
 import options from './options.js'
-import { type Address } from 'viem'
+import { type Address, type Hex } from 'viem'
 
 export const cmd = await yargs(hideBin(process.argv))
   // .command('lp', 'Show liquidity provider tools')
@@ -14,6 +20,7 @@ export const cmd = await yargs(hideBin(process.argv))
   // .demandCommand()
   .showHelp()
   .argv
+
 export const isCommand = (command: string) => cmd._[0] === command
 
 export const parseInitialNetwork = (): Network => {
@@ -42,4 +49,9 @@ export const getPanopticFactoryAddress = (): Address => {
 export const getUniswapFactoryAddress = (): Address => {
   const ufa = cmd.uniswapFactory as Address
   return ufa ?? defaultUniswapFactoryAddress
+}
+
+export const getPk = (): Hex => {
+  const pk = cmd.pk as Hex
+  return pk ?? defaultWalletPrivateKey
 }

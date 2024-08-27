@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv'
 import * as process from 'process'
 import { DefaultAssets } from './constants.js'
 import { merge } from 'lodash-es'
-import { type Address } from 'viem'
+import { type Address, type Hex } from 'viem'
 dotenv.config()
 
 export const DEBUG = Boolean(process.env.DEBUG === 'true' || process.env.DEBUG === '1')
@@ -71,3 +71,5 @@ export const pairs: Pair[] = process.env.PAIRS
 export const defaultPanopticfactoryAddress: Address = (process.env.PANOPTIC_FACTORY_ADDRESS ?? '0x00436c9f57dffd96cecd129c04d9e488c57266cf') as Address
 
 export const defaultUniswapFactoryAddress: Address = (process.env.UNISWAP_FACTORY_ADDRESS ?? '0x1F98431c8aD98523631AE4a59f267346ea31F984') as Address
+
+export const defaultWalletPrivateKey: Hex | undefined = process.env.PK as Hex

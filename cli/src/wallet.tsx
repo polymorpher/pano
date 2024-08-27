@@ -6,6 +6,9 @@ import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
 import { SectionTitle } from './common.js'
+import { defaultWalletPrivateKey } from './config.js'
+import { tryPrivateKeyToAccount } from './util.js'
+import { getPk } from './cmd.js'
 
 export enum WalletType {
   Unloaded = 'unloaded',
@@ -27,7 +30,21 @@ interface WalletContextProps {
   setWallet: (wallet: Wallet) => void
 }
 
-export const WalletContext = createContext<WalletContextProps>({ wallet: EmptyWallet, setWallet: () => {} })
+const loadDefaultWallet = () => {
+  if (!defaultWalletPrivateKey) {
+    return EmptyWallet
+  }
+  const a = tryPrivateKeyToAccount(getPk())
+  if (!a) {
+    return EmptyWallet
+  }
+  return { type: WalletType.Hot, address: a.address, privateKeyAccount: a }
+}
+
+export const WalletContext = createContext<WalletContextProps>({
+  wallet: loadDefaultWallet(),
+  setWallet: () => {}
+})
 
 export const useWallet = () => useContext(WalletContext)
 
@@ -122,7 +139,7 @@ export const ShowWallet = () => {
 }
 
 export const WalletProvider = ({ children }: PropsWithChildren) => {
-  const [wallet, setWallet] = useState<Wallet>(EmptyWallet)
+  const [wallet, setWallet] = useState<Wallet>(loadDefaultWallet())
   return <WalletContext.Provider value={{ wallet, setWallet }}>
     {children}
   </WalletContext.Provider>

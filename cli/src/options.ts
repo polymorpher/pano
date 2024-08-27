@@ -26,6 +26,10 @@ const options: Record<string, Options> = {
   panopticFactory: {
     type: 'string',
     describe: 'Panoptic Factory Deployment Address'
+  },
+  pk: {
+    type: 'string',
+    describe: 'The private key of the wallet you want to preload'
   }
 }
 export default options
