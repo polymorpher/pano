@@ -1,7 +1,7 @@
 import { knownAssets, type Network } from './config.js'
 import {
   type Address, type Hex,
-  isAddress,
+  isAddress, parseUnits,
   zeroAddress
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -42,7 +42,7 @@ export const tryPrivateKeyToAccount = (pk: Hex): PrivateKeyAccount | undefined =
   }
 }
 
-export const tryParseBigInt = (s: string): bigint | undefined => {
+export const tryParseBigInt = (s: string | number): bigint | undefined => {
   try {
     return BigInt(s)
   } catch (ex: any) {
@@ -55,9 +55,32 @@ export interface AnnotatedTransaction {
   annotation: string
 }
 
-export const toFixed = (n: number, a: number = 4, b: number = 8): string => {
+export const ClientPrecision: number = 8
+
+export const toFixed = (n: number, a: number = ClientPrecision / 2, b: number = ClientPrecision): string => {
   if (n > 1) {
     return n.toFixed(a)
   }
   return String(Math.round(n * (10 ** b)) / (10 ** b))
+}
+
+export const tryParseUnits = (s: string, decimals: number): bigint | undefined => {
+  try {
+    return parseUnits(s, decimals)
+  } catch (ex: any) {
+    return undefined
+  }
+}
+
+// Not relying on viem, gives more precise control if needed
+export const tryParseDecimalInput = (input: string, decimals: number): bigint | undefined => {
+  const decimalAmount = Number(input)
+  if (!decimalAmount) {
+    return undefined
+  }
+  const decimalAmountXPrecision = tryParseBigInt(Math.round(decimalAmount * (10 ** ClientPrecision)))
+  if (!decimalAmountXPrecision) {
+    return undefined
+  }
+  return decimalAmountXPrecision * (10n ** BigInt(decimals)) / (10n ** BigInt(ClientPrecision))
 }

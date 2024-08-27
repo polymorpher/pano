@@ -9,7 +9,7 @@ import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
-import { type AnnotatedTransaction, toFixed, tryParseBigInt } from './util.js'
+import { type AnnotatedTransaction, toFixed, tryParseUnits } from './util.js'
 
 const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
   const { c0Info, c1Info, price, priceInverse } = usePoolStats(pair)
@@ -17,7 +17,7 @@ const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
     return <Box><Text>Loading...</Text></Box>
   }
   return <Box>
-    <Text>{c0Info.symbol}/{c1Info.symbol} | price: {toFixed(price)} ${c1Info.symbol} for each ${c0Info.symbol} | inverse: {toFixed(priceInverse)})</Text>
+    <Text>{c0Info.symbol}/{c1Info.symbol} | price: {toFixed(price)} {c1Info.symbol} for each {c0Info.symbol} | inverse: {toFixed(priceInverse)})</Text>
   </Box>
 }
 
@@ -118,13 +118,14 @@ export const DepositControl = () => {
     }
     setStage(Stage.Confirm)
     setTextInput('')
-    const parsed = tryParseBigInt(input)
-    if (!parsed) {
+    // input is decimal amount, convert to atomic amount in bigint
+    const atomicAmount = tryParseUnits(input, chosenCollateral.decimals)
+    if (!atomicAmount) {
       addMessage(`Malformed value [${input}]`, { color: 'red' })
       return
     }
-    setAmount(parsed)
-    const ns = await chosenCollateral?.tracker?.read.previewDeposit([parsed])
+    setAmount(atomicAmount)
+    const ns = await chosenCollateral?.tracker?.read.previewDeposit([atomicAmount])
     setNewShares(ns)
   }, [addMessage, chosenCollateral])
 
