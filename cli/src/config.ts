@@ -73,3 +73,5 @@ export const defaultPanopticfactoryAddress: Address = (process.env.PANOPTIC_FACT
 export const defaultUniswapFactoryAddress: Address = (process.env.UNISWAP_FACTORY_ADDRESS ?? '0x1F98431c8aD98523631AE4a59f267346ea31F984') as Address
 
 export const defaultWalletPrivateKey: Hex | undefined = process.env.PK as Hex
+
+export const defaultDbPath: string | undefined = process.env.DB ?? 'db'

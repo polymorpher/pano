@@ -9,11 +9,13 @@
     "genTypes": "tsx scripts/genTypes.ts; eslint types-contract --fix"
   },
   "dependencies": {
+    "@types/pouchdb": "^6.4.2",
     "axios": "^1.7.3",
     "dotenv": "^16.4.5",
     "ink": "^5.0.1",
     "ink-text-input": "^6.0.0",
     "lodash-es": "^4.17.21",
+    "pouchdb": "^9.0.0",
     "react": "^18.3.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.17.0",

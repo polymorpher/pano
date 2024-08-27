@@ -30,6 +30,10 @@ const options: Record<string, Options> = {
   pk: {
     type: 'string',
     describe: 'The private key of the wallet you want to preload'
+  },
+  db: {
+    type: 'string',
+    describe: 'Path to local database folder'
   }
 }
 export default options
