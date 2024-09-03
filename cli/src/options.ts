@@ -21,11 +21,15 @@ const options: Record<string, Options> = {
   },
   uniswapFactory: {
     type: 'string',
-    describe: 'Uniswap V3 Factory Deployment Address'
+    describe: 'Uniswap V3 Factory Contract Address'
   },
   panopticFactory: {
     type: 'string',
-    describe: 'Panoptic Factory Deployment Address'
+    describe: 'Panoptic Factory Contract Address'
+  },
+  panopticHelper: {
+    type: 'string',
+    describe: 'Panoptic Helper Contract Address'
   },
   pk: {
     type: 'string',
