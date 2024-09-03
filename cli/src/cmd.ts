@@ -3,7 +3,7 @@ import {
   networks,
   defaultPanopticfactoryAddress,
   defaultUniswapFactoryAddress,
-  defaultWalletPrivateKey
+  defaultWalletPrivateKey, defaultPanopticHelperAddress
 } from './config.js'
 import yargs from 'yargs/yargs'
 import { hideBin } from 'yargs/helpers'
@@ -44,6 +44,11 @@ export const parseInitialNetwork = (): Network => {
 export const getPanopticFactoryAddress = (): Address => {
   const pfa = cmd.panopticFactory as Address
   return pfa ?? defaultPanopticfactoryAddress
+}
+
+export const getPanopticHelperAddress = (): Address => {
+  const pfa = cmd.panopticHelper as Address
+  return pfa ?? defaultPanopticHelperAddress
 }
 
 export const getUniswapFactoryAddress = (): Address => {

@@ -6,8 +6,9 @@ import SFPMAbi from '../types-contract/SemiFungiblePositionManager.sol/SemiFungi
 import CollateralTrackerAbi from '../types-contract/CollateralTracker.sol/CollateralTracker.json.ts'
 import IERC20Abi from '../types-contract/IERC20.sol/IERC20.json.ts'
 import IERC20MetadataAbi from '../types-contract/IERC20Metadata.sol/IERC20Metadata.json.ts'
+import PanopticHelperAbi from '../types-contract/PanopticHelper.sol/PanopticHelper.json.ts'
 
-export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi, IERC20Abi, IERC20MetadataAbi }
+export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi, IERC20Abi, IERC20MetadataAbi, PanopticHelperAbi }
 
 export const DefaultAssets: Record<string, Record<string, string>> = {
   ethereum: {
