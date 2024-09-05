@@ -2,24 +2,15 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
 import { Box, Text } from 'ink'
-import { SectionTitle, type ValidatedPair } from './common.js'
-import { type CollateralFullInfo, useCollateralBalance, usePools, usePoolStats } from './pools.js'
+import { MultiChoiceSelector, SectionTitle, type ValidatedPair } from './common.js'
+import { type CollateralFullInfo, useCollateralBalance, usePoolStats } from './pools/hooks.js'
 import { NotificationContext } from './notification.js'
 import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
-import { type AnnotatedTransaction, toFixed, tryParseUnits } from './util.js'
-
-const SimplePoolInfo = ({ pair }: { pair?: ValidatedPair }) => {
-  const { c0Info, c1Info, price, priceInverse } = usePoolStats(pair)
-  if (!pair) {
-    return <Box><Text>Loading...</Text></Box>
-  }
-  return <Box>
-    <Text>{c0Info.symbol}/{c1Info.symbol} | price: {toFixed(price)} {c1Info.symbol} for each {c0Info.symbol} | inverse: {toFixed(priceInverse)})</Text>
-  </Box>
-}
+import { type AnnotatedTransaction, tryParseUnits } from './util.js'
+import { PoolSelector } from './pools/selector.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -32,7 +23,6 @@ enum Stage {
 export const DepositControl = () => {
   const { wallet } = useWallet()
   const { client } = useWalletClient()
-  const { pairs } = usePools()
   const { addMessage } = useContext(NotificationContext)
   const [textInput, setTextInput] = useState<string>('')
   const [chosenPair, setChosenPair] = useState<ValidatedPair>()
@@ -65,47 +55,23 @@ export const DepositControl = () => {
     }
   }, [userCommandDisabled])
 
-  const onPoolSelection = useCallback((input: string) => {
-    if (!input) {
-      return
-    }
-    if (input.toLowerCase() === 'x') {
-      setTextInput('')
-      setChosenPair(undefined)
-      setUserCommandDisabled(false)
-      return
-    }
-    const index = Number(input)
-    if (!index || !(index <= pairs.length)) {
-      addMessage(`Unrecognized selection [${input}]`, { color: 'red' })
-      return
-    }
-    const p = pairs[index - 1]
-    setChosenPair(p)
-    setStage(Stage.CollateralSelection)
+  const onPoolSelected = ({ pair }: { text: string, pair?: ValidatedPair }) => {
     setTextInput('')
-    addMessage(`Your selected [${input}]`, { color: 'grey' })
-  }, [setUserCommandDisabled, pairs, addMessage])
-
-  const onCollateralSelection = useCallback(async (input: string) => {
-    if (!input || !wallet.address) {
-      return
-    }
-    if (input.toLowerCase() === 'x') {
-      setTextInput('')
+    if (!pair) {
       setChosenPair(undefined)
-      setChosenCollateral(undefined)
-      setStage(Stage.PoolSelection)
       return
     }
-    if (input !== '1' && input !== '2') {
-      setTextInput('')
-      addMessage(`Unrecognized selection [${input}]`, { color: 'red' })
+    setChosenPair(pair)
+    setStage(Stage.CollateralSelection)
+  }
+
+  const onCollateralSelected = useCallback(async (choice: number) => {
+    if (!wallet.address) {
       return
     }
-    const cc = input === '1' ? chosenPairInfo.c0Info : chosenPairInfo.c1Info
+    const cc = choice === 1 ? chosenPairInfo.c0Info : chosenPairInfo.c1Info
     setChosenCollateral(cc)
-    addMessage(`You selected [${input}] ${cc.symbol}`, { color: 'grey' })
+    addMessage(`You selected [${choice}] ${cc.symbol}`, { color: 'grey' })
     setStage(Stage.AmountInput)
     setTextInput('')
     const mw = await cc.tracker!.read.maxWithdraw([wallet.address])
@@ -220,35 +186,29 @@ export const DepositControl = () => {
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Deposit Collateral</SectionTitle>
-    {stage === Stage.PoolSelection && <Box marginTop={1} flexDirection={'column'}>
-      <Box marginBottom={1}>
-        <Text>Choose from an existing pool</Text>
-      </Box>
-      {pairs.map((pair, i) => <Box key={`pair-${i}`}><Text>[{i + 1}] </Text><SimplePoolInfo pair={pair}/></Box>)}
-      <Text color={'red'}>[x] Back to main menu</Text>
-      <Box marginTop={1}>
-        <Text>Select a pool: </Text>
-        <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onPoolSelection} />
-      </Box>
-    </Box>}
-    {stage === Stage.CollateralSelection && <Box marginTop={1} flexDirection={'column'}>
-      <Box marginY={1}><Text>You selected: </Text><SimplePoolInfo pair={chosenPair}/></Box>
-      <Text>Which collateral are you depositing into or withdrawing from?</Text>
-      <Text>[1] {chosenPairInfo?.c0Info?.symbol} (Your deposit balance: {formatUnits(valueBalance0, chosenPairInfo.c0Info.decimals)} | Token balance: {formatUnits(tokenBalance0, chosenPairInfo.c0Info.decimals)})</Text>
-      <Text>[2] {chosenPairInfo?.c1Info?.symbol} (Your deposit balance: {formatUnits(valueBalance1, chosenPairInfo.c1Info.decimals)} | Token balance: {formatUnits(tokenBalance1, chosenPairInfo.c1Info.decimals)})</Text>
-      <Text color={'red'}>[x] Back to pool selection</Text>
-      <Box>
-        <Text>Choose a collateral: </Text>
-        <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onCollateralSelection} />
-      </Box>
-    </Box>}
+    {stage === Stage.PoolSelection && <PoolSelector onSelected={onPoolSelected}/>}
+    {stage === Stage.CollateralSelection && <MultiChoiceSelector
+        intro={'Which collateral are you depositing into or withdrawing from?'}
+        prompt={'Choose a collateral'}
+      options={[
+          `${chosenPairInfo?.c0Info?.symbol} (Your deposit balance: ${formatUnits(valueBalance0, chosenPairInfo.c0Info.decimals)} | Token balance: ${formatUnits(tokenBalance0, chosenPairInfo.c0Info.decimals)})`,
+          `${chosenPairInfo?.c1Info?.symbol} (Your deposit balance: ${formatUnits(valueBalance1, chosenPairInfo.c1Info.decimals)} | Token balance: ${formatUnits(tokenBalance1, chosenPairInfo.c1Info.decimals)})`
+      ]}
+        onExit={() => {
+          setTextInput('')
+          setChosenPair(undefined)
+          setChosenCollateral(undefined)
+          setStage(Stage.PoolSelection)
+        }}
+        onSelected={onCollateralSelected}
+    /> }
     {stage === Stage.AmountInput && <Box marginTop={1} flexDirection={'column'}>
       <Box marginY={1} flexDirection={'column'}>
         <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
         <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()} </Text>
         <Text>---------------</Text>
-        <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenPairInfo.c0Info.decimals)} {chosenCollateral?.symbol}</Text>
-        <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenPairInfo.c1Info.decimals)} {chosenCollateral?.symbol}</Text>
+        <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+        <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
         <Text>Your shares: {choseC0 ? shareBalance0.toLocaleString() : shareBalance1.toLocaleString()} ({(equity * 100).toFixed(4)}%) </Text>
         <Text>Your maximum withdrawable amount: {formatUnits(maxWithdrawable, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
         <Text>Your open positions: {numOpenPositions}</Text>

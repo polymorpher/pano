@@ -1,14 +1,14 @@
 import { useContext, useEffect, useState } from 'react'
-import { pairs as initPairs } from './config.js'
-import { getTokenAddress, pairToStr, tickToPrice } from './util.js'
+import { pairs as initPairs } from 'src/config.js'
+import { getTokenAddress, pairToStr, tickToPrice } from 'src//util.js'
 import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
-import { usePublicClient } from './client.js'
-import { useFactories } from './uniswap.js'
-import { NotificationContext } from './notification.js'
-import { type ValidatedPair } from './common.js'
-import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from './constants.js'
-import { type ERC20Metadata, useERC20, type IERC20 } from './token.js'
-import { useWallet } from './wallet.js'
+import { usePublicClient } from 'src/client.js'
+import { useFactories } from 'src/uniswap.js'
+import { NotificationContext } from 'src/notification.js'
+import { type ValidatedPair } from 'src/common.js'
+import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from 'src/constants.js'
+import { type ERC20Metadata, useERC20, type IERC20 } from 'src/token.js'
+import { useWallet } from 'src/wallet.js'
 
 type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
 type CollateralTracker = GetContractReturnType<typeof CollateralTrackerAbi, PublicClient>

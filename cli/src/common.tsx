@@ -1,8 +1,10 @@
-import React, { type PropsWithChildren } from 'react'
+import React, { type PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { Box, Text } from 'ink'
 import type { Pair } from './config.js'
 import type { Address } from 'viem'
 import type { Tuple } from 'reverse-mirage'
+import TextInput from 'ink-text-input'
+import { NotificationContext } from './notification.js'
 
 export const SectionTitle = ({ children }: PropsWithChildren) => {
   return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>{children}</Text></Box>
@@ -77,4 +79,49 @@ export const calculateTokenId = (
     : 0n
 
   return id
+}
+
+interface MultiChoiceSelectorProps {
+  options: Array<string | React.JSX.Element>
+  onSelected: (choice: number) => any
+  onExit: () => any
+  prompt: string
+  intro: string
+  backText?: string
+}
+
+export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelected, onExit }: MultiChoiceSelectorProps) => {
+  const [textInput, setTextInput] = useState<string>('')
+  const { addMessage } = useContext(NotificationContext)
+  const onSubmit = useCallback((input: string) => {
+    if (!input) {
+      return
+    }
+    setTextInput('')
+    if (input.toLowerCase() === 'x') {
+      onExit()
+      return
+    }
+    const selection = Number(input)
+    if (!selection || selection > options.length) {
+      addMessage(`Unrecognized selection [${input}]`, { color: 'red' })
+      return
+    }
+    onSelected(selection)
+  }, [options.length, addMessage, onExit, onSelected])
+
+  return <Box marginTop={1} flexDirection={'column'}>
+    <Text>{intro}</Text>
+    {options.map((entry, index) => {
+      if (typeof entry === 'string') {
+        return <Text key={entry}>[{index + 1}] {entry}</Text>
+      }
+      return <Box key={`option-${index}`}><Text>[{index + 1}] </Text>{entry}</Box>
+    })}
+    <Text color={'red'}>[x] {backText ?? 'Go back to last step'}</Text>
+    <Box>
+      <Text>{prompt}: </Text>
+      <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+    </Box>
+  </Box>
 }

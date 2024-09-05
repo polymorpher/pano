@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Text } from 'ink'
 import { SectionTitle, type ValidatedPair } from './common.js'
-import { type CollateralFullInfo, usePools, usePoolStats } from './pools.js'
+import { type CollateralFullInfo, usePools, usePoolStats } from './pools/hooks.js'
 import { formatUnits } from 'viem'
 import { toFixed } from './util.js'
 
