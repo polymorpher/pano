@@ -1,10 +1,11 @@
 import React, { type PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { Box, Text } from 'ink'
 import type { Pair } from './config.js'
-import type { Address } from 'viem'
+import { type Address } from 'viem'
 import type { Tuple } from 'reverse-mirage'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
+import { UserInputContext } from './commands.js'
 
 export const SectionTitle = ({ children }: PropsWithChildren) => {
   return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>{children}</Text></Box>
@@ -86,13 +87,14 @@ interface MultiChoiceSelectorProps {
   onSelected: (choice: number) => any
   onExit: () => any
   prompt: string
-  intro: string
+  intro: string | React.JSX.Element
   backText?: string
 }
 
 export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelected, onExit }: MultiChoiceSelectorProps) => {
   const [textInput, setTextInput] = useState<string>('')
   const { addMessage } = useContext(NotificationContext)
+  const { disabled } = useContext(UserInputContext)
   const onSubmit = useCallback((input: string) => {
     if (!input) {
       return
@@ -111,17 +113,69 @@ export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelect
   }, [options.length, addMessage, onExit, onSelected])
 
   return <Box marginTop={1} flexDirection={'column'}>
-    <Text>{intro}</Text>
+    {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
     {options.map((entry, index) => {
       if (typeof entry === 'string') {
-        return <Text key={entry}>[{index + 1}] {entry}</Text>
+        return <Text key={`option-${index}`}>[{index + 1}] {entry}</Text>
       }
       return <Box key={`option-${index}`}><Text>[{index + 1}] </Text>{entry}</Box>
     })}
     <Text color={'red'}>[x] {backText ?? 'Go back to last step'}</Text>
     <Box>
       <Text>{prompt}: </Text>
-      <TextInput showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+      <TextInput focus={disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+    </Box>
+  </Box>
+}
+
+interface AmountSelectorProps {
+  onSubmit: (input: string) => any
+  prompt: string
+  intro: string | React.JSX.Element
+}
+
+export const AmountSelector = ({ intro, prompt, onSubmit }: AmountSelectorProps) => {
+  const [textInput, setTextInput] = useState<string>('')
+  const { disabled } = useContext(UserInputContext)
+  return <Box marginTop={1} flexDirection={'column'}>
+    {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
+    <Box>
+      <Text>{prompt}: </Text>
+      <TextInput focus={disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+    </Box>
+  </Box>
+}
+
+interface ConfirmationSelectorProps {
+  onConfirm: (yes?: boolean) => any
+  prompt?: string
+  intro: string | React.JSX.Element
+}
+
+export const ConfirmationSelector = ({ intro, prompt, onConfirm }: ConfirmationSelectorProps) => {
+  const [textInput, setTextInput] = useState<string>('')
+  const { disabled } = useContext(UserInputContext)
+  const { addMessage } = useContext(NotificationContext)
+
+  const onSubmit = useCallback(async (input: string) => {
+    input = input.toLowerCase()
+    setTextInput('')
+    if (input === 'n' || input === 'no') {
+      onConfirm(false)
+    } else if (input === 'a' || input === 'abort') {
+      onConfirm(undefined)
+    } else if (input === 'y' || input === 'yes') {
+      onConfirm(true)
+    } else {
+      addMessage(`Unrecognized input [${input}]`, { color: 'red' })
+    }
+  }, [onConfirm, addMessage])
+
+  return <Box marginTop={1} flexDirection={'column'}>
+    {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
+    <Box>
+      <Text>{prompt ?? 'Continue? (y) yes / (n) no / (a) abort'}: </Text>
+      <TextInput focus={disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>
 }

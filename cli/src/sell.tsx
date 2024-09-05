@@ -56,6 +56,6 @@ export const SellControl = () => {
       setPutCall(undefined)
       setStage(Stage.PoolSelection)
     }} prompt={'Choose a collateral'} intro={'Put or call?'}/>}
-    
+
   </Box>
 }

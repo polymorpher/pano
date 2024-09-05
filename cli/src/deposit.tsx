@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
 import { Box, Text } from 'ink'
-import { MultiChoiceSelector, SectionTitle, type ValidatedPair } from './common.js'
+import { AmountSelector, ConfirmationSelector, MultiChoiceSelector, SectionTitle, type ValidatedPair } from './common.js'
 import { type CollateralFullInfo, useCollateralBalance, usePoolStats } from './pools/hooks.js'
 import { NotificationContext } from './notification.js'
 import TextInput from 'ink-text-input'
@@ -116,16 +116,15 @@ export const DepositControl = () => {
     }
   }, [numOpenPositions, maxWithdrawable, addMessage, chosenCollateral])
 
-  const onConfirm = useCallback(async (input: string) => {
-    input = input.toLowerCase()
+  const onConfirm = useCallback(async (yes?: boolean) => {
     setTextInput('')
-    if (input === 'n' || input === 'no') {
+    if (yes === false) {
       setStage(Stage.AmountInput)
-    } else if (input === 'a' || input === 'abort') {
+    } else if (yes === undefined) {
       setStage(Stage.PoolSelection)
       setUserCommandDisabled(false)
       addMessage('Deposit operation aborted', { color: 'red' })
-    } else if (input === 'y' || input === 'yes') {
+    } else if (yes) {
       if (!chosenCollateral?.tokenContract || !chosenCollateral.tracker?.abi || !chosenCollateral.address) {
         addMessage('Unexpected error: collateral or token contract is uninitialized', { color: 'red' })
         return
@@ -179,8 +178,6 @@ export const DepositControl = () => {
       setChosenCollateral(undefined)
       setChosenPair(undefined)
       setStage(Stage.Empty)
-    } else {
-      addMessage(`Unrecognized input [${input}]`, { color: 'red' })
     }
   }, [newShares, wallet.address, allowanceOf, amount, client, chosenCollateral, setUserCommandDisabled, addMessage])
 
@@ -202,34 +199,32 @@ export const DepositControl = () => {
         }}
         onSelected={onCollateralSelected}
     /> }
-    {stage === Stage.AmountInput && <Box marginTop={1} flexDirection={'column'}>
-      <Box marginY={1} flexDirection={'column'}>
-        <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
-        <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()} </Text>
-        <Text>---------------</Text>
-        <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
-        <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
-        <Text>Your shares: {choseC0 ? shareBalance0.toLocaleString() : shareBalance1.toLocaleString()} ({(equity * 100).toFixed(4)}%) </Text>
-        <Text>Your maximum withdrawable amount: {formatUnits(maxWithdrawable, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
-        <Text>Your open positions: {numOpenPositions}</Text>
-        <Text>---------------</Text>
-        <Text>Withdraw is only allowed when there is no open position. Deposit has no restriction </Text>
-      </Box>
-      <Box>
-        <Text>How much do you want to deposit / withdraw? (Use negative value for withdraw. To go back, enter 0 or x): </Text>
-        <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onAmountSubmitted} />
-      </Box>
-    </Box>}
-    {stage === Stage.Confirm && <Box marginTop={1} flexDirection={'column'}>
-      <Box marginY={1}><Text>Please verify and confirm</Text></Box>
-      <Text>{amount > 0 ? 'Deposit' : 'Withdraw'} Amount: {formatUnits(amount > 0 ? amount : -amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
-      <Text>{amount > 0 ? 'Earning' : 'Burning'} Pool Shares: {newShares.toLocaleString()}</Text>
-      <Text>Collateral contract: {chosenCollateral?.address}</Text>
-      <Text>Token contract: {chosenCollateral?.tokenAddress}</Text>
-      <Box marginY={1}>
-        <Text>Continue? (y) yes / (n) no / (a) abort: </Text>
-        <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onConfirm} />
-      </Box>
-    </Box>}
+    {stage === Stage.AmountInput && <AmountSelector
+        intro={<>
+          <Text>Pool balance: {formatUnits(chosenCollateral?.poolAssets ?? 0n, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol} | Utilization: {chosenCollateral?.utilization}</Text>
+          <Text>Pool issued shares: {chosenCollateral?.shares.toLocaleString()} </Text>
+          <Text>---------------</Text>
+          <Text>Your current deposit balance: {formatUnits(choseC0 ? valueBalance0 : valueBalance1, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+          <Text>Your token total balance: {formatUnits(choseC0 ? tokenBalance0 : tokenBalance1, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+          <Text>Your shares: {choseC0 ? shareBalance0.toLocaleString() : shareBalance1.toLocaleString()} ({(equity * 100).toFixed(4)}%) </Text>
+          <Text>Your maximum withdrawable amount: {formatUnits(maxWithdrawable, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+          <Text>Your open positions: {numOpenPositions}</Text>
+          <Text>---------------</Text>
+          <Text>Withdraw is only allowed when there is no open position. Deposit has no restriction </Text>
+        </>}
+        prompt={'How much do you want to deposit / withdraw? (Use negative value for withdraw. To go back, enter 0 or x)'}
+        onSubmit={onAmountSubmitted}
+
+    />}
+    {stage === Stage.Confirm && <ConfirmationSelector
+      intro={<>
+        <Box marginY={1}><Text>Please verify and confirm</Text></Box>
+        <Text>{amount > 0 ? 'Deposit' : 'Withdraw'} Amount: {formatUnits(amount > 0 ? amount : -amount, chosenCollateral?.decimals ?? 0)} {chosenCollateral?.symbol}</Text>
+        <Text>{amount > 0 ? 'Earning' : 'Burning'} Pool Shares: {newShares.toLocaleString()}</Text>
+        <Text>Collateral contract: {chosenCollateral?.address}</Text>
+        <Text>Token contract: {chosenCollateral?.tokenAddress}</Text>
+      </>}
+      onConfirm={onConfirm}
+    />}
   </Box>
 }
