@@ -6,6 +6,7 @@ import type { Tuple } from 'reverse-mirage'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
+import { TickBase } from './util.js'
 
 export const SectionTitle = ({ children }: PropsWithChildren) => {
   return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>{children}</Text></Box>
@@ -130,20 +131,43 @@ export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelect
 }
 
 interface AmountSelectorProps {
-  onSubmit: (input: string) => any
+  onSubmit?: (input: number) => any
   prompt: string
   intro: string | React.JSX.Element
   inactive?: boolean
+  hideGoBackPrompt?: boolean
+  onBack?: () => any
+  allowZero?: boolean
+  onRawSubmit?: (input: string) => any
 }
 
-export const AmountSelector = ({ intro, prompt, onSubmit, inactive }: AmountSelectorProps) => {
+export const AmountSelector = ({ intro, prompt, onSubmit, inactive, hideGoBackPrompt, onBack, allowZero, onRawSubmit }: AmountSelectorProps) => {
   const [textInput, setTextInput] = useState<string>('')
   const { disabled } = useContext(UserInputContext)
+  const { addMessage } = useContext(NotificationContext)
+  const onInputSubmit = useCallback((input: string) => {
+    if ((!allowZero && input === '0') || input.toLowerCase() === 'x') {
+      setTextInput('')
+      onBack?.()
+      return
+    }
+    if (onRawSubmit) {
+      onRawSubmit(input)
+      return
+    }
+    const n = Number(input)
+    if (!n) {
+      addMessage(`Invalid input: ${input}`, { color: 'red' })
+      return
+    }
+    onSubmit?.(n)
+  }, [addMessage, onRawSubmit, onSubmit, allowZero, onBack])
+  const goBackPrompt = allowZero ? '(enter x to go back)' : '(enter 0 or x to go back)'
   return <Box marginTop={1} flexDirection={'column'}>
     {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
     <Box>
-      <Text>{prompt}: </Text>
-      <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+      <Text>{prompt} {hideGoBackPrompt ? '' : goBackPrompt}: </Text>
+      <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onInputSubmit} />
     </Box>
   </Box>
 }
@@ -181,4 +205,12 @@ export const ConfirmationSelector = ({ intro, prompt, onConfirm, inactive }: Con
       <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>
+}
+
+export const getOptionRange = (strike: number, width: number, tickSpacing: number): [number, number] => {
+  const ticks = width * tickSpacing
+  const multiplier = TickBase ** ticks
+  const lower = strike / multiplier
+  const upper = strike * multiplier
+  return [lower, upper]
 }

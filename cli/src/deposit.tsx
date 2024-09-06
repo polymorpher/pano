@@ -5,7 +5,6 @@ import { Box, Text } from 'ink'
 import { AmountSelector, ConfirmationSelector, MultiChoiceSelector, SectionTitle, type ValidatedPair } from './common.js'
 import { type CollateralFullInfo, useCollateralBalance, usePoolStats } from './pools/hooks.js'
 import { NotificationContext } from './notification.js'
-import TextInput from 'ink-text-input'
 import { UserInputContext } from './commands.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
@@ -24,7 +23,6 @@ export const DepositControl = () => {
   const { wallet } = useWallet()
   const { client } = useWalletClient()
   const { addMessage } = useContext(NotificationContext)
-  const [textInput, setTextInput] = useState<string>('')
   const [chosenPair, setChosenPair] = useState<ValidatedPair>()
   const chosenPairInfo = usePoolStats(chosenPair)
   const [chosenCollateral, setChosenCollateral] = useState<CollateralFullInfo>()
@@ -50,13 +48,11 @@ export const DepositControl = () => {
 
   useEffect(() => {
     if (userCommandDisabled) {
-      setTextInput('')
       setStage(Stage.PoolSelection)
     }
   }, [userCommandDisabled])
 
   const onPoolSelected = ({ pair }: { text: string, pair?: ValidatedPair }) => {
-    setTextInput('')
     if (!pair) {
       setChosenPair(undefined)
       return
@@ -73,7 +69,6 @@ export const DepositControl = () => {
     setChosenCollateral(cc)
     addMessage(`You selected [${choice}] ${cc.symbol}`, { color: 'grey' })
     setStage(Stage.AmountInput)
-    setTextInput('')
     const mw = await cc.tracker!.read.maxWithdraw([wallet.address])
     setMaxWithdrawable(mw)
     const op = await chosenPairInfo.panopticPool!.read.numberOfPositions([wallet.address])
@@ -84,13 +79,6 @@ export const DepositControl = () => {
     if (!chosenCollateral?.tracker) {
       return
     }
-    if (input === '0' || input.toLowerCase() === 'x') {
-      setStage(Stage.CollateralSelection)
-      setTextInput('')
-      setChosenCollateral(undefined)
-      return
-    }
-    setTextInput('')
     // input is decimal amount, convert to atomic amount in bigint
     const atomicAmount = tryParseUnits(input, chosenCollateral.decimals)
     if (!atomicAmount) {
@@ -117,7 +105,6 @@ export const DepositControl = () => {
   }, [numOpenPositions, maxWithdrawable, addMessage, chosenCollateral])
 
   const onConfirm = useCallback(async (yes?: boolean) => {
-    setTextInput('')
     if (yes === false) {
       setStage(Stage.AmountInput)
     } else if (yes === undefined) {
@@ -192,7 +179,6 @@ export const DepositControl = () => {
           `${chosenPairInfo?.c1Info?.symbol} (Your deposit balance: ${formatUnits(valueBalance1, chosenPairInfo.c1Info.decimals)} | Token balance: ${formatUnits(tokenBalance1, chosenPairInfo.c1Info.decimals)})`
       ]}
         onExit={() => {
-          setTextInput('')
           setChosenPair(undefined)
           setChosenCollateral(undefined)
           setStage(Stage.PoolSelection)
@@ -213,7 +199,11 @@ export const DepositControl = () => {
           <Text>Withdraw is only allowed when there is no open position. Deposit has no restriction </Text>
         </>}
         prompt={'How much do you want to deposit / withdraw? (Use negative value for withdraw. To go back, enter 0 or x)'}
-        onSubmit={onAmountSubmitted}
+        onBack={() => {
+          setStage(Stage.CollateralSelection)
+          setChosenCollateral(undefined)
+        }}
+        onRawSubmit={onAmountSubmitted}
 
     />}
     {stage === Stage.Confirm && <ConfirmationSelector
