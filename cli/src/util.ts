@@ -33,6 +33,11 @@ export const tickToPrice = (tick: number, decimals: number, precision: number = 
   return scaled
 }
 
+export const priceToTick = (price: number, decimals: number): number => {
+  const tick = (Math.log(price) / Math.log(TickBase)) ** (10 ** decimals)
+  return Math.round(tick)
+}
+
 export const tryPrivateKeyToAccount = (pk: Hex): PrivateKeyAccount | undefined => {
   try {
     return privateKeyToAccount(pk)

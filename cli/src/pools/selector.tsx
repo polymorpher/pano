@@ -9,9 +9,10 @@ import { NotificationContext } from '../notification.js'
 
 interface PoolSelectorProps {
   onSelected: (args: { text: string, pair?: ValidatedPair }) => any
+  inactive?: boolean
 }
 
-export const PoolSelector = ({ onSelected }: PoolSelectorProps) => {
+export const PoolSelector = ({ onSelected, inactive }: PoolSelectorProps) => {
   const [textInput, setTextInput] = useState<string>('')
   const { pairs } = usePools()
   const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
@@ -46,7 +47,7 @@ export const PoolSelector = ({ onSelected }: PoolSelectorProps) => {
     <Text color={'red'}>[x] Back to main menu</Text>
     <Box marginTop={1}>
       <Text>Select a pool: </Text>
-      <TextInput focus={userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onPoolSelection} />
+      <TextInput focus={!inactive && userCommandDisabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onPoolSelection} />
     </Box>
   </Box>
 }

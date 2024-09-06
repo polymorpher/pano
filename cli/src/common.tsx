@@ -89,9 +89,10 @@ interface MultiChoiceSelectorProps {
   prompt: string
   intro: string | React.JSX.Element
   backText?: string
+  inactive?: boolean
 }
 
-export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelected, onExit }: MultiChoiceSelectorProps) => {
+export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelected, onExit, inactive }: MultiChoiceSelectorProps) => {
   const [textInput, setTextInput] = useState<string>('')
   const { addMessage } = useContext(NotificationContext)
   const { disabled } = useContext(UserInputContext)
@@ -123,7 +124,7 @@ export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelect
     <Text color={'red'}>[x] {backText ?? 'Go back to last step'}</Text>
     <Box>
       <Text>{prompt}: </Text>
-      <TextInput focus={disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+      <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>
 }
@@ -132,16 +133,17 @@ interface AmountSelectorProps {
   onSubmit: (input: string) => any
   prompt: string
   intro: string | React.JSX.Element
+  inactive?: boolean
 }
 
-export const AmountSelector = ({ intro, prompt, onSubmit }: AmountSelectorProps) => {
+export const AmountSelector = ({ intro, prompt, onSubmit, inactive }: AmountSelectorProps) => {
   const [textInput, setTextInput] = useState<string>('')
   const { disabled } = useContext(UserInputContext)
   return <Box marginTop={1} flexDirection={'column'}>
     {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
     <Box>
       <Text>{prompt}: </Text>
-      <TextInput focus={disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+      <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>
 }
@@ -150,9 +152,10 @@ interface ConfirmationSelectorProps {
   onConfirm: (yes?: boolean) => any
   prompt?: string
   intro: string | React.JSX.Element
+  inactive?: boolean
 }
 
-export const ConfirmationSelector = ({ intro, prompt, onConfirm }: ConfirmationSelectorProps) => {
+export const ConfirmationSelector = ({ intro, prompt, onConfirm, inactive }: ConfirmationSelectorProps) => {
   const [textInput, setTextInput] = useState<string>('')
   const { disabled } = useContext(UserInputContext)
   const { addMessage } = useContext(NotificationContext)
@@ -175,7 +178,7 @@ export const ConfirmationSelector = ({ intro, prompt, onConfirm }: ConfirmationS
     {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
     <Box>
       <Text>{prompt ?? 'Continue? (y) yes / (n) no / (a) abort'}: </Text>
-      <TextInput focus={disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+      <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>
 }

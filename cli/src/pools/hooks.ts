@@ -6,11 +6,12 @@ import { usePublicClient } from 'src/client.js'
 import { useFactories } from 'src/uniswap.js'
 import { NotificationContext } from 'src/notification.js'
 import { type ValidatedPair } from 'src/common.js'
-import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi } from 'src/constants.js'
+import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi, UniswapPoolAbi } from 'src/constants.js'
 import { type ERC20Metadata, useERC20, type IERC20 } from 'src/token.js'
 import { useWallet } from 'src/wallet.js'
 
 type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
+type UniswapPool = GetContractReturnType<typeof UniswapPoolAbi, PublicClient>
 type CollateralTracker = GetContractReturnType<typeof CollateralTrackerAbi, PublicClient>
 
 export interface CollateralPoolState {
@@ -123,14 +124,15 @@ export const usePoolStats = (pool?: ValidatedPair) => {
   const { addMessage } = useContext(NotificationContext)
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
+  const [uniswapPool, setUniswapPool] = useState<UniswapPool>()
   const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>(EmptyTokenPair)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>(EmptyPriceTickInfo)
+  const [tickSpacing, setTickSpacing] = useState<number>(0)
   const c0Info = useCollateralInfo({ address: token0 })
   const c1Info = useCollateralInfo({ address: token1 })
   const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
   const priceInverse = price ? 1 / price : 0
-
   const recentPrices = recentPriceTicks.map(t => tickToPrice(t, c1Info.decimals - c0Info.decimals))
   const recentPricesInverse = recentPrices.map(p => p ? 1 / p : 0)
 
@@ -143,6 +145,8 @@ export const usePoolStats = (pool?: ValidatedPair) => {
       }
       const pp = getContract({ address: pool.panopticPoolAddress, abi: PanopticPoolAbi, client })
       setPanopticPool(pp)
+      const up = getContract({ address: pool.uniswapPoolAddress, abi: UniswapPoolAbi, client })
+      setUniswapPool(up)
       const t0 = await pp.read.collateralToken0()
       if (t0 === zeroAddress) {
         addMessage('Bad collateral token0 tracker address', { color: 'red' })
@@ -169,7 +173,18 @@ export const usePoolStats = (pool?: ValidatedPair) => {
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [panopticPool, addMessage])
 
-  return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse, panopticPool }
+  useEffect(() => {
+    async function getStats () {
+      if (!uniswapPool) {
+        return
+      }
+      const tickSpacing = await uniswapPool.read.tickSpacing()
+      setTickSpacing(tickSpacing)
+    }
+    getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [uniswapPool, addMessage])
+
+  return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing }
 }
 
 export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
