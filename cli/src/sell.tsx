@@ -1,17 +1,21 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import { db } from './db'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
-import { usePools, usePoolStats } from './pools/hooks.js'
+import {usePoolStats } from './pools/hooks.js'
 import { NotificationContext } from './notification.js'
-import { AmountSelector, MultiChoiceSelector, SectionTitle, type ValidatedPair } from './common.js'
-import TextInput from 'ink-text-input'
+import {
+  AmountSelector,
+  ConfirmationSelector,
+  getOptionRange,
+  MultiChoiceSelector,
+  SectionTitle,
+  type ValidatedPair
+} from './common.js'
 import { Box, Text } from 'ink'
-import { UserInputContext } from './commands.js'
-import { SimplePoolInfo } from './pools/info.js'
 import { PoolSelector } from './pools/selector.js'
 import { formatUnits } from 'viem'
-import { priceToTick, tickToPrice } from './util.js'
+import { priceToTick, tickToPrice, tryParseUnits } from './util.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -27,12 +31,9 @@ export const SellControl = () => {
   // TODO: make below statements a single hook
   const { wallet } = useWallet()
   const { client } = useWalletClient()
-  const { pairs } = usePools()
   const { addMessage } = useContext(NotificationContext)
-  const [textInput, setTextInput] = useState<string>('')
   const [chosenPair, setChosenPair] = useState<ValidatedPair>()
   const chosenPairInfo = usePoolStats(chosenPair)
-  const { disabled: userCommandDisabled, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const [stage, setStage] = useState<Stage>(Stage.PoolSelection)
   const [putCall, setPutCall] = useState<'token0' | 'token1'>()
   const [inversePrice, setInversePrice] = useState<boolean>(false)
@@ -42,10 +43,10 @@ export const SellControl = () => {
   const [strikeTick, setStrikeTick] = useState<number>(0)
   const strikePrice = tickToPrice(strikeTick, inversePrice ? chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals : chosenPairInfo.c0Info.decimals - chosenPairInfo.c1Info.decimals)
   const [width, setWidth] = useState<number>(0)
-  // const
+  const [lower, upper] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
+  const [positionSize, setPositionSize] = useState<bigint>(0n)
 
   const onPoolSelected = ({ pair }: { text: string, pair?: ValidatedPair }) => {
-    setTextInput('')
     if (!pair) {
       setChosenPair(undefined)
       return
@@ -59,12 +60,7 @@ export const SellControl = () => {
     setStage(Stage.StrikeFormat)
   }, [addMessage])
 
-  const onAmountSubmit = useCallback((input: string) => {
-    const price = Number(input)
-    if (!price) {
-      addMessage(`Invalid amount: ${input}`, { color: 'red' })
-      return
-    }
+  const onStrikeAmountSubmit = useCallback((price: number) => {
     const priceTerms = inversePrice ? `${chosenPairInfo.c0Info.symbol} for 1 ${chosenPairInfo.c1Info.symbol}` : `${chosenPairInfo.c1Info.symbol} for 1 ${chosenPairInfo.c0Info.symbol}`
     addMessage(`Strike price set to ${price} ${priceTerms}`, { color: 'green' })
     const decimals = inversePrice ? chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals : chosenPairInfo.c0Info.decimals - chosenPairInfo.c1Info.decimals
@@ -73,7 +69,7 @@ export const SellControl = () => {
     setStage(Stage.Width)
   }, [inversePrice, addMessage, chosenPairInfo])
 
-  const onWidthSelect = useCallback((input: string) => {
+  const onWidthSubmit = useCallback((input: string) => {
     if (input.endsWith('%')) {
       input = input.slice(0, input.length - 1)
     }
@@ -85,9 +81,34 @@ export const SellControl = () => {
     const multiplier = percent / 100 + 1
     const ticks = priceToTick(multiplier, 0)
     const width = Math.round(ticks / chosenPairInfo.tickSpacing)
+    const [l, u] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
+    addMessage(`Range set to ${percent.toFixed(2)}% (${l}, ${u})`, { color: 'green' })
     setWidth(width)
-    // chosenPairInfo.tickSpacing
-  }, [addMessage, chosenPairInfo])
+    setStage(Stage.Quantity)
+  }, [strikePrice, addMessage, chosenPairInfo])
+
+  const onQuantitySubmit = useCallback((amount: number) => {
+    const decimals = putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals
+    const atomicAmount = tryParseUnits(amount.toString(), decimals)
+    if (!atomicAmount) {
+      addMessage(`Invalid amount: ${amount}`, { color: 'red' })
+      return
+    }
+    setPositionSize(atomicAmount)
+    addMessage(`Position size set to ${amount}, measured in ${putCall === 'token0' ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol}`, { color: 'green' })
+    setStage(Stage.Confirm)
+  }, [addMessage, chosenPairInfo, putCall])
+
+  const onConfirm = useCallback(async (yes?: boolean) => {
+    if (yes === false) {
+      setStage(Stage.Quantity)
+    } else if (yes === undefined) {
+      setStage(Stage.PoolSelection)
+      addMessage('Deposit operation aborted', { color: 'red' })
+    } else if (yes) {
+      // TODO
+    }
+  }, [wallet.address, client, chosenPairInfo, addMessage])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Selling (minting) options</SectionTitle>
@@ -107,9 +128,13 @@ export const SellControl = () => {
       setStage(Stage.PutCall)
     }} prompt={'Choose a collateral'} intro={'Put or call?'}/>}
     {stage === Stage.StrikeAmount && <AmountSelector
-        intro={'Strike price for the option?'}
-       prompt={`Enter the price in terms of number of ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol} per ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol}`}
-        onSubmit={onAmountSubmit}
+        intro={`Strike price for the option? In terms of number of ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol} per ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol}`}
+       prompt={'Enter the price'}
+        onSubmit={onStrikeAmountSubmit}
+        onBack={() => {
+          setStage(Stage.PutCall)
+          setStrikeTick(0)
+        }}
     />}
     {stage === Stage.Width && <AmountSelector
         intro={<>
@@ -118,7 +143,27 @@ export const SellControl = () => {
           <Text>Strike price: {strikePrice} | {inversePrice ? inversePriceFormatSuffix : priceFormatSuffix} </Text>
         </>}
         prompt={'Enter the desired percentage'}
-        onSubmit={onWidthSelect}
+        onRawSubmit={onWidthSubmit}
+        onBack={() => {
+          setStage(Stage.StrikeAmount)
+          setWidth(0)
+        }}
+    />}
+    {stage === Stage.Quantity && <AmountSelector
+        intro={`Number of options? In terms of number of ${putCall === 'token0' ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol}`}
+        prompt={'Enter the amount'}
+        onSubmit={onQuantitySubmit}
+    />}
+    {stage === Stage.Confirm && <ConfirmationSelector
+        intro={<>
+          <Box marginY={1}><Text>Please verify and confirm</Text></Box>
+          <Text>- Pool: {chosenPairInfo.c0Info.symbol}/{chosenPairInfo.c1Info.symbol}</Text>
+          <Text>- Selling {putCall === 'token0' ? 'PUT' : 'CALL'}</Text>
+          <Text>- Strike Price {strikePrice} {inversePrice ? inversePriceFormatSuffix : priceFormatSuffix}</Text>
+          <Text>- Premium Price Range: [{lower}, {upper}] </Text>
+          <Text>- Position Size: [{formatUnits(positionSize, putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals) }] </Text>
+        </>}
+        onConfirm={onConfirm}
     />}
   </Box>
 }
