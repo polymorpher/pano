@@ -55,6 +55,10 @@ export interface Position {
   legs: Tuple<Leg | undefined, 4>
 }
 
+export interface PositionWithId extends Position {
+  id: bigint
+}
+
 export function getPoolId (pool: Address): bigint {
   return (BigInt(pool) >> 96n) & 0xffffffffffffffffn
 }
