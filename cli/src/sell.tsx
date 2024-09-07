@@ -40,8 +40,7 @@ export const SellControl = () => {
   const baseAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c1Info : chosenPairInfo.c0Info
   const quoteAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c0Info : chosenPairInfo.c1Info
 
-  const priceFormatSuffix = `${chosenPairInfo.c1Info.symbol}/${chosenPairInfo.c0Info.symbol}: Number of ${chosenPairInfo.c1Info.symbol} for each ${chosenPairInfo.c0Info.symbol} (current price: ${chosenPairInfo.price})`
-  const inversePriceFormatSuffix = `${chosenPairInfo.c0Info.symbol}/${chosenPairInfo.c1Info.symbol}: Number of ${chosenPairInfo.c0Info.symbol} for each ${chosenPairInfo.c1Info.symbol} (current price: ${chosenPairInfo.priceInverse})`
+  const currentPrice = quoteAsset === 'token0' ? chosenPairInfo.priceInverse : chosenPairInfo.price
 
   const [strikeTick, setStrikeTick] = useState<number>(0)
   const strikePrice01 = tickToPrice(strikeTick, chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals)
@@ -56,7 +55,7 @@ export const SellControl = () => {
       return
     }
     setChosenPair(pair)
-    setStage(Stage.PutCall)
+    setStage(Stage.QuoteAsset)
   }
 
   const onQuoteAssetSubmit = useCallback((choice: number) => {
@@ -75,6 +74,7 @@ export const SellControl = () => {
     addMessage(`Strike price set to ${price} ${quoteAssetInfo.symbol}`, { color: 'green' })
     const decimals = chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals
     const tick = priceToTick(quoteAsset === 'token0' ? 1 / price : price, decimals)
+    addMessage(`tick: ${tick}`)
     setStrikeTick(tick)
     setStage(Stage.Width)
   }, [quoteAsset, chosenPairInfo, quoteAssetInfo, addMessage])
@@ -138,30 +138,30 @@ export const SellControl = () => {
     {stage === Stage.PoolSelection && <PoolSelector onSelected={onPoolSelected}/>}
 
     {stage === Stage.QuoteAsset && <MultiChoiceSelector options={[
-      priceFormatSuffix,
-      inversePriceFormatSuffix
+      chosenPairInfo.c0Info.symbol,
+      chosenPairInfo.c1Info.symbol
     ]} onSelected={onQuoteAssetSubmit} onExit={() => {
       setQuoteAsset('token0')
       setStage(Stage.PoolSelection)
     }} prompt={'Choose your quote asset'}
-       intro={<>
+       intro={<Box marginY={1} flexDirection={'column'}>
          <Text>Select quote asset</Text>
          <Text>- prices is quoted in that asset, against the other asset (i.e. base asset)</Text>
          <Text>- e.g. If quote asset is USDC, base asset is ETH, price is the number of USDC needed to buy 1 ETH</Text>
-       </>}
+       </Box>}
     />}
 
     {stage === Stage.PutCall && <MultiChoiceSelector options={[
-      `Put: profits when ${baseAssetInfo.symbol} does not go down much, incurs loss otherwise`,
-      `Call: profits when ${baseAssetInfo.symbol} does not go up much, incurs loss otherwise`
+      `Put: you profit when ${baseAssetInfo.symbol} does not go down much, incurs loss otherwise`,
+      `Call: you profit when ${baseAssetInfo.symbol} does not go up much, incurs loss otherwise`
     ]} onSelected={onPutCallSelected} onExit={() => {
       setPutCall(undefined)
       setStage(Stage.QuoteAsset)
     }} prompt={'Choose the type of option to sell'} intro={'Selling put or call?'}/>}
 
     {stage === Stage.StrikeAmount && <AmountSelector
-        intro={'Strike price for the option?'}
-       prompt={`Enter price in terms of the number of ${quoteAssetInfo.symbol} to buy 1 ${baseAssetInfo.symbol}`}
+        intro={`Strike price for the option? Median spot price of last 10 minute is ${currentPrice}`}
+       prompt={`Enter price for 1 ${baseAssetInfo.symbol} (in ${quoteAssetInfo.symbol})`}
         onSubmit={onStrikeAmountSubmit}
         onBack={() => {
           setStage(Stage.PutCall)
@@ -172,8 +172,8 @@ export const SellControl = () => {
     {stage === Stage.Width && <AmountSelector
         intro={<>
           <Text>Price range of the option?</Text>
-          <Text>Option accrues premium in-range after it is bought. See https://panoptic.xyz/docs/product/streamia</Text>
-          <Text>Strike price: {strikePrice} {quoteAssetInfo.symbol} </Text>
+          <Text>- Option accrues premium in-range after it is bought. See https://panoptic.xyz/docs/product/streamia</Text>
+          <Text>- Strike price: {strikePrice} {quoteAssetInfo.symbol} </Text>
         </>}
         prompt={'Enter the desired percentage'}
         onRawSubmit={onWidthSubmit}

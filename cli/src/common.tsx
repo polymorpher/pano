@@ -118,7 +118,7 @@ export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelect
   }, [options.length, addMessage, onExit, onSelected])
 
   return <Box marginTop={1} flexDirection={'column'}>
-    {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
+    {typeof intro === 'string' ? <Box marginY={1}><Text>{intro}</Text></Box> : intro}
     {options.map((entry, index) => {
       if (typeof entry === 'string') {
         return <Text key={`option-${index}`}>[{index + 1}] {entry}</Text>
@@ -126,7 +126,7 @@ export const MultiChoiceSelector = ({ intro, prompt, backText, options, onSelect
       return <Box key={`option-${index}`}><Text>[{index + 1}] </Text>{entry}</Box>
     })}
     <Text color={'red'}>[x] {backText ?? 'Go back to last step'}</Text>
-    <Box>
+    <Box marginY={1}>
       <Text>{prompt}: </Text>
       <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
@@ -168,7 +168,7 @@ export const AmountSelector = ({ intro, prompt, onSubmit, inactive, hideGoBackPr
   const goBackPrompt = allowZero ? '(enter x to go back)' : '(enter 0 or x to go back)'
   return <Box marginTop={1} flexDirection={'column'}>
     {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
-    <Box>
+    <Box marginY={1}>
       <Text>{prompt} {hideGoBackPrompt ? '' : goBackPrompt}: </Text>
       <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onInputSubmit} />
     </Box>
@@ -203,7 +203,7 @@ export const ConfirmationSelector = ({ intro, prompt, onConfirm, inactive }: Con
 
   return <Box marginTop={1} flexDirection={'column'}>
     {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
-    <Box>
+    <Box marginY={1}>
       <Text>{prompt ?? 'Continue? (y) yes / (n) no / (a) abort'}: </Text>
       <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
