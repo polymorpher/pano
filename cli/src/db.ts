@@ -41,7 +41,7 @@ export async function readPositions (address: Address, uniswapPool?: Address): P
   }).filter(e => e !== undefined) as PositionWithId[]
 }
 
-export async function getPositionIdList (address: Address, uniswapPool?: Address): Promise<bigint> {
+export async function getPositionIdList (address: Address, uniswapPool?: Address): Promise<bigint[]> {
   const positions = await readPositions(address, uniswapPool)
   return positions.map(p => p.id)
 }
