@@ -185,7 +185,7 @@ export const SellControl = () => {
       `Put: you profit when ${baseAssetInfo.symbol} does not go down much, incurs loss otherwise`,
       `Call: you profit when ${baseAssetInfo.symbol} does not go up much, incurs loss otherwise`
     ]} onSelected={onPutCallSelected} onExit={() => {
-      setPutCall(undefined)
+      setPutCall('token0')
       setStage(Stage.QuoteAsset)
     }} prompt={'Choose the type of option to sell'} intro={'Selling put or call?'}/>}
 
