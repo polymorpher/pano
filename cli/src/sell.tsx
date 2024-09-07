@@ -19,8 +19,8 @@ import { priceToTick, tickToPrice, tryParseUnits } from './util.js'
 
 enum Stage {
   PoolSelection = 1,
-  PutCall = 2,
-  StrikeFormat = 3,
+  QuoteAsset = 2,
+  PutCall = 3,
   StrikeAmount = 4,
   Width = 5,
   Quantity = 6,
@@ -36,7 +36,7 @@ export const SellControl = () => {
   const chosenPairInfo = usePoolStats(chosenPair)
   const [stage, setStage] = useState<Stage>(Stage.PoolSelection)
   const [putCall, setPutCall] = useState<'token0' | 'token1'>()
-  const [inversePrice, setInversePrice] = useState<boolean>(false)
+  const [baseAsset, setBaseAsset] = useState<boolean>(false)
   const priceFormatSuffix = `${chosenPairInfo.c1Info.symbol}/${chosenPairInfo.c0Info.symbol}: Number of ${chosenPairInfo.c1Info.symbol} for each ${chosenPairInfo.c0Info.symbol} (current price: ${chosenPairInfo.price})`
   const inversePriceFormatSuffix = `${chosenPairInfo.c0Info.symbol}/${chosenPairInfo.c1Info.symbol}: Number of ${chosenPairInfo.c0Info.symbol} for each ${chosenPairInfo.c1Info.symbol} (current price: ${chosenPairInfo.priceInverse})`
 
@@ -123,6 +123,14 @@ export const SellControl = () => {
     <SectionTitle>Selling (minting) options</SectionTitle>
     {stage === Stage.PoolSelection && <PoolSelector onSelected={onPoolSelected}/>}
 
+    {stage === Stage.QuoteAsset && <MultiChoiceSelector options={[
+      priceFormatSuffix,
+      inversePriceFormatSuffix
+    ]} onSelected={onStirkeFormatSubmit} onExit={() => {
+      setInversePrice(false)
+      setStage(Stage.PutCall)
+    }} prompt={'Choose your base asset'} intro={'Select base asset - prices is calculated as the number of quote assets required to buy 1 base asset. e.g. If base asset is ETH and quote asset is USDC, price is the number of USDC needed to buy 1 ETH'}/>}
+
     {stage === Stage.PutCall && <MultiChoiceSelector options={[
       `Put: profits if the price of ${chosenPairInfo?.c0Info?.symbol} goes up or stays the same (i.e. price of ${chosenPairInfo?.c1Info?.symbol} goes down), incurs loss otherwise`,
       `Call: profits if the price of ${chosenPairInfo?.c1Info?.symbol} goes up or stays the same (i.e. price of ${chosenPairInfo?.c0Info?.symbol} goes down), incurs loss otherwise`
@@ -131,13 +139,7 @@ export const SellControl = () => {
       setStage(Stage.PoolSelection)
     }} prompt={'Choose the type of option for minting'} intro={'Put or call?'}/>}
 
-    {stage === Stage.StrikeFormat && <MultiChoiceSelector options={[
-      priceFormatSuffix,
-      inversePriceFormatSuffix
-    ]} onSelected={onStirkeFormatSubmit} onExit={() => {
-      setInversePrice(false)
-      setStage(Stage.PutCall)
-    }} prompt={'Choose a price format'} intro={'How should the price be quoted / entered?'}/>}
+
 
     {stage === Stage.StrikeAmount && <AmountSelector
         intro={`Strike price for the option? In terms of number of ${inversePrice ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol} per ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol}`}
