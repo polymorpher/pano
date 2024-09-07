@@ -1,14 +1,14 @@
 import React, { useCallback, useContext, useState } from 'react'
-import { db } from './db'
+import { db, readPositions } from './db'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
 import { usePoolStats } from './pools/hooks.js'
 import { NotificationContext } from './notification.js'
 import {
-  AmountSelector,
+  AmountSelector, calculateTokenId,
   ConfirmationSelector,
-  getOptionRange,
-  MultiChoiceSelector,
+  getOptionRange, Leg,
+  MultiChoiceSelector, type Position, PositionType,
   SectionTitle, type Token01,
   type ValidatedPair
 } from './common.js'
@@ -158,6 +158,26 @@ export const SellControl = () => {
       addMessage('Option minting aborted', { color: 'red' })
     } else if (yes) {
       addMessage('TODO!', { color: 'green' })
+      const currentPositions = readPositions(wallet.address, chosenPair?.uniswapPoolAddress)
+      const tickLower = strikeTick - width * chosenPairInfo.tickSpacing
+      const tickUpper = strikeTick + width * chosenPairInfo.tickSpacing
+      // doing only single leg option for now
+      const leg: Leg = {
+        asset: quoteAsset === 'token0' ? 'token1' : 'token0',
+        optionRatio: 1,
+        position: 'short',
+        tokenType: putCall,
+        riskPartnerIndex: 0,
+        tickLower,
+        tickUpper
+      }
+      const position: Position = {
+        uniswapPoolAddress: chosenPairInfo.uniswapPool!.address,
+        tickSpacing: chosenPairInfo.tickSpacing,
+        legs: [leg, undefined, undefined, undefined]
+      }
+      const id = calculateTokenId(chosenPairInfo.uniswapPool!.address, chosenPairInfo.tickSpacing, [leg, undefined, undefined, undefined])
+      const positionIdList = [...currentPositions, id]
       // TODO
     }
   // }, [wallet.address, client, chosenPairInfo, addMessage])

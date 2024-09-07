@@ -23,6 +23,8 @@ export interface ValidatedPair extends Pair {
 }
 
 export interface Leg {
+  // "asset" is used for calculating number of tokens being moved, as well as the option's notional value
+  // Learn more at https://github.com/polymorpher/panoptic-v1-core/blob/1432f9152e3e16c9c692b14bd7160bff7ce20737/contracts/libraries/PanopticMath.sol#L427
   asset: Token01
   optionRatio: number
   position: PositionType

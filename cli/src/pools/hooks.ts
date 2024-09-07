@@ -5,7 +5,7 @@ import { type Address, getContract, type GetContractReturnType, type PublicClien
 import { usePublicClient } from 'src/client.js'
 import { useFactories } from 'src/uniswap.js'
 import { NotificationContext } from 'src/notification.js'
-import { type ValidatedPair } from 'src/common.js'
+import { type TickSpacing, type ValidatedPair } from 'src/common.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi, UniswapPoolAbi } from 'src/constants.js'
 import { type ERC20Metadata, useERC20, type IERC20 } from 'src/token.js'
 import { useWallet } from 'src/wallet.js'
@@ -128,7 +128,7 @@ export const usePoolStats = (pool?: ValidatedPair) => {
   const [[token0, token1], setTokens] = useState<[Address | undefined, Address | undefined]>(EmptyTokenPair)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>(EmptyPriceTickInfo)
-  const [tickSpacing, setTickSpacing] = useState<number>(0)
+  const [tickSpacing, setTickSpacing] = useState<TickSpacing>(1)
   const c0Info = useCollateralInfo({ address: token0 })
   const c1Info = useCollateralInfo({ address: token1 })
   const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
@@ -178,7 +178,7 @@ export const usePoolStats = (pool?: ValidatedPair) => {
       if (!uniswapPool) {
         return
       }
-      const tickSpacing = await uniswapPool.read.tickSpacing()
+      const tickSpacing = await uniswapPool.read.tickSpacing() as TickSpacing
       setTickSpacing(tickSpacing)
     }
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
