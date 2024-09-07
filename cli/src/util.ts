@@ -34,7 +34,7 @@ export const tickToPrice = (tick: number, decimals: number, precision: number = 
 }
 
 export const priceToTick = (price: number, decimals: number): number => {
-  const tick = (Math.log(price) / Math.log(TickBase)) ** (10 ** decimals)
+  const tick = Math.log(price * (10 ** decimals)) / Math.log(TickBase)
   return Math.round(tick)
 }
 

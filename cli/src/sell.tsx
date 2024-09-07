@@ -14,8 +14,8 @@ import {
 } from './common.js'
 import { Box, Text } from 'ink'
 import { PoolSelector } from './pools/selector.js'
-import { formatUnits } from 'viem'
-import { priceToTick, tickToPrice, tryParseUnits } from './util.js'
+import { formatUnits, parseUnits } from 'viem'
+import { priceToTick, tickToPrice, toFixed, tryParseUnits } from './util.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -27,6 +27,29 @@ enum Stage {
   Confirm = 7,
 }
 
+// arg positionSize is in putCall asset
+export const getPositionSizeInBaseAsset = (positionSize: bigint,
+  putCall: Token01,
+  quoteAsset: Token01,
+  strikePrice: number,
+  token0Decimals: number,
+  token1Decimals: number
+): bigint => {
+  if (quoteAsset === 'token0' && putCall === 'token0') {
+    const size = Number(formatUnits(positionSize, token0Decimals))
+    const sizeBaseAsset = size / strikePrice
+    return parseUnits(sizeBaseAsset.toString(), token1Decimals)
+  } else if (quoteAsset === 'token0' && putCall === 'token1') {
+    return positionSize
+  } else if (quoteAsset === 'token1' && putCall === 'token0') {
+    return positionSize
+  } else {
+    const size = Number(formatUnits(positionSize, token1Decimals))
+    const sizeBaseAsset = size * strikePrice
+    return parseUnits(sizeBaseAsset.toString(), token0Decimals)
+  }
+}
+
 export const SellControl = () => {
   // TODO: make below statements a single hook
   const { wallet } = useWallet()
@@ -35,7 +58,7 @@ export const SellControl = () => {
   const [chosenPair, setChosenPair] = useState<ValidatedPair>()
   const chosenPairInfo = usePoolStats(chosenPair)
   const [stage, setStage] = useState<Stage>(Stage.PoolSelection)
-  const [putCall, setPutCall] = useState<Token01>()
+  const [putCall, setPutCall] = useState<Token01>('token0')
   const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
   const baseAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c1Info : chosenPairInfo.c0Info
   const quoteAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c0Info : chosenPairInfo.c1Info
@@ -47,7 +70,12 @@ export const SellControl = () => {
   const strikePrice = quoteAsset === 'token0' ? 1 / strikePrice01 : strikePrice01
   const [width, setWidth] = useState<number>(0)
   const [lower, upper] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
+
+  // in number of atomic units of the token selected by putCall
+  // for safety and to keep things consistent, we do not store a separate "position size in terms of base asset" for display purposes.
+  // Instead we use a function to convert the value back and ask the user to confirm
   const [positionSize, setPositionSize] = useState<bigint>(0n)
+  const positionSizeInBaseAsset = getPositionSizeInBaseAsset(positionSize, putCall, quoteAsset, strikePrice, chosenPairInfo.c0Info.decimals, chosenPairInfo.c1Info.decimals)
 
   const onPoolSelected = ({ pair }: { text: string, pair?: ValidatedPair }) => {
     if (!pair) {
@@ -74,7 +102,7 @@ export const SellControl = () => {
     addMessage(`Strike price set to ${price} ${quoteAssetInfo.symbol}`, { color: 'green' })
     const decimals = chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals
     const tick = priceToTick(quoteAsset === 'token0' ? 1 / price : price, decimals)
-    addMessage(`tick: ${tick}`)
+    // addMessage(`tick: ${tick} | decimals=${decimals}`)
     setStrikeTick(tick)
     setStage(Stage.Width)
   }, [quoteAsset, chosenPairInfo, quoteAssetInfo, addMessage])
@@ -92,13 +120,15 @@ export const SellControl = () => {
     const ticks = priceToTick(multiplier, 0)
     const width = Math.round(ticks / chosenPairInfo.tickSpacing)
     const [l, u] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
-    addMessage(`Range set to ${percent.toFixed(2)}% (${l}, ${u})`, { color: 'green' })
+    addMessage(`Range set to ${percent.toFixed(2)}% (${toFixed(l)}, ${toFixed(u)})`, { color: 'green' })
     setWidth(width)
     setStage(Stage.Quantity)
   }, [strikePrice, addMessage, chosenPairInfo])
 
   const onQuantitySubmit = useCallback((amount: number) => {
     const decimals = putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals
+
+    // putCall === 'token0'
     if (quoteAsset === 'token0' && putCall === 'token0') {
       // quoteAsset === 'token0'  =>  amount=1 means 1 base asset (ETH) worth of quote asset (USDC)
       // so if we are moving token0 (ETH) (i.e.put), actual amount must be multiplied by strikePrice
@@ -160,7 +190,7 @@ export const SellControl = () => {
     }} prompt={'Choose the type of option to sell'} intro={'Selling put or call?'}/>}
 
     {stage === Stage.StrikeAmount && <AmountSelector
-        intro={`Strike price for the option? Median spot price of last 10 minute is ${currentPrice}`}
+        intro={`Strike price for the option? Median spot price of last 10 minute is ${toFixed(currentPrice)}`}
        prompt={`Enter price for 1 ${baseAssetInfo.symbol} (in ${quoteAssetInfo.symbol})`}
         onSubmit={onStrikeAmountSubmit}
         onBack={() => {
@@ -171,11 +201,12 @@ export const SellControl = () => {
 
     {stage === Stage.Width && <AmountSelector
         intro={<>
-          <Text>Price range of the option?</Text>
-          <Text>- Option accrues premium in-range after it is bought. See https://panoptic.xyz/docs/product/streamia</Text>
-          <Text>- Strike price: {strikePrice} {quoteAssetInfo.symbol} </Text>
+          <Text>Price range for the option?</Text>
+          <Text>- Premium (profit) is accrued when ${baseAssetInfo.symbol} price stays within range around strike price</Text>
+          <Text>- Strike price: {toFixed(strikePrice)} {quoteAssetInfo.symbol} </Text>
+          <Text>- Learn more at https://panoptic.xyz/docs/product/streamia </Text>
         </>}
-        prompt={'Enter the desired percentage'}
+        prompt={`Enter the desired percentage range (e.g. 10% means +-10% around ${toFixed(strikePrice)}])`}
         onRawSubmit={onWidthSubmit}
         onBack={() => {
           setStage(Stage.StrikeAmount)
@@ -192,9 +223,9 @@ export const SellControl = () => {
           <Box marginY={1}><Text>Please verify and confirm</Text></Box>
           <Text>- Pool: {chosenPairInfo.c0Info.symbol}/{chosenPairInfo.c1Info.symbol}</Text>
           <Text>- Selling {putCall === 'token0' ? 'PUT' : 'CALL'} on {baseAssetInfo.symbol}</Text>
-          <Text>- Strike Price: {strikePrice} {quoteAssetInfo.symbol}</Text>
-          <Text>- Premium Earning Price Range: [{lower}, {upper}] {quoteAssetInfo.symbol} </Text>
-          <Text>- Position Size: {formatUnits(positionSize, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text>
+          <Text>- Strike Price: {toFixed(strikePrice)} {quoteAssetInfo.symbol}</Text>
+          <Text>- Premium Earning Price Range: [{toFixed(lower)}, {toFixed(upper)}] {quoteAssetInfo.symbol} </Text>
+          <Text>- Position Size: {formatUnits(positionSizeInBaseAsset, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text>
         </>}
         onConfirm={onConfirm}
     />}
