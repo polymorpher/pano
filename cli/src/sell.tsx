@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useState } from 'react'
 import { db } from './db'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
-import {usePoolStats } from './pools/hooks.js'
+import { usePoolStats } from './pools/hooks.js'
 import { NotificationContext } from './notification.js'
 import {
   AmountSelector,
@@ -60,6 +60,13 @@ export const SellControl = () => {
     setStage(Stage.StrikeFormat)
   }, [addMessage])
 
+  const onStirkeFormatSubmit = useCallback((choice: number) => {
+    const invert = choice === 2
+    setInversePrice(invert)
+    addMessage(`Quoting price in terms of ${invert ? inversePriceFormatSuffix : priceFormatSuffix}`, { color: 'green' })
+    setStage(Stage.StrikeAmount)
+  }, [inversePriceFormatSuffix, priceFormatSuffix, addMessage])
+
   const onStrikeAmountSubmit = useCallback((price: number) => {
     const priceTerms = inversePrice ? `${chosenPairInfo.c0Info.symbol} for 1 ${chosenPairInfo.c1Info.symbol}` : `${chosenPairInfo.c1Info.symbol} for 1 ${chosenPairInfo.c0Info.symbol}`
     addMessage(`Strike price set to ${price} ${priceTerms}`, { color: 'green' })
@@ -106,29 +113,34 @@ export const SellControl = () => {
       setStage(Stage.PoolSelection)
       addMessage('Deposit operation aborted', { color: 'red' })
     } else if (yes) {
+      addMessage('TODO!', { color: 'green' })
       // TODO
     }
-  }, [wallet.address, client, chosenPairInfo, addMessage])
+  // }, [wallet.address, client, chosenPairInfo, addMessage])
+  }, [addMessage])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Selling (minting) options</SectionTitle>
     {stage === Stage.PoolSelection && <PoolSelector onSelected={onPoolSelected}/>}
+
     {stage === Stage.PutCall && <MultiChoiceSelector options={[
-      'Put: incurs loss if price {chosenPairInfo?.c0Info?.symbol} goes down, i.e. price of {chosenPairInfo?.c1Info?.symbol} goes up',
-      'Call: incurs loss if {chosenPairInfo?.c1Info?.symbol} goes down, i.e. price of {chosenPairInfo?.c0Info?.symbol} goes up'
+      `Put: profits if the price of ${chosenPairInfo?.c0Info?.symbol} goes up or stays the same (i.e. price of ${chosenPairInfo?.c1Info?.symbol} goes down), incurs loss otherwise`,
+      `Call: profits if the price of ${chosenPairInfo?.c1Info?.symbol} goes up or stays the same (i.e. price of ${chosenPairInfo?.c0Info?.symbol} goes down), incurs loss otherwise`
     ]} onSelected={onPutCallSelected} onExit={() => {
       setPutCall(undefined)
       setStage(Stage.PoolSelection)
-    }} prompt={'Choose a collateral'} intro={'Choose a strike price format'}/>}
+    }} prompt={'Choose the type of option for minting'} intro={'Put or call?'}/>}
+
     {stage === Stage.StrikeFormat && <MultiChoiceSelector options={[
       priceFormatSuffix,
       inversePriceFormatSuffix
-    ]} onSelected={onPutCallSelected} onExit={() => {
+    ]} onSelected={onStirkeFormatSubmit} onExit={() => {
       setInversePrice(false)
       setStage(Stage.PutCall)
-    }} prompt={'Choose a collateral'} intro={'Put or call?'}/>}
+    }} prompt={'Choose a price format'} intro={'How should the price be quoted / entered?'}/>}
+
     {stage === Stage.StrikeAmount && <AmountSelector
-        intro={`Strike price for the option? In terms of number of ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol} per ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol}`}
+        intro={`Strike price for the option? In terms of number of ${inversePrice ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol} per ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol}`}
        prompt={'Enter the price'}
         onSubmit={onStrikeAmountSubmit}
         onBack={() => {
@@ -136,6 +148,7 @@ export const SellControl = () => {
           setStrikeTick(0)
         }}
     />}
+
     {stage === Stage.Width && <AmountSelector
         intro={<>
           <Text>Price range of the option?</Text>
