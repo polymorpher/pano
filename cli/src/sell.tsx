@@ -9,7 +9,7 @@ import {
   ConfirmationSelector,
   getOptionRange,
   MultiChoiceSelector,
-  SectionTitle,
+  SectionTitle, type Token01,
   type ValidatedPair
 } from './common.js'
 import { Box, Text } from 'ink'
@@ -35,13 +35,17 @@ export const SellControl = () => {
   const [chosenPair, setChosenPair] = useState<ValidatedPair>()
   const chosenPairInfo = usePoolStats(chosenPair)
   const [stage, setStage] = useState<Stage>(Stage.PoolSelection)
-  const [putCall, setPutCall] = useState<'token0' | 'token1'>()
-  const [baseAsset, setBaseAsset] = useState<boolean>(false)
+  const [putCall, setPutCall] = useState<Token01>()
+  const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
+  const baseAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c1Info : chosenPairInfo.c0Info
+  const quoteAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c0Info : chosenPairInfo.c1Info
+
   const priceFormatSuffix = `${chosenPairInfo.c1Info.symbol}/${chosenPairInfo.c0Info.symbol}: Number of ${chosenPairInfo.c1Info.symbol} for each ${chosenPairInfo.c0Info.symbol} (current price: ${chosenPairInfo.price})`
   const inversePriceFormatSuffix = `${chosenPairInfo.c0Info.symbol}/${chosenPairInfo.c1Info.symbol}: Number of ${chosenPairInfo.c0Info.symbol} for each ${chosenPairInfo.c1Info.symbol} (current price: ${chosenPairInfo.priceInverse})`
 
   const [strikeTick, setStrikeTick] = useState<number>(0)
-  const strikePrice = tickToPrice(strikeTick, inversePrice ? chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals : chosenPairInfo.c0Info.decimals - chosenPairInfo.c1Info.decimals)
+  const strikePrice01 = tickToPrice(strikeTick, chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals)
+  const strikePrice = quoteAsset === 'token0' ? 1 / strikePrice01 : strikePrice01
   const [width, setWidth] = useState<number>(0)
   const [lower, upper] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
   const [positionSize, setPositionSize] = useState<bigint>(0n)
@@ -54,27 +58,26 @@ export const SellControl = () => {
     setChosenPair(pair)
     setStage(Stage.PutCall)
   }
+
+  const onQuoteAssetSubmit = useCallback((choice: number) => {
+    setQuoteAsset(choice === 1 ? 'token0' : 'token1')
+    addMessage(`Quoting price in terms of ${quoteAssetInfo.symbol}`, { color: 'green' })
+    setStage(Stage.PutCall)
+  }, [quoteAssetInfo, addMessage])
+
   const onPutCallSelected = useCallback((choice: number) => {
     setPutCall(choice === 1 ? 'token0' : 'token1')
-    addMessage(`Selected ${choice === 1 ? 'PUT' : 'CALL'} option`, { color: 'green' })
-    setStage(Stage.StrikeFormat)
-  }, [addMessage])
-
-  const onStirkeFormatSubmit = useCallback((choice: number) => {
-    const invert = choice === 2
-    setInversePrice(invert)
-    addMessage(`Quoting price in terms of ${invert ? inversePriceFormatSuffix : priceFormatSuffix}`, { color: 'green' })
+    addMessage(`Selected ${choice === 1 ? 'PUT' : 'CALL'} option on ${baseAssetInfo.symbol} (quoted in ${quoteAssetInfo.symbol})`, { color: 'green' })
     setStage(Stage.StrikeAmount)
-  }, [inversePriceFormatSuffix, priceFormatSuffix, addMessage])
+  }, [baseAssetInfo, quoteAssetInfo, addMessage])
 
   const onStrikeAmountSubmit = useCallback((price: number) => {
-    const priceTerms = inversePrice ? `${chosenPairInfo.c0Info.symbol} for 1 ${chosenPairInfo.c1Info.symbol}` : `${chosenPairInfo.c1Info.symbol} for 1 ${chosenPairInfo.c0Info.symbol}`
-    addMessage(`Strike price set to ${price} ${priceTerms}`, { color: 'green' })
-    const decimals = inversePrice ? chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals : chosenPairInfo.c0Info.decimals - chosenPairInfo.c1Info.decimals
-    const tick = priceToTick(inversePrice ? 1 / price : price, decimals)
+    addMessage(`Strike price set to ${price} ${quoteAssetInfo.symbol}`, { color: 'green' })
+    const decimals = chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals
+    const tick = priceToTick(quoteAsset === 'token0' ? 1 / price : price, decimals)
     setStrikeTick(tick)
     setStage(Stage.Width)
-  }, [inversePrice, addMessage, chosenPairInfo])
+  }, [quoteAsset, chosenPairInfo, quoteAssetInfo, addMessage])
 
   const onWidthSubmit = useCallback((input: string) => {
     if (input.endsWith('%')) {
@@ -96,22 +99,33 @@ export const SellControl = () => {
 
   const onQuantitySubmit = useCallback((amount: number) => {
     const decimals = putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals
+    if (quoteAsset === 'token0' && putCall === 'token0') {
+      // quoteAsset === 'token0'  =>  amount=1 means 1 base asset (ETH) worth of quote asset (USDC)
+      // so if we are moving token0 (ETH) (i.e.put), actual amount must be multiplied by strikePrice
+      amount = amount * strikePrice
+    } else if (quoteAsset === 'token1' && putCall === 'token1') {
+      // quoteAsset === 'token1'  =>  amount=1 means 1 USDC worth of asset
+      // so if we are moving token1 (ETH), actual amount should be divided by strikePrice
+      amount = amount / strikePrice
+    }
+    // for the other two cases, actual amount equals to amount
+
     const atomicAmount = tryParseUnits(amount.toString(), decimals)
     if (!atomicAmount) {
       addMessage(`Invalid amount: ${amount}`, { color: 'red' })
       return
     }
     setPositionSize(atomicAmount)
-    addMessage(`Position size set to ${amount}, measured in ${putCall === 'token0' ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol}`, { color: 'green' })
+    addMessage(`Position size set to ${amount} ${baseAssetInfo.symbol}`, { color: 'green' })
     setStage(Stage.Confirm)
-  }, [addMessage, chosenPairInfo, putCall])
+  }, [baseAssetInfo, quoteAsset, strikePrice, addMessage, chosenPairInfo, putCall])
 
   const onConfirm = useCallback(async (yes?: boolean) => {
     if (yes === false) {
       setStage(Stage.Quantity)
     } else if (yes === undefined) {
       setStage(Stage.PoolSelection)
-      addMessage('Deposit operation aborted', { color: 'red' })
+      addMessage('Option minting aborted', { color: 'red' })
     } else if (yes) {
       addMessage('TODO!', { color: 'green' })
       // TODO
@@ -126,24 +140,28 @@ export const SellControl = () => {
     {stage === Stage.QuoteAsset && <MultiChoiceSelector options={[
       priceFormatSuffix,
       inversePriceFormatSuffix
-    ]} onSelected={onStirkeFormatSubmit} onExit={() => {
-      setInversePrice(false)
-      setStage(Stage.PutCall)
-    }} prompt={'Choose your base asset'} intro={'Select base asset - prices is calculated as the number of quote assets required to buy 1 base asset. e.g. If base asset is ETH and quote asset is USDC, price is the number of USDC needed to buy 1 ETH'}/>}
+    ]} onSelected={onQuoteAssetSubmit} onExit={() => {
+      setQuoteAsset('token0')
+      setStage(Stage.PoolSelection)
+    }} prompt={'Choose your quote asset'}
+       intro={<>
+         <Text>Select quote asset</Text>
+         <Text>- prices is quoted in that asset, against the other asset (i.e. base asset)</Text>
+         <Text>- e.g. If quote asset is USDC, base asset is ETH, price is the number of USDC needed to buy 1 ETH</Text>
+       </>}
+    />}
 
     {stage === Stage.PutCall && <MultiChoiceSelector options={[
-      `Put: profits if the price of ${chosenPairInfo?.c0Info?.symbol} goes up or stays the same (i.e. price of ${chosenPairInfo?.c1Info?.symbol} goes down), incurs loss otherwise`,
-      `Call: profits if the price of ${chosenPairInfo?.c1Info?.symbol} goes up or stays the same (i.e. price of ${chosenPairInfo?.c0Info?.symbol} goes down), incurs loss otherwise`
+      `Put: profits when ${baseAssetInfo.symbol} does not go down much, incurs loss otherwise`,
+      `Call: profits when ${baseAssetInfo.symbol} does not go up much, incurs loss otherwise`
     ]} onSelected={onPutCallSelected} onExit={() => {
       setPutCall(undefined)
-      setStage(Stage.PoolSelection)
-    }} prompt={'Choose the type of option for minting'} intro={'Put or call?'}/>}
-
-
+      setStage(Stage.QuoteAsset)
+    }} prompt={'Choose the type of option to sell'} intro={'Selling put or call?'}/>}
 
     {stage === Stage.StrikeAmount && <AmountSelector
-        intro={`Strike price for the option? In terms of number of ${inversePrice ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol} per ${inversePrice ? chosenPairInfo.c1Info.symbol : chosenPairInfo.c0Info.symbol}`}
-       prompt={'Enter the price'}
+        intro={'Strike price for the option?'}
+       prompt={`Enter price in terms of the number of ${quoteAssetInfo.symbol} to buy 1 ${baseAssetInfo.symbol}`}
         onSubmit={onStrikeAmountSubmit}
         onBack={() => {
           setStage(Stage.PutCall)
@@ -154,8 +172,8 @@ export const SellControl = () => {
     {stage === Stage.Width && <AmountSelector
         intro={<>
           <Text>Price range of the option?</Text>
-          <Text>Price range is defined in terms of percentage around strike price, for which the option is considered as in-range and accrues premium. See https://panoptic.xyz/docs/product/streamia</Text>
-          <Text>Strike price: {strikePrice} | {inversePrice ? inversePriceFormatSuffix : priceFormatSuffix} </Text>
+          <Text>Option accrues premium in-range after it is bought. See https://panoptic.xyz/docs/product/streamia</Text>
+          <Text>Strike price: {strikePrice} {quoteAssetInfo.symbol} </Text>
         </>}
         prompt={'Enter the desired percentage'}
         onRawSubmit={onWidthSubmit}
@@ -165,18 +183,18 @@ export const SellControl = () => {
         }}
     />}
     {stage === Stage.Quantity && <AmountSelector
-        intro={`Number of options? In terms of number of ${putCall === 'token0' ? chosenPairInfo.c0Info.symbol : chosenPairInfo.c1Info.symbol}`}
-        prompt={'Enter the amount'}
+        intro={'Number of options to be sold?'}
+        prompt={`Enter in the number of ${baseAssetInfo.symbol}`}
         onSubmit={onQuantitySubmit}
     />}
     {stage === Stage.Confirm && <ConfirmationSelector
         intro={<>
           <Box marginY={1}><Text>Please verify and confirm</Text></Box>
           <Text>- Pool: {chosenPairInfo.c0Info.symbol}/{chosenPairInfo.c1Info.symbol}</Text>
-          <Text>- Selling {putCall === 'token0' ? 'PUT' : 'CALL'}</Text>
-          <Text>- Strike Price {strikePrice} {inversePrice ? inversePriceFormatSuffix : priceFormatSuffix}</Text>
-          <Text>- Premium Price Range: [{lower}, {upper}] </Text>
-          <Text>- Position Size: [{formatUnits(positionSize, putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals) }] </Text>
+          <Text>- Selling {putCall === 'token0' ? 'PUT' : 'CALL'} on {baseAssetInfo.symbol}</Text>
+          <Text>- Strike Price: {strikePrice} {quoteAssetInfo.symbol}</Text>
+          <Text>- Premium Earning Price Range: [{lower}, {upper}] {quoteAssetInfo.symbol} </Text>
+          <Text>- Position Size: {formatUnits(positionSize, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text>
         </>}
         onConfirm={onConfirm}
     />}

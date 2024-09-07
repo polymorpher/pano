@@ -12,6 +12,9 @@ export const SectionTitle = ({ children }: PropsWithChildren) => {
   return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>{children}</Text></Box>
 }
 
+export type Token01 = 'token0' | 'token1'
+export type PositionType = 'long' | 'short'
+
 export interface ValidatedPair extends Pair {
   token0Address: Address
   token1Address: Address
@@ -20,10 +23,10 @@ export interface ValidatedPair extends Pair {
 }
 
 export interface Leg {
-  asset: 'token0' | 'token1'
+  asset: Token01
   optionRatio: number
-  position: 'long' | 'short'
-  tokenType: 'token0' | 'token1'
+  position: PositionType
+  tokenType: Token01
   riskPartnerIndex: 0 | 1 | 2 | 3
   tickLower: number
   tickUpper: number
