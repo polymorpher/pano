@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from 'react'
-import { db, readPositions } from './db'
+import { getPositionIdList, readPositions } from './db.js'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
 import { usePoolStats } from './pools/hooks.js'
@@ -7,15 +7,16 @@ import { NotificationContext } from './notification.js'
 import {
   AmountSelector, calculateTokenId,
   ConfirmationSelector,
-  getOptionRange, Leg,
-  MultiChoiceSelector, type Position, PositionType,
+  getOptionRange, type Leg,
+  MultiChoiceSelector, type Position,
   SectionTitle, type Token01,
   type ValidatedPair
 } from './common.js'
 import { Box, Text } from 'ink'
 import { PoolSelector } from './pools/selector.js'
-import { formatUnits, parseUnits } from 'viem'
+import { formatUnits, getContract, parseUnits } from 'viem'
 import { priceToTick, tickToPrice, toFixed, tryParseUnits } from './util.js'
+import { PanopticPoolAbi } from './constants.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -75,7 +76,7 @@ export const SellControl = () => {
   // for safety and to keep things consistent, we do not store a separate "position size in terms of base asset" for display purposes.
   // Instead we use a function to convert the value back and ask the user to confirm
   const [positionSize, setPositionSize] = useState<bigint>(0n)
-  const positionSizeInBaseAsset = getPositionSizeInBaseAsset(positionSize, putCall, quoteAsset, strikePrice, chosenPairInfo.c0Info.decimals, chosenPairInfo.c1Info.decimals)
+  // const positionSizeInBaseAsset = getPositionSizeInBaseAsset(positionSize, putCall, quoteAsset, strikePrice, chosenPairInfo.c0Info.decimals, chosenPairInfo.c1Info.decimals)
 
   const onPoolSelected = ({ pair }: { text: string, pair?: ValidatedPair }) => {
     if (!pair) {
@@ -126,20 +127,22 @@ export const SellControl = () => {
   }, [strikePrice, addMessage, chosenPairInfo])
 
   const onQuantitySubmit = useCallback((amount: number) => {
-    const decimals = putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals
+    // Update: temporarily commenting out, as no conversion seems to be needed,
+    // as the smart contract appears to be correctly converting the notional values to be moved, given "asset" field of the leg is set
+    // const decimals = putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals
+    // // putCall === 'token0'
+    // if (quoteAsset === 'token0' && putCall === 'token0') {
+    //   // quoteAsset === 'token0'  =>  amount=1 means 1 base asset (ETH) worth of quote asset (USDC)
+    //   // so if we are moving token0 (ETH) (i.e.put), actual amount must be multiplied by strikePrice
+    //   amount = amount * strikePrice
+    // } else if (quoteAsset === 'token1' && putCall === 'token1') {
+    //   // quoteAsset === 'token1'  =>  amount=1 means 1 USDC worth of asset
+    //   // so if we are moving token1 (ETH), actual amount should be divided by strikePrice
+    //   amount = amount / strikePrice
+    // }
+    // // for the other two cases, actual amount equals to amount
 
-    // putCall === 'token0'
-    if (quoteAsset === 'token0' && putCall === 'token0') {
-      // quoteAsset === 'token0'  =>  amount=1 means 1 base asset (ETH) worth of quote asset (USDC)
-      // so if we are moving token0 (ETH) (i.e.put), actual amount must be multiplied by strikePrice
-      amount = amount * strikePrice
-    } else if (quoteAsset === 'token1' && putCall === 'token1') {
-      // quoteAsset === 'token1'  =>  amount=1 means 1 USDC worth of asset
-      // so if we are moving token1 (ETH), actual amount should be divided by strikePrice
-      amount = amount / strikePrice
-    }
-    // for the other two cases, actual amount equals to amount
-
+    const decimals = quoteAsset === 'token0' ? chosenPairInfo.c1Info.decimals : chosenPairInfo.c0Info.decimals
     const atomicAmount = tryParseUnits(amount.toString(), decimals)
     if (!atomicAmount) {
       addMessage(`Invalid amount: ${amount}`, { color: 'red' })
@@ -148,7 +151,7 @@ export const SellControl = () => {
     setPositionSize(atomicAmount)
     addMessage(`Position size set to ${amount} ${baseAssetInfo.symbol}`, { color: 'green' })
     setStage(Stage.Confirm)
-  }, [baseAssetInfo, quoteAsset, strikePrice, addMessage, chosenPairInfo, putCall])
+  }, [baseAssetInfo, quoteAsset, addMessage, chosenPairInfo])
 
   const onConfirm = useCallback(async (yes?: boolean) => {
     if (yes === false) {
@@ -157,8 +160,8 @@ export const SellControl = () => {
       setStage(Stage.PoolSelection)
       addMessage('Option minting aborted', { color: 'red' })
     } else if (yes) {
-      addMessage('TODO!', { color: 'green' })
-      const currentPositions = readPositions(wallet.address, chosenPair?.uniswapPoolAddress)
+      // TODO: check collateral requirement first
+      const currentPositions = await getPositionIdList(wallet.address!, chosenPair?.uniswapPoolAddress)
       const tickLower = strikeTick - width * chosenPairInfo.tickSpacing
       const tickUpper = strikeTick + width * chosenPairInfo.tickSpacing
       // doing only single leg option for now
@@ -178,7 +181,21 @@ export const SellControl = () => {
       }
       const id = calculateTokenId(chosenPairInfo.uniswapPool!.address, chosenPairInfo.tickSpacing, [leg, undefined, undefined, undefined])
       const positionIdList = [...currentPositions, id]
-      // TODO
+      // TODO: this might only be useful for multi-leg positions. need to figure out how to set it appropriately later
+      const effectiveLiquidityLimitX32 = 0n
+      // TODO: we do not use slippage or let user configure slippage right now.
+      //  Setting 0 to both values essentially skips slippage check.
+      //  This needs to be fixed later
+      const tickLowerLimit = 0
+      const tickUpperLimit = 0
+      const c = getContract({
+        abi: chosenPairInfo.panopticPool!.abi,
+        address: chosenPairInfo.panopticPool!.address,
+        client: client!
+      })
+      const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
+      addMessage(`Executed transaction ${hash}. Option minted!`, { color: 'green' })
+      // TODO: reset state, go back to pool selection / main menu
     }
   // }, [wallet.address, client, chosenPairInfo, addMessage])
   }, [addMessage])
@@ -245,7 +262,8 @@ export const SellControl = () => {
           <Text>- Selling {putCall === 'token0' ? 'PUT' : 'CALL'} on {baseAssetInfo.symbol}</Text>
           <Text>- Strike Price: {toFixed(strikePrice)} {quoteAssetInfo.symbol}</Text>
           <Text>- Premium Earning Price Range: [{toFixed(lower)}, {toFixed(upper)}] {quoteAssetInfo.symbol} </Text>
-          <Text>- Position Size: {formatUnits(positionSizeInBaseAsset, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text>
+          <Text>- Position Size: {formatUnits(positionSize, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text>
+          {/* <Text>- Position Size: {formatUnits(positionSizeInBaseAsset, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text> */}
         </>}
         onConfirm={onConfirm}
     />}
