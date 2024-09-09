@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from 'react'
-import { getPositionIdList, readPositions } from './db.js'
+import { getPositionIdList } from './db.js'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
 import { usePoolStats } from './pools/hooks.js'
@@ -8,7 +8,7 @@ import {
   AmountSelector, calculateTokenId,
   ConfirmationSelector,
   getOptionRange, type Leg,
-  MultiChoiceSelector, type Position,
+  MultiChoiceSelector,
   SectionTitle, type Token01,
   type ValidatedPair
 } from './common.js'
@@ -16,7 +16,6 @@ import { Box, Text } from 'ink'
 import { PoolSelector } from './pools/selector.js'
 import { formatUnits, getContract, parseUnits } from 'viem'
 import { priceToTick, tickToPrice, toFixed, tryParseUnits } from './util.js'
-import { PanopticPoolAbi } from './constants.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -69,8 +68,8 @@ export const SellControl = () => {
   const [strikeTick, setStrikeTick] = useState<number>(0)
   const strikePrice01 = tickToPrice(strikeTick, chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals)
   const strikePrice = quoteAsset === 'token0' ? 1 / strikePrice01 : strikePrice01
-  const [width, setWidth] = useState<number>(0)
-  const [lower, upper] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
+  const [range, setRange] = useState<number>(0)
+  const [lower, upper] = getOptionRange(strikePrice, range, chosenPairInfo.tickSpacing)
 
   // in number of atomic units of the token selected by putCall
   // for safety and to keep things consistent, we do not store a separate "position size in terms of base asset" for display purposes.
@@ -100,9 +99,13 @@ export const SellControl = () => {
   }, [baseAssetInfo, quoteAssetInfo, addMessage])
 
   const onStrikeAmountSubmit = useCallback((price: number) => {
+    // must round to nearest tick divisible by tickSpacing
     addMessage(`Strike price set to ${price} ${quoteAssetInfo.symbol}`, { color: 'green' })
     const decimals = chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals
     const tick = priceToTick(quoteAsset === 'token0' ? 1 / price : price, decimals)
+    const roundedTick = Math.round(tick / chosenPairInfo.tickSpacing) * chosenPairInfo.tickSpacing
+    const roundedPrice = tickToPrice(tick, decimals)
+    const displayRoundedPrice = quoteAsset === 'token0' ? 1 / price : price, decimals
     // addMessage(`tick: ${tick} | decimals=${decimals}`)
     setStrikeTick(tick)
     setStage(Stage.Width)
@@ -119,10 +122,10 @@ export const SellControl = () => {
     }
     const multiplier = percent / 100 + 1
     const ticks = priceToTick(multiplier, 0)
-    const width = Math.round(ticks / chosenPairInfo.tickSpacing)
-    const [l, u] = getOptionRange(strikePrice, width, chosenPairInfo.tickSpacing)
+    const radius = Math.round(ticks / chosenPairInfo.tickSpacing)
+    const [l, u] = getOptionRange(strikePrice, radius, chosenPairInfo.tickSpacing)
     addMessage(`Range set to ${percent.toFixed(2)}% (${toFixed(l)}, ${toFixed(u)})`, { color: 'green' })
-    setWidth(width)
+    setRange(radius)
     setStage(Stage.Quantity)
   }, [strikePrice, addMessage, chosenPairInfo])
 
@@ -161,9 +164,9 @@ export const SellControl = () => {
       addMessage('Option minting aborted', { color: 'red' })
     } else if (yes) {
       // TODO: check collateral requirement first
-      const currentPositions = await getPositionIdList(wallet.address!, chosenPair?.uniswapPoolAddress)
-      const tickLower = strikeTick - width * chosenPairInfo.tickSpacing
-      const tickUpper = strikeTick + width * chosenPairInfo.tickSpacing
+      const currentPositions = await getPositionIdList(wallet.address!, chosenPairInfo.uniswapPool!.address)
+      const tickLower = strikeTick - range * chosenPairInfo.tickSpacing
+      const tickUpper = strikeTick + range * chosenPairInfo.tickSpacing
       // doing only single leg option for now
       const leg: Leg = {
         asset: quoteAsset === 'token0' ? 'token1' : 'token0',
@@ -174,11 +177,7 @@ export const SellControl = () => {
         tickLower,
         tickUpper
       }
-      const position: Position = {
-        uniswapPoolAddress: chosenPairInfo.uniswapPool!.address,
-        tickSpacing: chosenPairInfo.tickSpacing,
-        legs: [leg, undefined, undefined, undefined]
-      }
+      addMessage(`leg=${JSON.stringify(leg)} tickSpacing=${chosenPairInfo.tickSpacing} radius=${range}`)
       const id = calculateTokenId(chosenPairInfo.uniswapPool!.address, chosenPairInfo.tickSpacing, [leg, undefined, undefined, undefined])
       const positionIdList = [...currentPositions, id]
       // TODO: this might only be useful for multi-leg positions. need to figure out how to set it appropriately later
@@ -193,12 +192,16 @@ export const SellControl = () => {
         address: chosenPairInfo.panopticPool!.address,
         client: client!
       })
-      const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
-      addMessage(`Executed transaction ${hash}. Option minted!`, { color: 'green' })
-      // TODO: reset state, go back to pool selection / main menu
+      try {
+        const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
+        addMessage(`Executed transaction ${hash}. Option minted!`, { color: 'green' })
+        // TODO: reset state, go back to pool selection / main menu
+      } catch (ex: any) {
+        addMessage((ex as Error).toString(), { color: 'red' })
+        addMessage((ex as Error).stack ?? 'Unknown stacktrace', { color: 'red' })
+      }
     }
-  // }, [wallet.address, client, chosenPairInfo, addMessage])
-  }, [addMessage])
+  }, [addMessage, chosenPairInfo, client, positionSize, putCall, quoteAsset, strikeTick, wallet, range])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Selling (minting) options</SectionTitle>
@@ -247,7 +250,7 @@ export const SellControl = () => {
         onRawSubmit={onWidthSubmit}
         onBack={() => {
           setStage(Stage.StrikeAmount)
-          setWidth(0)
+          setRange(0)
         }}
     />}
     {stage === Stage.Quantity && <AmountSelector
