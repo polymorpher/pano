@@ -3,6 +3,7 @@ import * as process from 'process'
 import { DefaultAssets } from './constants.js'
 import { merge } from 'lodash-es'
 import { type Address, type Hex } from 'viem'
+import { type Token01 } from './common.js'
 dotenv.config()
 
 export const DEBUG = Boolean(process.env.DEBUG === 'true' || process.env.DEBUG === '1')
@@ -57,6 +58,7 @@ export interface Pair {
   token0: string
   token1: string
   fee: number
+  baseAsset: Token01
 }
 
 // each tuple is [token0, token1, fee in bps]. Order of token0 and token1 does not matter
@@ -64,7 +66,7 @@ export interface Pair {
 export const pairs: Pair[] = process.env.PAIRS
   ? JSON.parse(process.env.PAIRS)
   : [
-      { token0: 'USDC', token1: 'WETH', fee: 500 }
+      { token0: 'USDC', token1: 'WETH', fee: 500, baseAsset: 'token1' }
     ]
 
 // local ETH fork's deployment address, using test/junk mnemonic
