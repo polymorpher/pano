@@ -30,6 +30,7 @@ export interface Leg {
   position: PositionType
   tokenType: Token01
   riskPartnerIndex: 0 | 1 | 2 | 3
+  // always follows pool's tick (token1/token0 price) - no conversion necessary regardless of the value of `asset`
   tickLower: number
   tickUpper: number
 }

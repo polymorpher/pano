@@ -100,14 +100,14 @@ export const SellControl = () => {
 
   const onStrikeAmountSubmit = useCallback((price: number) => {
     // must round to nearest tick divisible by tickSpacing
-    addMessage(`Strike price set to ${price} ${quoteAssetInfo.symbol}`, { color: 'green' })
     const decimals = chosenPairInfo.c1Info.decimals - chosenPairInfo.c0Info.decimals
     const tick = priceToTick(quoteAsset === 'token0' ? 1 / price : price, decimals)
     const roundedTick = Math.round(tick / chosenPairInfo.tickSpacing) * chosenPairInfo.tickSpacing
-    const roundedPrice = tickToPrice(tick, decimals)
-    const displayRoundedPrice = quoteAsset === 'token0' ? 1 / price : price, decimals
+    const roundedPrice = tickToPrice(roundedTick, decimals)
+    const displayRoundedPrice = quoteAsset === 'token0' ? 1 / roundedPrice : roundedPrice
+    addMessage(`Strike price set to ${displayRoundedPrice} ${quoteAssetInfo.symbol}`, { color: 'green' })
     // addMessage(`tick: ${tick} | decimals=${decimals}`)
-    setStrikeTick(tick)
+    setStrikeTick(roundedTick)
     setStage(Stage.Width)
   }, [quoteAsset, chosenPairInfo, quoteAssetInfo, addMessage])
 
