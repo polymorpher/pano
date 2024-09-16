@@ -20,7 +20,7 @@ export enum CommandKeys {
   Deposit = 'deposit',
   Portfolio = 'portfolio',
   Sell = 'sell',
-  Market = 'market',
+  Mint = 'mint',
   Buy = 'buy',
   Admin = 'admin',
   Quit = 'quit',
@@ -32,9 +32,9 @@ export const Commands: Record<CommandKeys, Command> = {
   wallet: { short: 'w', full: 'wallet', desc: 'set private key for wallet (if not already set through .env, environment variable, or command line)', submenu: true },
   deposit: { short: 'd', full: 'deposit', desc: 'deposit or withdraw funds as collateral in one of the trading pools', submenu: true, wallet: true },
   portfolio: { short: 'p', full: 'portfolio', desc: 'show your deposited assets, option positions, estimated profit and loss', wallet: true, tbd: true },
-  sell: { short: 's', full: 'sell', desc: 'sell (i.e. mint) an option', wallet: true, submenu: true },
-  market: { short: 'm', full: 'market', desc: 'show available options in the market for buying', tbd: true },
-  buy: { short: 'b', full: 'buy', desc: 'buy a minted option', wallet: true, tbd: true },
+  sell: { short: 's', full: 'sell', desc: 'sell (short) a simple option (single leg)', wallet: true, submenu: true },
+  mint: { short: 'm', full: 'mint', desc: 'mint a complex option (multi-leg, potentially mixing long and short)', tbd: true, submenu: true },
+  buy: { short: 'b', full: 'buy', desc: 'buy (long) a simple option (single leg)', wallet: true, tbd: true },
   admin: { short: 'a', full: 'admin', desc: 'enter admin mode to perform management operations (liquidation, forced exercise)', wallet: true, tbd: true },
   quit: { short: 'q', full: 'quit', desc: 'exit the program' }
 }
