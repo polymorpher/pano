@@ -120,7 +120,19 @@ const EmptyPriceTickInfo = {
 
 const EmptyTokenPair: [Address | undefined, Address | undefined] = [undefined, undefined]
 
-export const usePoolStats = (pool?: ValidatedPair) => {
+export interface PoolInfo {
+  c0Info: CollateralFullInfo
+  c1Info: CollateralFullInfo
+  price: number
+  priceInverse: number
+  recentPrices: number[]
+  recentPricesInverse: number[]
+  panopticPool?: PanopticPool
+  uniswapPool?: UniswapPool
+  tickSpacing: TickSpacing
+}
+
+export const usePoolStats = (pool?: ValidatedPair): PoolInfo => {
   const { addMessage } = useContext(NotificationContext)
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()

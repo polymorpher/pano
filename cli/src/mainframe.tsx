@@ -8,7 +8,7 @@ import { NotificationBar, NotificationProvider } from './notification.js'
 import { useWallet, WalletControl, WalletProvider } from './wallet.js'
 import { DepositControl } from './deposit.js'
 import { WalletRequired } from './errors.js'
-import { SellControl } from './sell.js'
+import { SellControl } from './trade/sell.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
