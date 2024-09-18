@@ -34,7 +34,7 @@ export const Commands: Record<CommandKeys, Command> = {
   portfolio: { short: 'p', full: 'portfolio', desc: 'show your deposited assets, option positions, estimated profit and loss', wallet: true, tbd: true },
   sell: { short: 's', full: 'sell', desc: 'sell (short) a simple option (single leg)', wallet: true, submenu: true },
   mint: { short: 'm', full: 'mint', desc: 'mint a complex option (multi-leg, potentially mixing long and short)', tbd: true, submenu: true },
-  buy: { short: 'b', full: 'buy', desc: 'buy (long) a simple option (single leg)', wallet: true, tbd: true },
+  buy: { short: 'b', full: 'buy', desc: 'buy (long) a simple option (single leg)', wallet: true, submenu: true },
   admin: { short: 'a', full: 'admin', desc: 'enter admin mode to perform management operations (liquidation, forced exercise)', wallet: true, tbd: true },
   quit: { short: 'q', full: 'quit', desc: 'exit the program' }
 }
