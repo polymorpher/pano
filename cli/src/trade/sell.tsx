@@ -14,7 +14,7 @@ import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
 
 export const SellControl = () => {
-  const { stage, setStage, chosenPairInfo, client, addMessage, onPoolSelected } = useTrade()
+  const { stage, setStage, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
   const { positions, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
 
   const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
@@ -33,12 +33,13 @@ export const SellControl = () => {
       const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
       addMessage(`Executed transaction ${hash}. Option sold!`, { color: 'green' })
       await addPosition(position)
+      exit()
       // TODO: reset state, go back to pool selection / main menu
     } catch (ex: any) {
       addMessage((ex as Error).toString(), { color: 'red' })
       addMessage((ex as Error).stack ?? 'Unknown stacktrace', { color: 'red' })
     }
-  }, [addPosition, positions, addMessage, chosenPairInfo, client])
+  }, [exit, addPosition, positions, addMessage, chosenPairInfo, client])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Selling simple options</SectionTitle>

@@ -1,4 +1,4 @@
-import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
+import { type Address } from 'viem'
 import { useCallback, useState, useEffect, useContext } from 'react'
 import { calculateTokenId, type Position, type PositionWithId } from '../common.js'
 import { readPositions, storePosition } from '../db.js'

@@ -20,7 +20,7 @@ import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
 
 export const BuyControl = () => {
-  const { stage, setStage, chosenPairInfo, client, wallet, addMessage, onPoolSelected } = useTrade()
+  const { stage, setStage, chosenPairInfo, client, wallet, addMessage, onPoolSelected, exit } = useTrade()
   const { positions, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
   const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
     const position: Position = { uniswapPoolAddress: chosenPairInfo.uniswapPool!.address, tickSpacing: chosenPairInfo.tickSpacing, legs: [leg, undefined, undefined, undefined] }
@@ -36,12 +36,13 @@ export const BuyControl = () => {
     try {
       const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
       await addPosition(position)
+      exit()
       addMessage(`Executed transaction ${hash}. Option purchased!`, { color: 'green' })
     } catch (ex: any) {
       addMessage((ex as Error).toString(), { color: 'red' })
       addMessage((ex as Error).stack ?? 'Unknown stacktrace', { color: 'red' })
     }
-  }, [addPosition, positions, addMessage, chosenPairInfo, client, wallet])
+  }, [exit, addPosition, positions, addMessage, chosenPairInfo, client])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Buying simple options</SectionTitle>
