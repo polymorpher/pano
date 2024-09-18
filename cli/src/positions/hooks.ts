@@ -48,6 +48,9 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
 
   useEffect(() => {
     reloadPositions().then(ps => {
+      if (!ps) {
+        return
+      }
       addMessage(`Loaded current positions: ${JSON.stringify(ps)}`)
     }).catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, reloadPositions])
