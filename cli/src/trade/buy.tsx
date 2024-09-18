@@ -1,13 +1,8 @@
-import React, { useCallback, useContext, useState } from 'react'
-import { getPositionIdList } from 'src/db.js'
-import { useWallet } from 'src/wallet.js'
-import { useWalletClient } from 'src/client.js'
-import { usePoolStats } from 'src/pools/hooks.js'
-import { NotificationContext } from 'src/notification.js'
+import React, { useCallback } from 'react'
 import {
   calculateTokenId,
   type Leg, type Position,
-  SectionTitle, type ValidatedPair
+  SectionTitle
 } from 'src/common.js'
 import { Box } from 'ink'
 import { PoolSelector } from 'src/pools/selector.js'
@@ -15,17 +10,16 @@ import { getContract } from 'viem'
 import { LegMaker, TradeStage } from './trade.js'
 import { useTrade } from './hooks.js'
 import { defaultEffectiveLiquidityRatio, defaultSlippageTolerance } from '../config.js'
-import { priceToTick } from '../util.js'
 import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
 
 export const BuyControl = () => {
-  const { stage, setStage, chosenPairInfo, client, wallet, addMessage, onPoolSelected, exit } = useTrade()
-  const { positions, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
+  const { stage, setStage, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
+  const { positionIds, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
   const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
     const position: Position = { uniswapPoolAddress: chosenPairInfo.uniswapPool!.address, tickSpacing: chosenPairInfo.tickSpacing, legs: [leg, undefined, undefined, undefined] }
     const id = calculateTokenId(position)
-    const positionIdList = [...positions.map(p => p.id), id]
+    const positionIdList = [...positionIds, id]
     const effectiveLiquidityLimitX32 = BigInt(Math.round(defaultEffectiveLiquidityRatio * 2 ** 32))
     const [tickLowerLimit, tickUpperLimit] = getTickRange(chosenPairInfo.priceTick, defaultSlippageTolerance, chosenPairInfo.tickSpacing)
     const c = getContract({
@@ -42,7 +36,7 @@ export const BuyControl = () => {
       addMessage((ex as Error).toString(), { color: 'red' })
       addMessage((ex as Error).stack ?? 'Unknown stacktrace', { color: 'red' })
     }
-  }, [exit, addPosition, positions, addMessage, chosenPairInfo, client])
+  }, [exit, addPosition, positionIds, addMessage, chosenPairInfo, client])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Buying simple options</SectionTitle>

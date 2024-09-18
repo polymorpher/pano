@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb'
 import { defaultDbPath } from './config.js'
 import { cmd } from './cmd.js'
-import { type Address } from 'viem'
+import {type Address, Hex} from 'viem'
 import { calculateTokenId, extractPoolId, getPoolId, type Position, type PositionWithId } from './common.js'
 const dbPath = (cmd.db ?? defaultDbPath) as string
 
@@ -39,18 +39,21 @@ export async function readPositions (address: Address, uniswapPool?: Address): P
   const startkey = uniswapPool ? makeKey(address, POSITIONS, getPoolId(uniswapPool).toString(16)) : makeKey(address, POSITIONS)
   const docs = await db.allDocs<Position>({
     startkey,
-    endkey: startkey + END_MARK
+    endkey: startkey + END_MARK,
+    include_docs: true
   })
   return docs.rows.map(d => {
     if (!d.doc) {
       return undefined
     }
     const { uniswapPoolAddress, tickSpacing, legs, _id, ts } = d.doc
-    return { uniswapPoolAddress, tickSpacing, legs, id: BigInt(`0x${_id}`), ts }
+    const parts = _id.split('/')
+    const id = parts[parts.length - 1]
+    return { uniswapPoolAddress, tickSpacing, legs, id: `0x${id}`, ts }
   }).filter(e => e !== undefined) as PositionWithId[]
 }
 
-export async function getPositionIdList (address: Address, uniswapPool?: Address): Promise<bigint[]> {
+export async function getPositionIdList (address: Address, uniswapPool?: Address): Promise<Hex[]> {
   const positions = await readPositions(address, uniswapPool)
   return positions.map(p => p.id)
 }

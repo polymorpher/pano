@@ -15,13 +15,13 @@ import { usePositions } from '../positions/hooks.js'
 
 export const SellControl = () => {
   const { stage, setStage, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
-  const { positions, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
+  const { positionIds, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
 
   const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
     // TODO: check collateral requirement first
     const position: Position = { uniswapPoolAddress: chosenPairInfo.uniswapPool!.address, tickSpacing: chosenPairInfo.tickSpacing, legs: [leg, undefined, undefined, undefined] }
     const id = calculateTokenId(position)
-    const positionIdList = [...positions.map(e => e.id), id]
+    const positionIdList = [...positionIds, id]
     const effectiveLiquidityLimitX32 = 0n
     const [tickLowerLimit, tickUpperLimit] = getTickRange(chosenPairInfo.priceTick, defaultSlippageTolerance, chosenPairInfo.tickSpacing)
     const c = getContract({
@@ -39,7 +39,7 @@ export const SellControl = () => {
       addMessage((ex as Error).toString(), { color: 'red' })
       addMessage((ex as Error).stack ?? 'Unknown stacktrace', { color: 'red' })
     }
-  }, [exit, addPosition, positions, addMessage, chosenPairInfo, client])
+  }, [exit, addPosition, positionIds, addMessage, chosenPairInfo, client])
 
   return <Box flexDirection={'column'}>
     <SectionTitle>Selling simple options</SectionTitle>

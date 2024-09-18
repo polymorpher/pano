@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { Box, Text } from 'ink'
 import type { Pair } from './config.js'
-import { type Address } from 'viem'
+import { type Address, type Hex } from 'viem'
 import type { Tuple } from 'reverse-mirage'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
@@ -60,7 +60,7 @@ export interface Position {
 }
 
 export interface PositionWithId extends Position {
-  id: bigint
+  id: Hex
 }
 
 export function getPoolId (pool: Address): bigint {

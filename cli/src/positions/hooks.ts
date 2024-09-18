@@ -1,4 +1,4 @@
-import { type Address } from 'viem'
+import { type Address, type Hex } from 'viem'
 import { useCallback, useState, useEffect, useContext } from 'react'
 import { calculateTokenId, type Position, type PositionWithId } from '../common.js'
 import { readPositions, storePosition } from '../db.js'
@@ -9,6 +9,7 @@ export const usePositions = (poolAddress?: Address) => {
   const { wallet } = useWallet()
   const { addMessage } = useContext(NotificationContext)
   const [positions, setPositions] = useState<PositionWithId[]>([])
+  const positionIds = positions.map(p => BigInt(p.id))
   const reloadPositions = useCallback(async () => {
     if (!wallet.address || !poolAddress) {
       return
@@ -21,10 +22,13 @@ export const usePositions = (poolAddress?: Address) => {
     if (!wallet.address || !poolAddress) {
       return
     }
-    const id = calculateTokenId(position)
+    const tokenId = calculateTokenId(position)
     const updated = await storePosition(wallet.address, position)
+    const id: Hex = `0x${tokenId.toString(16)}`
     if (updated) {
-      setPositions(ps => [...ps, { ...position, id }].toSorted((a, b) => a.ts ?? 0 - (b.ts ?? 0)))
+      setPositions(ps =>
+        [...ps, { ...position, id }].toSorted((a, b) => a.ts ?? 0 - (b.ts ?? 0))
+      )
     }
   }, [wallet.address, poolAddress])
 
@@ -40,5 +44,5 @@ export const usePositions = (poolAddress?: Address) => {
       .catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, wallet.address, poolAddress])
 
-  return { positions, reloadPositions, addPosition }
+  return { positions, reloadPositions, addPosition, positionIds }
 }
