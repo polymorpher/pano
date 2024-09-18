@@ -63,6 +63,12 @@ export interface PositionWithId extends Position {
   id: Hex
 }
 
+export interface PositionWithData extends PositionWithId {
+  balance?: bigint
+  utilization0?: number
+  utilization1?: number
+}
+
 export function getPoolId (pool: Address): bigint {
   return (BigInt(pool) >> 96n) & 0xffffffffffffffffn
 }

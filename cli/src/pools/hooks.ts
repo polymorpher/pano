@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from 'react'
 import { pairs as initPairs } from 'src/config.js'
-import { getTokenAddress, pairToStr, tickToPrice } from 'src//util.js'
+import { getTokenAddress, isReadableAddress, pairToStr, tickToPrice } from 'src//util.js'
 import { type Address, getContract, type GetContractReturnType, type PublicClient, zeroAddress } from 'viem'
 import { usePublicClient } from 'src/client.js'
-import { useFactories } from 'src/uniswap.js'
+import { useFactories } from 'src/pools/uniswap.js'
 import { NotificationContext } from 'src/notification.js'
 import { type TickSpacing, type ValidatedPair } from 'src/common.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi, UniswapPoolAbi } from 'src/constants.js'
@@ -132,6 +132,34 @@ export interface PoolInfo {
   uniswapPool?: UniswapPool
   tickSpacing: TickSpacing
   pair?: ValidatedPair
+}
+
+export const usePoolContract = (uniswapPoolAddress?: Address) => {
+  const { addMessage } = useContext(NotificationContext)
+  const { client } = usePublicClient()
+  const { panopticFactory } = useFactories()
+  const [panopticPool, setPanopticPool] = useState<PanopticPool>()
+  const [uniswapPool, setUniswapPool] = useState<UniswapPool>()
+  useEffect(() => {
+    async function init () {
+      if (!client || !panopticFactory || !uniswapPoolAddress) {
+        return
+      }
+
+      const up = getContract({ address: uniswapPoolAddress, abi: UniswapPoolAbi, client })
+      setUniswapPool(up)
+
+      const ppAddress = await panopticFactory.read.getPanopticPool([up.address])
+
+      if (!isReadableAddress(ppAddress)) {
+        return
+      }
+      const pp = getContract({ address: ppAddress, abi: PanopticPoolAbi, client })
+      setPanopticPool(pp)
+    }
+    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [client, addMessage, panopticFactory, uniswapPoolAddress])
+  return { panopticPool, uniswapPool }
 }
 
 export const usePoolStats = (pair?: ValidatedPair): PoolInfo => {

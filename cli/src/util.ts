@@ -21,6 +21,8 @@ export const isReadableAddress = (address?: Address) => address && address !== z
 
 export const TickBase = 1.0001
 
+export const ScalingFactor = 10_000
+
 export const tickToPrice = (tick: number, decimals: number, precision: number = 7): number => {
   const raw = TickBase ** tick
   const scaled = raw / (10 ** decimals)

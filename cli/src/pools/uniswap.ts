@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getContract, type GetContractReturnType, type PublicClient } from 'viem'
-import { usePublicClient } from './client.js'
-import { PanopticFactoryAbi, UniswapFactoryAbi } from './constants.js'
-import { getPanopticFactoryAddress, getUniswapFactoryAddress } from './cmd.js'
+import { usePublicClient } from 'src/client.js'
+import { PanopticFactoryAbi, UniswapFactoryAbi } from 'src/constants.js'
+import { getPanopticFactoryAddress, getUniswapFactoryAddress } from 'src/cmd.js'
 
 type UniswapFactory = GetContractReturnType<typeof UniswapFactoryAbi, PublicClient>
 type PanopticFactory = GetContractReturnType<typeof PanopticFactoryAbi, PublicClient>
