@@ -22,8 +22,17 @@ export async function getPosition (address: Address, tokenId: bigint): Promise<P
   const poolId = extractPoolId(tokenId)
   const id = makeKey(address, POSITIONS, poolId.toString(16), tokenId.toString(16))
   const d = await db.get<Position>(id)
-  const { uniswapPoolAddress, tickSpacing, legs } = d
-  return { uniswapPoolAddress, tickSpacing, legs }
+  const { uniswapPoolAddress, tickSpacing, legs, ts } = d
+  return { uniswapPoolAddress, tickSpacing, legs, ts }
+}
+
+export async function positionExists (address: Address, tokenId: bigint): Promise<boolean> {
+  try {
+    await getPosition(address, tokenId)
+    return true
+  } catch (ex: any) {
+    return false
+  }
 }
 
 export async function readPositions (address: Address, uniswapPool?: Address): Promise<PositionWithId[]> {
@@ -36,8 +45,8 @@ export async function readPositions (address: Address, uniswapPool?: Address): P
     if (!d.doc) {
       return undefined
     }
-    const { uniswapPoolAddress, tickSpacing, legs, _id } = d.doc
-    return { uniswapPoolAddress, tickSpacing, legs, id: BigInt(`0x${_id}`) }
+    const { uniswapPoolAddress, tickSpacing, legs, _id, ts } = d.doc
+    return { uniswapPoolAddress, tickSpacing, legs, id: BigInt(`0x${_id}`), ts }
   }).filter(e => e !== undefined) as PositionWithId[]
 }
 
@@ -46,16 +55,22 @@ export async function getPositionIdList (address: Address, uniswapPool?: Address
   return positions.map(p => p.id)
 }
 
-export async function storePosition (address: Address, position: Position): Promise<void> {
-  const tokenId = calculateTokenId(position.uniswapPoolAddress, position.tickSpacing, position.legs)
+export async function storePosition (address: Address, position: Position): Promise<boolean> {
+  const tokenId = calculateTokenId(position)
   const poolId = getPoolId(position.uniswapPoolAddress)
   const _id = makeKey(address, POSITIONS, poolId.toString(16), tokenId.toString(16))
+  const hasPosition = await positionExists(address, tokenId)
+  if (hasPosition) {
+    return false
+  }
   const { uniswapPoolAddress, tickSpacing, legs } = position
   const doc = {
     _id,
     uniswapPoolAddress,
     tickSpacing,
-    legs
+    legs,
+    ts: Date.now()
   }
-  await db.put(doc)
+  await db.put<Position>(doc)
+  return true
 }

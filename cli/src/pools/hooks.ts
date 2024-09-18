@@ -124,15 +124,17 @@ export interface PoolInfo {
   c0Info: CollateralFullInfo
   c1Info: CollateralFullInfo
   price: number
+  priceTick: number
   priceInverse: number
   recentPrices: number[]
   recentPricesInverse: number[]
   panopticPool?: PanopticPool
   uniswapPool?: UniswapPool
   tickSpacing: TickSpacing
+  pair?: ValidatedPair
 }
 
-export const usePoolStats = (pool?: ValidatedPair): PoolInfo => {
+export const usePoolStats = (pair?: ValidatedPair): PoolInfo => {
   const { addMessage } = useContext(NotificationContext)
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
@@ -150,14 +152,14 @@ export const usePoolStats = (pool?: ValidatedPair): PoolInfo => {
 
   useEffect(() => {
     async function init () {
-      if (!client || !pool) {
+      if (!client || !pair) {
         setTokens(EmptyTokenPair)
         setPriceTickInfo(EmptyPriceTickInfo)
         return
       }
-      const pp = getContract({ address: pool.panopticPoolAddress, abi: PanopticPoolAbi, client })
+      const pp = getContract({ address: pair.panopticPoolAddress, abi: PanopticPoolAbi, client })
       setPanopticPool(pp)
-      const up = getContract({ address: pool.uniswapPoolAddress, abi: UniswapPoolAbi, client })
+      const up = getContract({ address: pair.uniswapPoolAddress, abi: UniswapPoolAbi, client })
       setUniswapPool(up)
       const t0 = await pp.read.collateralToken0()
       if (t0 === zeroAddress) {
@@ -172,7 +174,7 @@ export const usePoolStats = (pool?: ValidatedPair): PoolInfo => {
       setTokens([t0, t1])
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [network, client, pool, addMessage])
+  }, [network, client, pair, addMessage])
 
   useEffect(() => {
     async function getStats () {
@@ -196,7 +198,7 @@ export const usePoolStats = (pool?: ValidatedPair): PoolInfo => {
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [uniswapPool, addMessage])
 
-  return { c0Info, c1Info, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing }
+  return { c0Info, c1Info, priceTick, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing, pair }
 }
 
 export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {

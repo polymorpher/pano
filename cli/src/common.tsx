@@ -56,6 +56,7 @@ export interface Position {
   uniswapPoolAddress: Address
   tickSpacing: TickSpacing
   legs: Tuple<Leg | undefined, 4>
+  ts?: number
 }
 
 export interface PositionWithId extends Position {
@@ -71,11 +72,11 @@ export function extractPoolId (tokenId: bigint): bigint {
 }
 
 // adapted from Panoptic SDK
-export const calculateTokenId = (
-  uniswapPoolAddress: Address,
-  tickSpacing: TickSpacing,
-  legs: Tuple<Leg | undefined, 4>
-): bigint => {
+export const calculateTokenId = ({
+  uniswapPoolAddress,
+  tickSpacing,
+  legs
+}: Position): bigint => {
   let id = 0n
   id |= (BigInt(uniswapPoolAddress) >> 96n) & 0xffffffffffffffffn
   id |= legs[0] ? calculateLegId(legs[0], tickSpacing) << 64n : 0n

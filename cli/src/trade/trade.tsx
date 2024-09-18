@@ -145,8 +145,8 @@ export const LegMaker = ({ chosenPairInfo, onLegConfirm, position, stage, setSta
 
   return <Box flexDirection={'column'}>
     { stage === TradeStage.QuoteAsset && <MultiChoiceSelector options={[
-      chosenPairInfo.c0Info.symbol,
-      chosenPairInfo.c1Info.symbol
+      chosenPairInfo.c0Info.symbol + (chosenPairInfo.pair?.baseAsset === 'token1' ? ' (Recommended)' : ''),
+      chosenPairInfo.c1Info.symbol + (chosenPairInfo.pair?.baseAsset === 'token0' ? ' (Recommended)' : '')
     ]} onSelected={onQuoteAssetSubmit} onExit={() => {
       setQuoteAsset('token0')
       setStage(TradeStage.PoolSelection)
