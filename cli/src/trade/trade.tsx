@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState, useEffect } from 'react'
+import React, { useCallback, useContext, useState } from 'react'
 import {
   AmountSelector,
   ConfirmationSelector,
@@ -164,7 +164,7 @@ export const LegMaker = ({ chosenPairInfo, onLegConfirm, position, stage, setSta
     ]} onSelected={onPutCallSelected} onExit={() => {
       setPutCall('token0')
       setStage(TradeStage.QuoteAsset)
-    }} prompt={'Choose the type of option to sell'} intro={'Selling put or call?'}/> }
+    }} prompt={'Choose the type of option to trade'} intro={'Trading put or call?'}/> }
 
     { stage === TradeStage.StrikeAmount && <AmountSelector
       intro={`Strike price for the option? Median spot price of last 10 minute is ${toFixed(currentPrice)}`}
@@ -198,8 +198,9 @@ export const LegMaker = ({ chosenPairInfo, onLegConfirm, position, stage, setSta
     { stage === TradeStage.Confirm && <ConfirmationSelector
       intro={<>
         <Box marginY={1}><Text>Please verify and confirm</Text></Box>
+        <Text>- {position === 'short' ? 'SELL' : 'BUY'} an option</Text>
         <Text>- Pool: {chosenPairInfo.c0Info.symbol}/{chosenPairInfo.c1Info.symbol}</Text>
-        <Text>- Selling {putCall === 'token0' ? 'PUT' : 'CALL'} on {baseAssetInfo.symbol}</Text>
+        <Text>- Trading {putCall === 'token0' ? 'PUT' : 'CALL'} on {baseAssetInfo.symbol}</Text>
         <Text>- Strike Price: {toFixed(strikePrice)} {quoteAssetInfo.symbol}</Text>
         <Text>- Premium Earning Price Range: [{toFixed(lower)}, {toFixed(upper)}] {quoteAssetInfo.symbol} </Text>
         <Text>- Position Size: {formatUnits(positionSize, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text>
