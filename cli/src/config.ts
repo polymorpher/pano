@@ -14,7 +14,9 @@ export interface Network {
   id: string
   name: string
   rpc: string
+  archive?: string
   chainId: number
+  blockTime?: number
   nativeCurrency: { name: string, symbol: string, decimals: number }
 }
 
@@ -24,6 +26,7 @@ export const networks: Record<string, Network> = {
     name: 'Local (Forked Ethereum Mainnet)',
     rpc: 'http://127.0.0.1:8545',
     chainId: 1,
+    blockTime: 0,
     nativeCurrency: {
       name: 'Ether',
       symbol: 'ETH',
@@ -45,6 +48,8 @@ export const networks: Record<string, Network> = {
     id: 'harmony',
     name: 'Harmony Mainnet',
     rpc: 'https://api.harmony.one',
+    archive: 'https://a.api.s0.t.hmny.io/',
+    blockTime: 2000,
     chainId: 0x63564C40,
     nativeCurrency: {
       name: 'ONE',
@@ -83,3 +88,7 @@ export const defaultSlippageTolerance = Number(process.env.SLIPPAGE_TOLERANCE ??
 export const defaultWalletPrivateKey: Hex | undefined = process.env.PK as Hex
 
 export const defaultDbPath: string | undefined = process.env.DB ?? 'db'
+
+export const archivePoolingInterval = Number(process.env.ARCHIVE_POOLING_INTERVAL ?? 500)
+
+export const archivePoolingBlockRangeSize = BigInt(process.env.ARCHIVE_POOLING_BLOCK_RANGE_SIZE ?? 1024n)

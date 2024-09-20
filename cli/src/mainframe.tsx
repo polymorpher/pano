@@ -10,6 +10,7 @@ import { DepositControl } from './deposit.js'
 import { WalletRequired } from './errors.js'
 import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
+import {PortfolioControl} from "./positions/portfolio.js";
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
@@ -22,6 +23,7 @@ const Router = () => {
   return <>
     {m === CommandKeys.Help && <HelpMessage/>}
     {m === CommandKeys.List && <Stats/>}
+    {m === CommandKeys.Portfolio && <PortfolioControl/>}
     {m === CommandKeys.Wallet && <WalletControl/>}
     {m === CommandKeys.Deposit && <DepositControl/>}
     {m === CommandKeys.Sell && <SellControl/>}

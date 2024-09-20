@@ -31,7 +31,7 @@ export const Commands: Record<CommandKeys, Command> = {
   list: { short: 'l', full: 'list', desc: 'list all available pools, and show their pool and collateral statistics' },
   wallet: { short: 'w', full: 'wallet', desc: 'set private key for wallet (if not already set through .env, environment variable, or command line)', submenu: true },
   deposit: { short: 'd', full: 'deposit', desc: 'deposit or withdraw funds as collateral in one of the trading pools', submenu: true, wallet: true },
-  portfolio: { short: 'p', full: 'portfolio', desc: 'show your deposited assets, option positions, estimated profit and loss', wallet: true, tbd: true },
+  portfolio: { short: 'p', full: 'portfolio', desc: 'show your deposited assets, option positions, estimated profit and loss', wallet: true, submenu: true },
   sell: { short: 's', full: 'sell', desc: 'sell (short) a simple option (single leg)', wallet: true, submenu: true },
   mint: { short: 'm', full: 'mint', desc: 'mint a complex option (multi-leg, potentially mixing long and short)', tbd: true, submenu: true },
   buy: { short: 'b', full: 'buy', desc: 'buy (long) a simple option (single leg)', wallet: true, submenu: true },

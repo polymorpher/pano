@@ -21,6 +21,7 @@ export const buildPublicClient = (network: Network): PublicClient => {
 }
 
 interface PublicClientContextProps {
+  archiveClient?: PublicClient
   client?: PublicClient
   network: Network
   setNetwork: (network: Network) => void
@@ -37,6 +38,7 @@ const PublicClientContext = createContext<PublicClientContextProps>({
 const usePublicClientHook = () => {
   const [network, setNetwork] = useState<Network>(initialNetwork)
   const [publicClient, setPublicClient] = useState<PublicClient>()
+  const [archiveClient, setArchiveClient] = useState<PublicClient>()
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
     if (!network) {
@@ -46,13 +48,15 @@ const usePublicClientHook = () => {
     const client = buildPublicClient(network)
     addMessage(`Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`, { color: 'green' })
     setPublicClient(client)
+    const aClient = buildPublicClient(({ ...network, rpc: network.archive ?? network.rpc }))
+    setArchiveClient(aClient)
   }, [addMessage, network])
-  return { network, setNetwork, client: publicClient }
+  return { network, setNetwork, client: publicClient, archiveClient }
 }
 
 export const PublicClientProvider = ({ children }: PropsWithChildren) => {
-  const { client, network, setNetwork } = usePublicClientHook()
-  return <PublicClientContext.Provider value={{ client, network, setNetwork }}>
+  const { client, network, setNetwork, archiveClient } = usePublicClientHook()
+  return <PublicClientContext.Provider value={{ client, network, setNetwork, archiveClient }}>
     {children}
   </PublicClientContext.Provider>
 }
