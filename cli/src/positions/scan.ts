@@ -6,19 +6,27 @@ import { useContext, useEffect, useCallback } from 'react'
 import { NotificationContext } from '../notification.js'
 import { archivePoolingBlockRangeSize, archivePoolingInterval } from '../config.js'
 import { type Address, parseAbiItem } from 'viem'
-import { type Position } from '../common.js'
-import { stringify } from '../util.js'
+import { extractLR64, type Position } from '../common.js'
+import { ScalingFactor, stringify } from '../util.js'
 
 const OptionMinted = parseAbiItem('event OptionMinted(address indexed recipient, uint128 positionSize, uint256 indexed tokenId, int24 tickAtMint, uint128 poolUtilizations)')
 
 export interface OptionMintEntry {
   tokenId: bigint
-  balance: bigint
+  positionSize: bigint
   tick: number
-  utilization: number
+  utilization0: number
+  utilization1: number
   recipient: Address
+  blockNumber: bigint
+}
+
+export interface ScanUpdate {
+  entries: OptionMintEntry[]
   fromBlock: bigint
   toBlock: bigint
+  numBlocksScanned: bigint
+  totalBlocks: bigint
 }
 
 interface UseScanPositionsOptions {
@@ -31,7 +39,7 @@ export const useScanPositions = (options?: UseScanPositionsOptions) => {
   const { archiveClient, network } = usePublicClient()
   const { addMessage } = useContext(NotificationContext)
   const { wallet } = useWallet()
-  const scan = useCallback(async (panopticPoolAddress: Address, duration: number, onChunkScanned: (entries: OptionMintEntry[] | undefined, error?: Error) => any) => {
+  const scan = useCallback(async (panopticPoolAddress: Address, duration: number, onChunkScanned: (update: ScanUpdate | undefined, error?: Error) => any) => {
     if (!wallet.address || !archiveClient) {
       // addMessage(`No wallet address or archiveClient ${wallet.address} | ${archiveClient}`)
       return
@@ -55,8 +63,22 @@ export const useScanPositions = (options?: UseScanPositionsOptions) => {
           fromBlock,
           toBlock
         })
-        addMessage(`- scanned chunk ${fromBlock} to ${toBlock}, logs: ${stringify(logs)}`)
-        onChunkScanned([])
+        const entries = logs.map(log => {
+          const { recipient, tokenId, positionSize, tickAtMint, poolUtilizations } = log.args
+          const { blockNumber } = log
+          if (!recipient || !tokenId || !positionSize || !tickAtMint || !poolUtilizations) {
+            addMessage(`- Skipping entry (missing some fields): ${stringify(logs)}`)
+            return undefined
+          }
+          const [u1n, u0n] = extractLR64(poolUtilizations)
+          const utilization0 = Number(u0n) / ScalingFactor
+          const utilization1 = Number(u1n) / ScalingFactor
+
+          const entry: OptionMintEntry = { recipient, tokenId, positionSize, tick: tickAtMint, utilization0, utilization1, blockNumber }
+          return entry
+        }).filter(e => !!e)
+        addMessage(`- Scanned chunk ${fromBlock} to ${toBlock}, logs: ${stringify(logs)}`)
+        onChunkScanned({ entries, fromBlock, toBlock, totalBlocks: finalBlock - firstBlock, numBlocksScanned: toBlock - firstBlock })
         await new Promise((resolve) => setTimeout(resolve, poolingInterval))
       } catch (ex: any) {
         addMessage((ex as Error).toString(), { color: 'red' })

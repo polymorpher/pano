@@ -69,6 +69,12 @@ export interface PositionWithData extends PositionWithId {
   utilization1?: number
 }
 
+export function extractLR64 (n: bigint): [bigint, bigint] {
+  const left = (n >> 64n) & 0xffffffffffffffffn
+  const right = n & 0xffffffffffffffffn
+  return [left, right]
+}
+
 export function getPoolId (pool: Address): bigint {
   return (BigInt(pool) >> 96n) & 0xffffffffffffffffn
 }
