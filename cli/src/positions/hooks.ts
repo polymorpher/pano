@@ -34,7 +34,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
 
   const addPosition = useCallback(async (position: Position): Promise<boolean | undefined> => {
     if (!wallet.address || !uniswapPoolAddress) {
-      return
+      return undefined
     }
     const tokenId = calculateTokenId(position)
     const updated = await storePosition(wallet.address, position)

@@ -15,9 +15,9 @@ import { usePublicClient } from '../client.js'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
 import { stringify } from '../util.js'
-import { usePositions } from './hooks.js'
 import parseDuration from 'parse-duration'
 import humanizeDuration from 'humanize-duration'
+import { storePosition } from '../db.js'
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
@@ -30,11 +30,9 @@ export const PortfolioControl = () => {
   const { pairs } = usePools()
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
-  const { addPosition, positions } = usePositions()
   const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const [filteredPairs, setFilteredPairs] = useState<Array<[ValidatedPair, bigint]>>([])
   const poolIdMapping: Record<string, Address> = Object.fromEntries(filteredPairs.map(([p]) => [getUniswapPoolId(p.uniswapPoolAddress).toString(16), p.uniswapPoolAddress]))
-  const [scanDuration, setScanDuration] = useState<number>(0)
   const [stage, setStage] = useState<PortfolioStage>(PortfolioStage.SelectAction)
   const [scanInterrupt, setScanInterrupt] = useState<boolean>(false)
 
@@ -55,8 +53,8 @@ export const PortfolioControl = () => {
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [filteredPairs, addMessage, wallet.address, scan, client, pairs])
 
-  const doScan = useCallback(async () => {
-    if (!client || !archiveClient) {
+  const doScan = useCallback(async (duration: number) => {
+    if (!client || !archiveClient || !wallet.address) {
       return
     }
     addMessage(`Found ${filteredPairs.length} pools with open positions`)
@@ -65,16 +63,18 @@ export const PortfolioControl = () => {
       const up = getContract({ address: pair.uniswapPoolAddress, abi: UniswapPoolAbi, client })
       const tickSpacing = await up.read.tickSpacing() as TickSpacing
       let subtotal = 0
-      await scan(pair.panopticPoolAddress, scanDuration, async (update, error): Promise<boolean> => {
+      // addMessage(`scanDuration=${duration}`)
+      await scan(pair.panopticPoolAddress, duration, async (update, error): Promise<boolean> => {
         if (error ?? !update) {
           addMessage(`Error encounterd during scan: ${error}`, { color: 'red' })
           return true
         }
+        addMessage(stringify(update))
         if (update.numBlocksScanned === 0n) {
           // first update has 0 entry
           const fromTime = Number((await archiveClient.getBlock({ blockNumber: update.firstBlock })).timestamp) * 1000
           const toTime = Number((await archiveClient.getBlock({ blockNumber: update.finalBlock })).timestamp) * 1000
-          addMessage(`Scanning from block ${update.firstBlock} to ${update.finalBlock} (from ${new Date(fromTime).toLocaleString()}) to ${new Date(toTime).toLocaleString()}`)
+          addMessage(`Scanning from block ${update.firstBlock} to ${update.finalBlock} | from ${new Date(fromTime).toLocaleString()} to ${new Date(toTime).toLocaleString()}`, { color: 'green' })
           return true
         }
         const percDone = (Number(update.totalBlocks) / Number(update.totalBlocks) * 100).toFixed(2)
@@ -82,7 +82,7 @@ export const PortfolioControl = () => {
         for (const entry of update.entries) {
           const position = tokenIdToPosition(entry.tokenId, tickSpacing, poolIdMapping)
           position.ts = Number(entry.blockTimestamp) * 1000
-          const added = await addPosition(position)
+          const added = await storePosition(wallet.address!, position)
           if (added) {
             addMessage(`Synced new position: ${stringify(position)}`)
           } else if (added === undefined) {
@@ -96,11 +96,11 @@ export const PortfolioControl = () => {
         }
         return !scanInterrupt
       })
-      addMessage(`Pool ${pair.token0}/${pair.token1} (${pair.panopticPoolAddress}) scan completed. ${Number(subtotal)} blocks scanned`)
+      addMessage(`Pool ${pair.token0}/${pair.token1} (${pair.panopticPoolAddress}) scan completed. ${Number(subtotal)} blocks scanned`, { color: 'green' })
       setStage(PortfolioStage.SelectAction)
     }
     setScanInterrupt(false)
-  }, [archiveClient, scanInterrupt, addPosition, poolIdMapping, scanDuration, filteredPairs, addMessage, scan, client])
+  }, [archiveClient, scanInterrupt, wallet.address, poolIdMapping, filteredPairs, addMessage, scan, client])
 
   const onAction = useCallback(async (choice: number) => {
     if (choice === 1) {
@@ -112,8 +112,7 @@ export const PortfolioControl = () => {
     const n = Number(input)
     if (n) {
       addMessage(`Starting scan over the past ${n} blocks...`)
-      setScanDuration(-Math.abs(n))
-      await doScan()
+      await doScan(-Math.abs(n))
       return
     }
     const d = parseDuration(input)
@@ -121,9 +120,8 @@ export const PortfolioControl = () => {
       addMessage('Invalid duration input', { color: 'red' })
       return
     }
-    setScanDuration(Math.abs(d))
     addMessage(`Starting scan over the past ${humanizeDuration(d)}`)
-    await doScan()
+    await doScan(Math.abs(d))
   }, [addMessage, doScan])
 
   const onScanInterrupted = useCallback(async () => {
