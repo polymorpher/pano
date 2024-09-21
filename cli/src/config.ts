@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 import * as process from 'process'
 import { DefaultAssets } from './constants.js'
-import { merge } from 'lodash-es'
+import { merge } from 'remeda'
 import { type Address, type Hex } from 'viem'
 import { type Token01 } from './common.js'
 dotenv.config()

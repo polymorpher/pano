@@ -1,36 +1,52 @@
-import { type Address, type Hex } from 'viem'
+import { type Address, getContract, type Hex } from 'viem'
 import { useCallback, useState, useEffect, useContext } from 'react'
 import { calculateTokenId, type Position, type PositionWithData } from '../common.js'
 import { readPositions, storePosition } from '../db.js'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
-import { usePoolContract } from '../pools/hooks.js'
 import { ScalingFactor } from '../util.js'
+import { groupBy } from 'remeda'
+import { PanopticPoolAbi } from '../constants.js'
+import { useFactories } from '../pools/uniswap.js'
+import { usePublicClient } from '../client.js'
 
 export const usePositions = (uniswapPoolAddress?: Address) => {
   const { wallet } = useWallet()
+  const { client } = usePublicClient()
   const { addMessage } = useContext(NotificationContext)
   const [positions, setPositions] = useState<PositionWithData[]>([])
   const positionIds = positions.map(p => BigInt(p.id))
-  const { panopticPool } = usePoolContract(uniswapPoolAddress)
+  const { panopticFactory } = useFactories()
   const reloadPositions = useCallback(async () => {
-    if (!wallet.address || !uniswapPoolAddress || !panopticPool) {
+    if (!wallet.address || !panopticFactory || !client) {
       return
     }
     const ps = await readPositions(wallet.address, uniswapPoolAddress)
-    const positionBalancesP: Array<Promise<PositionWithData | undefined>> = ps.map(async p => {
-      const [balance, u0, u1] = await panopticPool.read.optionPositionBalance([wallet.address!, BigInt(p.id)])
-      if (!(balance > 0)) {
-        addMessage(`[WARNING] Local position data is inconsistent with contract state. Position ${p.id} for pool ${uniswapPoolAddress} has zero balance. Position is now removed locally`, { color: 'yello' })
-        return
-      }
-      return { ...p, balance, utilization0: Number(u0) / ScalingFactor, utilization1: Number(u1) / ScalingFactor }
+    const positionsByPool = groupBy(ps, p => p.uniswapPoolAddress)
+    const positionsPA = Object.entries(positionsByPool).map(async ([upa, positions]) => {
+      const ppAddress = await panopticFactory.read.getPanopticPool([upa as Address])
+      const panopticPool = getContract({ address: ppAddress, abi: PanopticPoolAbi, client })
+      return await Promise.all(positions.map(async p => {
+        const [balance, u0, u1] = await panopticPool.read.optionPositionBalance([wallet.address!, BigInt(p.id)])
+        if (!(balance > 0)) {
+          addMessage(`[WARNING] Local position data is inconsistent with contract state. Position ${p.id} for pool ${uniswapPoolAddress} has zero balance. Position is now removed locally`, { color: 'yello' })
+          return
+        }
+        return { ...p, balance, utilization0: Number(u0) / ScalingFactor, utilization1: Number(u1) / ScalingFactor } satisfies PositionWithData
+      }))
     })
-    const positions = (await Promise.all(positionBalancesP)).filter(e => e !== undefined)
-    const sortedPositions = positions.toSorted((a, b) => a.ts ?? 0 - (b.ts ?? 0))
+    const sortedPositions = (await Promise.all(positionsPA)).flat()
+      .filter(e => !!e)
+      .toSorted((a, b) => {
+        if (a.uniswapPoolAddress === b.uniswapPoolAddress) {
+          return a.ts ?? 0 - (b.ts ?? 0)
+        } else {
+          return BigInt(a.uniswapPoolAddress) - BigInt(b.uniswapPoolAddress) > 0n ? 1 : -1
+        }
+      })
     setPositions(sortedPositions)
     return sortedPositions
-  }, [addMessage, panopticPool, wallet.address, uniswapPoolAddress])
+  }, [client, panopticFactory, addMessage, wallet.address, uniswapPoolAddress])
 
   const addPosition = useCallback(async (position: Position): Promise<boolean | undefined> => {
     if (!wallet.address || !uniswapPoolAddress) {
