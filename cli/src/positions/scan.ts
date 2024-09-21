@@ -19,12 +19,15 @@ export interface OptionMintEntry {
   utilization1: number
   recipient: Address
   blockNumber: bigint
+  blockTimestamp: bigint
 }
 
 export interface ScanUpdate {
   entries: OptionMintEntry[]
   fromBlock: bigint
+  firstBlock: bigint
   toBlock: bigint
+  finalBlock: bigint
   numBlocksScanned: bigint
   totalBlocks: bigint
 }
@@ -39,19 +42,19 @@ export const useScanPositions = (options?: UseScanPositionsOptions) => {
   const { archiveClient, network } = usePublicClient()
   const { addMessage } = useContext(NotificationContext)
   const { wallet } = useWallet()
-  const scan = useCallback(async (panopticPoolAddress: Address, duration: number, onChunkScanned: (update: ScanUpdate | undefined, error?: Error) => any) => {
+  const scan = useCallback(async (panopticPoolAddress: Address, duration: number, onChunkScanned: (update: ScanUpdate | undefined, error?: Error) => Promise<boolean>) => {
     if (!wallet.address || !archiveClient) {
       // addMessage(`No wallet address or archiveClient ${wallet.address} | ${archiveClient}`)
       return
     }
     const finalBlock = await archiveClient.getBlockNumber()
     const blockTime = options?.blockTime ?? network.blockTime
-    const firstBlock = finalBlock - BigInt(blockTime && blockTime > 0 ? Math.ceil(duration / blockTime) : duration)
-    const fromTime = Number((await archiveClient.getBlock({ blockNumber: firstBlock })).timestamp) * 1000
-    const toTime = Number((await archiveClient.getBlock({ blockNumber: finalBlock })).timestamp) * 1000
-    addMessage(`Scanning from block ${firstBlock} to ${finalBlock} (from ${new Date(fromTime).toLocaleString()}) to ${new Date(toTime).toLocaleString()}`)
+    const firstBlock = duration < 0 ? (finalBlock + BigInt(duration)) : (finalBlock - BigInt(blockTime && blockTime > 0 ? Math.ceil(duration / blockTime) : duration))
     const poolingInterval = options?.poolingInterval ?? archivePoolingInterval
     const blockRangeSize = options?.blockRangeSize ?? archivePoolingBlockRangeSize
+    if (!await onChunkScanned({ entries: [], fromBlock: 0n, toBlock: 0n, firstBlock, finalBlock, numBlocksScanned: 0n, totalBlocks: finalBlock - firstBlock })) {
+      return
+    }
     for (let b = firstBlock; b < finalBlock; b += blockRangeSize) {
       const toBlock = finalBlock < b + blockRangeSize ? finalBlock : b + blockRangeSize
       const fromBlock = b
@@ -63,29 +66,40 @@ export const useScanPositions = (options?: UseScanPositionsOptions) => {
           fromBlock,
           toBlock
         })
+        const timestampsEntries: Array<[string, bigint]> = await Promise.all(logs.map(async log => {
+          const b = await archiveClient.getBlock({ blockNumber: log.blockNumber })
+          return [BigInt(log.blockNumber).toString(16), b.timestamp]
+        }))
+        const timestampMapping = Object.fromEntries(timestampsEntries)
         const entries = logs.map(log => {
           const { recipient, tokenId, positionSize, tickAtMint, poolUtilizations } = log.args
           const { blockNumber } = log
-          if (!recipient || !tokenId || !positionSize || !tickAtMint || !poolUtilizations) {
-            addMessage(`- Skipping entry (missing some fields): ${stringify(logs)}`)
+          const blockTimestamp = timestampMapping[blockNumber.toString(16)]
+
+          if (!recipient || !tokenId || !positionSize || !tickAtMint || !poolUtilizations || !blockTimestamp) {
+            // addMessage(`- Skipping entry (missing some fields): ${stringify(logs)}`)
             return undefined
           }
           const [u1n, u0n] = extractLR64(poolUtilizations)
           const utilization0 = Number(u0n) / ScalingFactor
           const utilization1 = Number(u1n) / ScalingFactor
 
-          const entry: OptionMintEntry = { recipient, tokenId, positionSize, tick: tickAtMint, utilization0, utilization1, blockNumber }
+          const entry: OptionMintEntry = { recipient, tokenId, positionSize, tick: tickAtMint, utilization0, utilization1, blockNumber, blockTimestamp }
           return entry
         }).filter(e => !!e)
-        addMessage(`- Scanned chunk ${fromBlock} to ${toBlock}, logs: ${stringify(logs)}`)
-        onChunkScanned({ entries, fromBlock, toBlock, totalBlocks: finalBlock - firstBlock, numBlocksScanned: toBlock - firstBlock })
+        // addMessage(`- Scanned chunk ${fromBlock} to ${toBlock}, logs: ${stringify(logs)}`)
+        const shouldContinue = await onChunkScanned({ entries, firstBlock, finalBlock, fromBlock, toBlock, totalBlocks: finalBlock - firstBlock, numBlocksScanned: toBlock - firstBlock })
+        if (!shouldContinue) {
+          return
+        }
         await new Promise((resolve) => setTimeout(resolve, poolingInterval))
       } catch (ex: any) {
-        addMessage((ex as Error).toString(), { color: 'red' })
-        onChunkScanned(undefined, ex as Error)
+        const shouldContinue = await onChunkScanned(undefined, ex as Error)
+        if (!shouldContinue) {
+          return
+        }
       }
     }
-    addMessage('Scan completed')
-  }, [options, network, wallet.address, archiveClient, addMessage])
+  }, [options, network, wallet.address, archiveClient])
   return { scan }
 }

@@ -14,7 +14,7 @@ export const SectionTitle = ({ children }: PropsWithChildren) => {
 
 export type Token01 = 'token0' | 'token1'
 export type PositionType = 'long' | 'short'
-
+export type RiskPartnerIndexType = 0 | 1 | 2 | 3
 export interface ValidatedPair extends Pair {
   token0Address: Address
   token1Address: Address
@@ -29,7 +29,7 @@ export interface Leg {
   optionRatio: number
   position: PositionType
   tokenType: Token01
-  riskPartnerIndex: 0 | 1 | 2 | 3
+  riskPartnerIndex: RiskPartnerIndexType
   // always follows pool's tick (token1/token0 price) - no conversion necessary regardless of the value of `asset`
   tickLower: number
   tickUpper: number
@@ -50,6 +50,49 @@ export const calculateLegId = (leg: Leg, tickSpacing: TickSpacing) => {
   id |= BigInt((leg.tickUpper + leg.tickLower) / 2) << 12n
   id |= BigInt((leg.tickUpper - leg.tickLower) / tickSpacing) << 36n
   return id
+}
+
+export function tokenIdToLeg (tokenId: bigint, legIndex: number, tickSpacing: TickSpacing): Leg | undefined {
+  const masked = (tokenId >> 64n >> (48n * BigInt(legIndex))) & 0xffffffffffffn
+  if (masked === 0n) {
+    return undefined
+  }
+  const asset = (masked & 0x1n) === 0n ? 'token0' : 'token1'
+  const optionRatio = Number((masked >> 1n) & 0x8fn)
+  const position = ((masked >> 8n) & 0x1n) === 0n ? 'short' : 'long'
+  const tokenType = ((masked >> 9n) & 0x1n) === 0n ? 'token0' : 'token1'
+  const riskPartnerIndex = Number((masked >> 10n) & 0x3n) as RiskPartnerIndexType
+  const strike = Number((masked >> 12n) & 0xffffffn)
+  const width = Number((masked >> 36n) & 0xfffn)
+  const tickLower = strike - width * tickSpacing
+  const tickUpper = strike + width * tickSpacing
+  return {
+    asset,
+    optionRatio,
+    position,
+    tokenType,
+    riskPartnerIndex,
+    tickLower,
+    tickUpper
+  }
+}
+
+export const tokenIdToPosition = (tokenId: bigint, tickSpacing: TickSpacing, poolMapping: Record<string, Address>): Position => {
+  const poolId = extractPoolId(tokenId)
+  const uniswapPoolAddress = poolMapping[poolId.toString(16)]
+  const leg1 = tokenIdToLeg(tokenId, 0, tickSpacing)
+  const leg2 = tokenIdToLeg(tokenId, 1, tickSpacing)
+  const leg3 = tokenIdToLeg(tokenId, 2, tickSpacing)
+  const leg4 = tokenIdToLeg(tokenId, 3, tickSpacing)
+  return {
+    uniswapPoolAddress,
+    tickSpacing,
+    legs: [leg1, leg2, leg3, leg4]
+  }
+}
+
+export const getUniswapPoolId = (poolAddress: Address): bigint => {
+  return (BigInt(poolAddress) >> 96n) & 0xffffffffffffffffn
 }
 
 export interface Position {
@@ -225,6 +268,36 @@ export const ConfirmationSelector = ({ intro, prompt, onConfirm, inactive }: Con
     {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
     <Box marginY={1}>
       <Text>{prompt ?? 'Continue? (y) yes / (n) no / (a) abort'}: </Text>
+      <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
+    </Box>
+  </Box>
+}
+
+interface InProgressSelectorProps {
+  onExit?: () => any
+  prompt?: string
+  intro: string | React.JSX.Element
+  inactive?: boolean
+}
+
+export const InProgressSelector = ({ intro, prompt, onExit, inactive }: InProgressSelectorProps) => {
+  const [textInput, setTextInput] = useState<string>('')
+  const { disabled } = useContext(UserInputContext)
+  const { addMessage } = useContext(NotificationContext)
+  const onSubmit = useCallback(async (input: string) => {
+    input = input.toLowerCase()
+    setTextInput('')
+    if (input === 'x') {
+      onExit?.()
+      return
+    }
+    addMessage(`Unrecognized input [${input}]`, { color: 'red' })
+  }, [onExit, addMessage])
+
+  return <Box marginTop={1} flexDirection={'column'}>
+    {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
+    <Box marginY={1}>
+      <Text>{prompt ?? 'Enter x to stop'}: </Text>
       <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>

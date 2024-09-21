@@ -1,7 +1,7 @@
 import PouchDB from 'pouchdb'
 import { defaultDbPath } from './config.js'
 import { cmd } from './cmd.js'
-import {type Address, Hex} from 'viem'
+import { type Address, type Hex } from 'viem'
 import { calculateTokenId, extractPoolId, getPoolId, type Position, type PositionWithId } from './common.js'
 const dbPath = (cmd.db ?? defaultDbPath) as string
 
@@ -72,7 +72,7 @@ export async function storePosition (address: Address, position: Position): Prom
     uniswapPoolAddress,
     tickSpacing,
     legs,
-    ts: Date.now()
+    ts: position.ts ?? Date.now()
   }
   await db.put<Position>(doc)
   return true

@@ -32,7 +32,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
     return sortedPositions
   }, [addMessage, panopticPool, wallet.address, uniswapPoolAddress])
 
-  const addPosition = useCallback(async (position: Position) => {
+  const addPosition = useCallback(async (position: Position): Promise<boolean | undefined> => {
     if (!wallet.address || !uniswapPoolAddress) {
       return
     }
@@ -44,6 +44,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
         [...ps, { ...position, id }].toSorted((a, b) => a.ts ?? 0 - (b.ts ?? 0))
       )
     }
+    return updated
   }, [wallet.address, uniswapPoolAddress])
 
   useEffect(() => {
