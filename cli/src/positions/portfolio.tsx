@@ -18,6 +18,7 @@ import { stringify } from '../util.js'
 import parseDuration from 'parse-duration'
 import humanizeDuration from 'humanize-duration'
 import { storePosition } from '../db.js'
+import { usePositions } from './hooks.js'
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
@@ -28,6 +29,7 @@ export const PortfolioControl = () => {
   const { addMessage } = useContext(NotificationContext)
   const { wallet } = useWallet()
   const { pairs } = usePools()
+  const { positions } = usePositions()
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
   const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
