@@ -58,10 +58,20 @@ export async function getPositionIdList (address: Address, uniswapPool?: Address
   return positions.map(p => p.id)
 }
 
-export async function storePosition (address: Address, position: Position): Promise<boolean> {
+interface IdData {
+  tokenId: bigint
+  poolId: bigint
+  id: string
+}
+
+function buildId (address: Address, position: Position): IdData {
   const tokenId = calculateTokenId(position)
   const poolId = getPoolId(position.uniswapPoolAddress)
-  const _id = makeKey(address, POSITIONS, poolId.toString(16), tokenId.toString(16))
+  return { id: makeKey(address, POSITIONS, poolId.toString(16), tokenId.toString(16)), tokenId, poolId }
+}
+
+export async function storePosition (address: Address, position: Position): Promise<boolean> {
+  const { tokenId, id: _id } = buildId(address, position)
   const hasPosition = await positionExists(address, tokenId)
   if (hasPosition) {
     return false
@@ -76,4 +86,58 @@ export async function storePosition (address: Address, position: Position): Prom
   }
   await db.put<Position>(doc)
   return true
+}
+
+export async function removePosition (address: Address, position: Position): Promise<boolean> {
+  const { id: _id } = buildId(address, position)
+  try {
+    const p = await db.get<Position>(_id)
+    const response = await db.remove(p)
+    return response.ok
+  } catch (ex: any) {
+    return false
+  }
+}
+
+interface RemovalResult {
+  id: string
+  removed: boolean
+  error?: string
+}
+
+interface BulkRemovalResult {
+  results: Record<string, RemovalResult>
+  error?: Error
+}
+
+// TODO: test, then use this instead of single removals in position management
+export async function bulkRemovePositions (address: Address, positions: Position[]): Promise<BulkRemovalResult> {
+  const results: Record<string, RemovalResult> = {}
+  try {
+    const ids = positions.map(p => buildId(address, p)).map(e => e.id)
+    const r1 = await db.allDocs<Position>({ keys: ids })
+
+    const docs = r1.rows.map(row => {
+      const re = row as { key: string, error?: string }
+      if (re.error) {
+        results[re.key] = { id: re.key, removed: false, error: re.error }
+        return undefined
+      }
+      const rr = row as { id: string, value: { rev: string } }
+      return { _id: rr.id, _rev: rr.value.rev, _deleted: true }
+    }).filter(e => !!e) as Array<{ _id: string, _rev: string, _deleted: true }>
+    const response = await db.bulkDocs(docs)
+    response.forEach((r, index) => {
+      const re = r as { message?: string, error?: boolean }
+      if (re.error) {
+        results[docs[index]._id] = { id: docs[index]._id, removed: false, error: re.message }
+        return
+      }
+      const rr = r as { ok: boolean, id: string }
+      results[rr.id] = { id: rr.id, removed: true }
+    })
+    return { results }
+  } catch (err) {
+    return { results, error: err as Error }
+  }
 }

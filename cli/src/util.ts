@@ -95,6 +95,6 @@ export const tryParseDecimalInput = (input: string, decimals: number): bigint | 
   return decimalAmountXPrecision * (10n ** BigInt(decimals)) / (10n ** BigInt(ClientPrecision))
 }
 
-export function stringify (o: any): string {
-  return JSON.stringify(o, (_, v) => typeof v === 'bigint' ? v.toString() : v)
+export function stringify (o: any, expand?: boolean): string {
+  return JSON.stringify(o, (_, v) => typeof v === 'bigint' ? (v).toString(16) : v, expand ? 2 : undefined)
 }

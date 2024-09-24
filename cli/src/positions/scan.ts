@@ -2,12 +2,11 @@
 
 import { usePublicClient } from 'src/client.js'
 import { useWallet } from '../wallet.js'
-import { useContext, useEffect, useCallback } from 'react'
-import { NotificationContext } from '../notification.js'
+import { useCallback } from 'react'
 import { archivePoolingBlockRangeSize, archivePoolingInterval } from '../config.js'
 import { type Address, parseAbiItem } from 'viem'
-import { extractLR64, type Position } from '../common.js'
-import { ScalingFactor, stringify } from '../util.js'
+import { extractLR64 } from '../common.js'
+import { ScalingFactor } from '../util.js'
 
 const OptionMinted = parseAbiItem('event OptionMinted(address indexed recipient, uint128 positionSize, uint256 indexed tokenId, int24 tickAtMint, uint128 poolUtilizations)')
 
@@ -40,7 +39,6 @@ interface UseScanPositionsOptions {
 
 export const useScanPositions = (options?: UseScanPositionsOptions) => {
   const { archiveClient, network } = usePublicClient()
-  const { addMessage } = useContext(NotificationContext)
   const { wallet } = useWallet()
   const scan = useCallback(async (panopticPoolAddress: Address, duration: number, onChunkScanned: (update: ScanUpdate | undefined, error?: Error) => Promise<boolean>) => {
     if (!wallet.address || !archiveClient) {

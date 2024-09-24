@@ -1,10 +1,10 @@
 import { type Address, getContract, type Hex } from 'viem'
 import { useCallback, useState, useEffect, useContext } from 'react'
 import { calculateTokenId, type Position, type PositionWithData } from '../common.js'
-import { readPositions, storePosition } from '../db.js'
+import { readPositions, storePosition, removePosition } from '../db.js'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
-import { ScalingFactor } from '../util.js'
+import { ScalingFactor, stringify } from '../util.js'
 import { groupBy } from 'remeda'
 import { PanopticPoolAbi } from '../constants.js'
 import { useFactories } from '../pools/uniswap.js'
@@ -22,6 +22,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       return
     }
     const ps = await readPositions(wallet.address, uniswapPoolAddress)
+    // addMessage(`Found ${ps.length} local positions. Sorting...`)
     const positionsByPool = groupBy(ps, p => p.uniswapPoolAddress)
     const positionsPA = Object.entries(positionsByPool).map(async ([upa, positions]) => {
       const ppAddress = await panopticFactory.read.getPanopticPool([upa as Address])
@@ -29,7 +30,11 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       return await Promise.all(positions.map(async p => {
         const [balance, u0, u1] = await panopticPool.read.optionPositionBalance([wallet.address!, BigInt(p.id)])
         if (!(balance > 0)) {
-          addMessage(`[WARNING] Local position data is inconsistent with contract state. Position ${p.id} for pool ${uniswapPoolAddress} has zero balance. Position is now removed locally`, { color: 'yello' })
+          addMessage(`[WARNING] Local position data is inconsistent with contract state. Position ${p.id} for pool ${p.uniswapPoolAddress} has zero balance. Position is now removed locally`, { color: 'yellow' })
+          const removed = await removePosition(wallet.address!, p)
+          if (!removed) {
+            addMessage(`[WARNING] Unable to remove position ${p.id} for pool ${p.uniswapPoolAddress}`, { color: 'yellow' })
+          }
           return
         }
         return { ...p, balance, utilization0: Number(u0) / ScalingFactor, utilization1: Number(u1) / ScalingFactor } satisfies PositionWithData
@@ -68,7 +73,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       if (!ps) {
         return
       }
-      addMessage(`Loaded current positions: ${JSON.stringify(ps)}`)
+      addMessage(`Loaded current positions: ${stringify(ps)}`)
     }).catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, reloadPositions])
 

@@ -134,7 +134,7 @@ export const PortfolioControl = () => {
   return <Box flexDirection={'column'}>
     <SectionTitle>Portfolio and Positions</SectionTitle>
     {filteredPairs.map(([p, n]) => {
-      return <Text key={p.panopticPoolAddress}>Pool {p.token0}/${p.token1}: {n.toString()} open positions</Text>
+      return <Text key={p.panopticPoolAddress}>Pool {p.token0}/{p.token1}: {n.toString()} open positions</Text>
     })}
     {stage === PortfolioStage.SelectAction &&
     <MultiChoiceSelector options={[
@@ -142,7 +142,7 @@ export const PortfolioControl = () => {
     ]} onSelected={onAction}
        onExit={() => { setUserCommandDisabled(false) }} prompt={'Choose an action'}
        intro={<Box marginY={1} flexDirection={'column'}>
-         <Text>Your positions might need to be re-synced with the data on-chain if you experience errors in buying or selling options.</Text>
+         <Text>If you experience errors in buying or selling options, your positions might need to be re-synced with the data on-chain .</Text>
        </Box>}
     />}
     {stage === PortfolioStage.SetScanDuration &&
