@@ -9,7 +9,7 @@ import { UserInputContext } from './commands.js'
 import { TickBase } from './util.js'
 
 export const SectionTitle = ({ children }: PropsWithChildren) => {
-  return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1}><Text color={'yellow'}>{children}</Text></Box>
+  return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1} marginY={1}><Text color={'yellow'}>{children}</Text></Box>
 }
 
 export type Token01 = 'token0' | 'token1'

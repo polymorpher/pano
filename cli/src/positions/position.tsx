@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { type Leg, type PositionWithData } from '../common.js'
 import { Box, Text } from 'ink'
 import { type PanopticPoolInfo, type UniswapPoolBasicInfo, usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks.js'
-import { tickToPrice, toFixed } from '../util.js'
+import { findBaseAsset, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 
 interface PositionProps {
@@ -17,16 +17,23 @@ interface LegProps {
 }
 
 const SingleLeg = ({ leg, poolInfo, showRatio }: LegProps) => {
-  const decimals = leg.asset === 'token0' ? poolInfo.token1.decimals : poolInfo.token0.decimals
+  const decimals = poolInfo.token1.decimals - poolInfo.token0.decimals
   const quoteSymbol = leg.asset === 'token0' ? poolInfo.token1.symbol : poolInfo.token0.symbol
   const radius = tickToPrice((leg.tickUpper - leg.tickLower) / 2, 0) - 1.0
+  const price = tickToPrice((leg.tickUpper + leg.tickLower) / 2, decimals)
+  const baseAsset = findBaseAsset(poolInfo.token0.symbol, poolInfo.token1.symbol) ?? 'token0'
+  const strike = baseAsset === 'token0' ? price : 1 / price
+  const lowerPrice = tickToPrice(leg.tickLower, decimals)
+  const upperPrice = tickToPrice(leg.tickUpper, decimals)
+  const lower = baseAsset === 'token0' ? lowerPrice : 1 / upperPrice
+  const upper = baseAsset === 'token0' ? upperPrice : 1 / lowerPrice
   return <Box>
     {showRatio ? <Text>[{leg.optionRatio} options per contract] </Text> : <></>}
     <Text>{leg.position === 'long' ? 'Long' : 'Short' } </Text>
     <Text>{leg.tokenType === 'token0' ? 'PUT' : 'CALL' } </Text>
-    <Text>@ {toFixed(tickToPrice((leg.tickUpper + leg.tickLower) / 2, decimals), 4)} {quoteSymbol} </Text>
+    <Text>@ {toFixed(strike)} {quoteSymbol} </Text>
     <Text>±{(radius * 100).toFixed(2)}% </Text>
-    <Text>| accruing premium in range [{toFixed(tickToPrice(leg.tickLower, decimals), 4)}, {toFixed(tickToPrice(leg.tickUpper, decimals), 2)}]</Text>
+    <Text>| accruing premium in range [{toFixed(lower)}, {toFixed(upper)}]</Text>
   </Box>
 }
 

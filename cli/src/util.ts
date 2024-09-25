@@ -1,4 +1,4 @@
-import { knownAssets, type Network } from './config.js'
+import { knownAssets, type Network, pairs } from './config.js'
 import {
   type Address, type Hex,
   isAddress, parseUnits,
@@ -6,6 +6,7 @@ import {
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import type { PrivateKeyAccount } from 'viem/accounts'
+import { type Token01 } from './common.js'
 
 export const getTokenAddress = (token: string, network: Network): Address | undefined => {
   return knownAssets[network?.id ?? '']?.[token]
@@ -97,4 +98,12 @@ export const tryParseDecimalInput = (input: string, decimals: number): bigint | 
 
 export function stringify (o: any, expand?: boolean): string {
   return JSON.stringify(o, (_, v) => typeof v === 'bigint' ? (v).toString(16) : v, expand ? 2 : undefined)
+}
+
+export function findBaseAsset (token0Symbol: string, token1Symbol: string): Token01 | undefined {
+  for (const pair of pairs) {
+    if (pair.token0 === token0Symbol && pair.token1 === token1Symbol) {
+      return pair.baseAsset
+    }
+  }
 }

@@ -74,7 +74,7 @@ export const PortfolioControl = () => {
           addMessage(`Error encounterd during scan: ${error}`, { color: 'red' })
           return true
         }
-        addMessage(stringify(update))
+        // addMessage(stringify(update))
         if (update.numBlocksScanned === 0n) {
           // first update has 0 entry
           const fromTime = Number((await archiveClient.getBlock({ blockNumber: update.firstBlock })).timestamp) * 1000
