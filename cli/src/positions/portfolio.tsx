@@ -19,6 +19,8 @@ import parseDuration from 'parse-duration'
 import humanizeDuration from 'humanize-duration'
 import { storePosition } from '../db.js'
 import { usePositions } from './hooks.js'
+import { groupBy } from 'remeda'
+import { PoolPositions } from './position.js'
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
@@ -30,6 +32,7 @@ export const PortfolioControl = () => {
   const { wallet } = useWallet()
   const { pairs } = usePools()
   const { positions } = usePositions()
+  const positionsByPool = groupBy(positions, p => p.uniswapPoolAddress)
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
   const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
@@ -135,6 +138,9 @@ export const PortfolioControl = () => {
     <SectionTitle>Portfolio and Positions</SectionTitle>
     {filteredPairs.map(([p, n]) => {
       return <Text key={p.panopticPoolAddress}>Pool {p.token0}/{p.token1}: {n.toString()} open positions</Text>
+    })}
+    {Object.entries(positionsByPool).map(([uniswapPoolAddress, poolPositions]) => {
+      return <PoolPositions key={uniswapPoolAddress} uniswapPoolAddress={uniswapPoolAddress as Address} poolPositions={poolPositions}/>
     })}
     {stage === PortfolioStage.SelectAction &&
     <MultiChoiceSelector options={[

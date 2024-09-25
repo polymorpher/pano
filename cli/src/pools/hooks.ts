@@ -7,7 +7,7 @@ import { useFactories } from 'src/pools/uniswap.js'
 import { NotificationContext } from 'src/notification.js'
 import { type TickSpacing, type ValidatedPair } from 'src/common.js'
 import { CollateralTrackerAbi, DECIMALS, PanopticPoolAbi, UniswapPoolAbi } from 'src/constants.js'
-import { type ERC20Metadata, useERC20, type IERC20 } from 'src/token.js'
+import { type ERC20Metadata, useERC20, type IERC20, type ERC20Info } from 'src/token.js'
 import { useWallet } from 'src/wallet.js'
 
 type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
@@ -120,7 +120,7 @@ const EmptyPriceTickInfo = {
 
 const EmptyTokenPair: [Address | undefined, Address | undefined] = [undefined, undefined]
 
-export interface PoolInfo {
+export interface PanopticPoolInfo {
   c0Info: CollateralFullInfo
   c1Info: CollateralFullInfo
   price: number
@@ -162,7 +162,58 @@ export const usePoolContract = (uniswapPoolAddress?: Address) => {
   return { panopticPool, uniswapPool }
 }
 
-export const usePoolStats = (pair?: ValidatedPair): PoolInfo => {
+export interface UniswapPoolBasicInfo {
+  token0: ERC20Info
+  token1: ERC20Info
+  tickSpacing: TickSpacing
+  sqrtPriceX96: bigint
+  tick: number
+  ready: boolean
+}
+export const useUniswapPoolBasicInfo = (uniswapPoolAddress?: Address): UniswapPoolBasicInfo => {
+  const { addMessage } = useContext(NotificationContext)
+  const { uniswapPool } = usePoolContract(uniswapPoolAddress)
+  const [token0Address, setToken0Address] = useState<Address>()
+  const [token1Address, setToken1Address] = useState<Address>()
+  const [tickSpacing, setTickSpacing] = useState<TickSpacing>(1)
+  const [tick, setTick] = useState<number>(0)
+  const [sqrtPriceX96, setSqrtPriceX96] = useState<bigint>(0n)
+  const token0 = useERC20(token0Address)
+  const token1 = useERC20(token1Address)
+  const [poolReady, setPoolReady] = useState<boolean>(false)
+  const [ready, setReady] = useState<boolean>(false)
+
+  useEffect(() => {
+    async function init () {
+      if (!uniswapPool) {
+        return
+      }
+      const t0Address = await uniswapPool.read.token0()
+      const t1Address = await uniswapPool.read.token1()
+      setToken0Address(t0Address)
+      setToken1Address(t1Address)
+      const tickSpacing = await uniswapPool.read.tickSpacing() as TickSpacing
+      const [sqrtPriceX96, tick] = await uniswapPool.read.slot0()
+      setSqrtPriceX96(sqrtPriceX96)
+      setTick(tick)
+      setTickSpacing(tickSpacing)
+      setPoolReady(true)
+    }
+    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [uniswapPool, addMessage])
+
+  useEffect(() => {
+    if (token0.ready && token1.ready && poolReady) {
+      setReady(true)
+    } else {
+      setReady(false)
+    }
+  }, [token0.ready, token1.ready])
+
+  return { token0, token1, tickSpacing, tick, sqrtPriceX96, ready }
+}
+
+export const usePoolStats = (pair?: ValidatedPair): PanopticPoolInfo => {
   const { addMessage } = useContext(NotificationContext)
   const { network, client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()

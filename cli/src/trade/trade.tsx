@@ -8,7 +8,7 @@ import {
 } from '../common.js'
 import { priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
 import { Box, Text } from 'ink'
-import { type PoolInfo } from '../pools/hooks.js'
+import { type PanopticPoolInfo } from '../pools/hooks.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 
@@ -23,7 +23,7 @@ export enum TradeStage {
 }
 
 interface LegMakerProps {
-  chosenPairInfo: PoolInfo
+  chosenPairInfo: PanopticPoolInfo
   onLegConfirm: (leg: Leg, positionSize: bigint) => any
   stage: TradeStage
   setStage: (stage: TradeStage) => any

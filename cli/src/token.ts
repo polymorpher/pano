@@ -27,13 +27,16 @@ export interface ERC20Metadata {
   decimals: number
 }
 
-export const useERC20 = (address?: Address): ERC20Metadata & { contract?: IERC20, metadataContract?: IERC20Metadata } => {
+export type ERC20Info = ERC20Metadata & { contract?: IERC20, metadataContract?: IERC20Metadata, ready: boolean }
+
+export const useERC20 = (address?: Address): ERC20Info => {
   const { client } = usePublicClient()
   const [name, setName] = useState<string>('')
   const [decimals, setDecimals] = useState<number>(0)
   const [symbol, setSymbol] = useState<string>('')
   const [contract, setContract] = useState<IERC20>()
   const [metadataContract, setMetadataContract] = useState<IERC20Metadata>()
+  const [ready, setReady] = useState<boolean>(false)
 
   useEffect(() => {
     async function init () {
@@ -50,10 +53,11 @@ export const useERC20 = (address?: Address): ERC20Metadata & { contract?: IERC20
       setName(name)
       setSymbol(symbol)
       setDecimals(decimals)
+      setReady(true)
     }
     init().catch(console.error)
   }, [address, client])
-  return { name, decimals, symbol, contract, metadataContract }
+  return { name, decimals, symbol, contract, metadataContract, ready }
 }
 
 export const useERC20Balance = (contract?: IERC20) => {
