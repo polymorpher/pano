@@ -1,7 +1,8 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React from 'react'
 import { type Leg, type PositionWithData } from '../common.js'
 import { Box, Text } from 'ink'
-import { type PanopticPoolInfo, type UniswapPoolBasicInfo, usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks.js'
+import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
+import { useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 import { findBaseAsset, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 

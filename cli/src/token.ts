@@ -1,12 +1,8 @@
 import { useCallback, useContext, useEffect, useState } from 'react'
 import {
-  type Account,
-  type Address, type Chain,
-  getContract,
+  type Address, getContract,
   type GetContractReturnType,
-  type PublicClient,
-  type Transport,
-  type WalletClient
+  type PublicClient
 } from 'viem'
 
 import {

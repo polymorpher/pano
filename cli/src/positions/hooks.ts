@@ -1,13 +1,13 @@
 import { type Address, getContract, type Hex } from 'viem'
 import { useCallback, useState, useEffect, useContext } from 'react'
-import { calculateTokenId, type Position, type PositionWithData } from '../common.js'
+import { calculateTokenId, type Position, type PositionWithData, type ValidatedPair } from '../common.js'
 import { readPositions, storePosition, removePosition } from '../db.js'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
-import { ScalingFactor, stringify } from '../util.js'
+import { ScalingFactor } from '../util.js'
 import { groupBy } from 'remeda'
 import { PanopticPoolAbi } from '../constants.js'
-import { useFactories } from '../pools/uniswap.js'
+import { useFactories } from '../pools/hooks/factory.js'
 import { usePublicClient } from '../client.js'
 
 export const usePositions = (uniswapPoolAddress?: Address) => {
@@ -78,4 +78,8 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
   }, [addMessage, reloadPositions])
 
   return { positions, reloadPositions, addPosition, positionIds }
+}
+
+export const usePortfolioValue = (pair?: ValidatedPair) => {
+
 }

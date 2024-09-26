@@ -7,7 +7,7 @@ import {
 } from 'src/common.js'
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
-import { usePools } from '../pools/hooks.js'
+import { usePools } from '../pools/hooks/panoptic.js'
 import { UserInputContext } from '../commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'

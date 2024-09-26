@@ -8,7 +8,7 @@ import {
 } from '../common.js'
 import { priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
 import { Box, Text } from 'ink'
-import { type PanopticPoolInfo } from '../pools/hooks.js'
+import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 

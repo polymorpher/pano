@@ -3,7 +3,7 @@ import { useWallet } from '../wallet.js'
 import { useWalletClient } from '../client.js'
 import { NotificationContext } from '../notification.js'
 import type { ValidatedPair } from '../common.js'
-import { usePoolStats } from '../pools/hooks.js'
+import { usePoolStats } from '../pools/hooks/panoptic.js'
 import { TradeStage } from './trade.js'
 import { UserInputContext } from '../commands.js'
 

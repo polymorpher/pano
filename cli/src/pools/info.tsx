@@ -1,5 +1,5 @@
 import type { ValidatedPair } from 'src/common.js'
-import { usePoolStats } from 'src/pools/hooks.js'
+import { usePoolStats } from 'src/pools/hooks/panoptic.js'
 import { toFixed } from 'src/util.js'
 import React from 'react'
 import { Box, Text } from 'ink'

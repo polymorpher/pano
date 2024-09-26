@@ -1,5 +1,5 @@
 import React from 'react'
-import { Text, Box } from 'ink'
+import { Text } from 'ink'
 import { Commands } from './commands.js'
 import { SectionTitle } from './common.js'
 
