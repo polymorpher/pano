@@ -1,5 +1,5 @@
 import { usePublicClient } from '../../client.js'
-import { useFactories } from '../uniswap.js'
+import { useFactories } from './factory.js'
 import { useContext, useEffect, useState } from 'react'
 import type { TickSpacing, ValidatedPair } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
