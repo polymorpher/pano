@@ -1,11 +1,11 @@
 import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
-import { useContext, useEffect, useState } from 'react'
-import type { TickSpacing, ValidatedPair } from '../../common.js'
+import { useCallback, useContext, useEffect, useState } from 'react'
+import { type PairedPoolAddresses, type TickSpacing, type ValidatedPair } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
 import { pairs as initPairs } from '../../config.js'
 import { getTokenAddress, pairToStr, tickToPrice } from '../../util.js'
-import { getContract, zeroAddress } from 'viem'
+import { Address, formatUnits, getContract, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
   EmptyPriceTickInfo,
@@ -15,6 +15,8 @@ import {
   type UniswapPool
 } from './common.js'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../../constants.js'
+import { useWallet } from '../../wallet.js'
+import { useUniswapPoolBasicInfo } from './uniswap.js'
 
 export const usePools = () => {
   const { network, client } = usePublicClient()
@@ -61,7 +63,7 @@ export const usePools = () => {
   return { pairs }
 }
 
-export const usePoolContractFromPair = (pair?: ValidatedPair): PoolContracts => {
+export const usePoolContractFromPair = (pair?: PairedPoolAddresses): PoolContracts => {
   const { addMessage } = useContext(NotificationContext)
   const { client } = usePublicClient()
   const [panopticPool, setPanopticPool] = useState<PanopticPool>()
@@ -83,9 +85,13 @@ export const usePoolContractFromPair = (pair?: ValidatedPair): PoolContracts => 
   return { panopticPool, uniswapPool }
 }
 
-export const usePoolStats = (pair?: ValidatedPair): PanopticPoolInfo => {
-  const { addMessage } = useContext(NotificationContext)
+export const usePoolStats = (pair?: PairedPoolAddresses): PanopticPoolInfo => {
   const { panopticPool, uniswapPool } = usePoolContractFromPair(pair)
+  return usePoolStatsByContracts({ panopticPool, uniswapPool })
+}
+
+export const usePoolStatsByContracts = ({ panopticPool, uniswapPool }: PoolContracts): PanopticPoolInfo => {
+  const { addMessage } = useContext(NotificationContext)
   const { collateral0, collateral1 } = useCollateralAddresses(panopticPool)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -121,4 +127,22 @@ export const usePoolStats = (pair?: ValidatedPair): PanopticPoolInfo => {
   }, [uniswapPool, addMessage])
 
   return { c0Info, c1Info, priceTick, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing, pair }
+}
+
+export const usePortfolioValue = ({ panopticPool, uniswapPool }: PoolContracts) => {
+  const { wallet } = useWallet()
+  const { addMessage } = useContext(NotificationContext)
+  const calculatePortfolioValue = useCallback(async (positionIds, tick) => {
+    if (!panopticPool || !wallet.address) {
+      return
+    }
+    const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
+    return { value0, value1 }
+  }, [wallet.address, panopticPool])
+
+  useEffect(() => {
+    async function init () {
+    }
+    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [calculatePortfolioValue, addMessage])
 }

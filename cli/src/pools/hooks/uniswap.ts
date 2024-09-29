@@ -5,11 +5,11 @@ import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../../constants.js'
 import { isReadableAddress } from '../../util.js'
-import { type PanopticPool, type UniswapPool, type UniswapPoolBasicInfo } from './common.js'
+import { type PanopticPool, type PoolContracts, type UniswapPool, type UniswapPoolBasicInfo } from './common.js'
 import type { TickSpacing } from '../../common.js'
 import { useERC20 } from '../../token.js'
 
-export const usePoolContract = (uniswapPoolAddress?: Address) => {
+export const usePoolContract = (uniswapPoolAddress?: Address): PoolContracts => {
   const { addMessage } = useContext(NotificationContext)
   const { client } = usePublicClient()
   const { panopticFactory } = useFactories()

@@ -1,7 +1,7 @@
 import type { Address, GetContractReturnType, PublicClient } from 'viem'
 import { type CollateralTrackerAbi, type PanopticPoolAbi, type UniswapPoolAbi } from '../../constants.js'
 import type { ERC20Info, ERC20Metadata, IERC20 } from '../../token.js'
-import type { TickSpacing, ValidatedPair } from '../../common.js'
+import type { PairedPoolAddresses, TickSpacing, ValidatedPair } from '../../common.js'
 
 export interface UniswapPoolBasicInfo {
   token0: ERC20Info
@@ -48,7 +48,7 @@ export const EmptyPriceTickInfo = {
   recentPriceTicks: []
 }
 
-export interface PanopticPoolInfo {
+export interface PanopticPoolInfo extends PoolContracts {
   c0Info: CollateralFullInfo
   c1Info: CollateralFullInfo
   price: number
@@ -56,8 +56,16 @@ export interface PanopticPoolInfo {
   priceInverse: number
   recentPrices: number[]
   recentPricesInverse: number[]
-  panopticPool?: PanopticPool
-  uniswapPool?: UniswapPool
   tickSpacing: TickSpacing
   pair?: ValidatedPair
+}
+
+export function getPoolAddress ({ panopticPool, uniswapPool }: PoolContracts): PairedPoolAddresses | undefined {
+  if (!panopticPool || !uniswapPool) {
+    return undefined
+  }
+  return {
+    panopticPoolAddress: panopticPool.address,
+    uniswapPoolAddress: uniswapPool.address
+  }
 }

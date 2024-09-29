@@ -1,10 +1,13 @@
-import React from 'react'
+import React, { useCallback, useContext } from 'react'
 import { type Leg, type PositionWithData } from '../common.js'
 import { Box, Text } from 'ink'
 import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
-import { useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
+import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 import { findBaseAsset, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
+import { useWallet } from '../wallet.js'
+import { NotificationContext } from '../notification.js'
+import { usePoolStats, usePoolStatsByContracts } from '../pools/hooks/panoptic.js'
 
 interface PositionProps {
   position: PositionWithData
@@ -91,5 +94,27 @@ export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositio
     {poolInfo.ready && poolPositions.map(position => {
       return <Position key={position.id} position={position} poolInfo={poolInfo}/>
     })}
+  </Box>
+}
+
+type PoolValue = PoolPositionsProps
+
+export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValue) => {
+  const { wallet } = useWallet()
+  const { addMessage } = useContext(NotificationContext)
+  const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
+  const { c0Info, c1Info, priceTick } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+
+  const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number) => {
+    if (!panopticPool || !wallet.address) {
+      return
+    }
+    const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
+    return { value0, value1 }
+  }, [wallet.address, panopticPool])
+
+  return <Box flexDirection={'column'} marginY={1}>
+    <Text>Pool Portfolio Value</Text>
+    <Text></Text>
   </Box>
 }

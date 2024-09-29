@@ -15,11 +15,15 @@ export const SectionTitle = ({ children }: PropsWithChildren) => {
 export type Token01 = 'token0' | 'token1'
 export type PositionType = 'long' | 'short'
 export type RiskPartnerIndexType = 0 | 1 | 2 | 3
-export interface ValidatedPair extends Pair {
-  token0Address: Address
-  token1Address: Address
+
+export interface PairedPoolAddresses {
   uniswapPoolAddress: Address
   panopticPoolAddress: Address
+}
+
+export interface ValidatedPair extends Pair, PairedPoolAddresses {
+  token0Address: Address
+  token1Address: Address
 }
 
 export interface Leg {
