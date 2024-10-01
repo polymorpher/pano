@@ -1,13 +1,13 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { type Leg, type PositionWithData } from '../common.js'
 import { Box, Text } from 'ink'
-import { EmptyPriceTick, type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
+import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 import { findBaseAsset, stringify, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
-import { type PoolValues, useCalculatePortfolioValue, usePoolStats, usePoolStatsByContracts } from '../pools/hooks/panoptic.js'
+import { type PoolValues, usePoolStatsByContracts } from '../pools/hooks/panoptic.js'
 
 interface PositionProps {
   position: PositionWithData
@@ -31,13 +31,14 @@ const SingleLeg = ({ leg, poolInfo, showRatio }: LegProps) => {
   const upperPrice = tickToPrice(leg.tickUpper, decimals)
   const lower = baseAsset === 'token0' ? lowerPrice : 1 / upperPrice
   const upper = baseAsset === 'token0' ? upperPrice : 1 / lowerPrice
+  const premiumState = leg.position === 'short' ? 'Earning' : 'Paying'
   return <Box>
     {showRatio ? <Text>[{leg.optionRatio} options per contract] </Text> : <></>}
     <Text>{leg.position === 'long' ? 'Long' : 'Short' } </Text>
     <Text>{leg.tokenType === 'token0' ? 'PUT' : 'CALL' } </Text>
     <Text>@ {toFixed(strike)} {quoteSymbol} </Text>
     <Text>±{(radius * 100).toFixed(2)}% </Text>
-    <Text>| accruing premium in range [{toFixed(lower)}, {toFixed(upper)}]</Text>
+    <Text>| {premiumState} premium in range [{toFixed(lower)}, {toFixed(upper)}]</Text>
   </Box>
 }
 
@@ -47,13 +48,19 @@ interface IndexedLeg {
 }
 
 export const Position = ({ position, poolInfo }: PositionProps) => {
+  // const { addMessage } = useContext(NotificationContext)
+  // useEffect(() => {
+  //   addMessage(stringify(position))
+  // }, [position, addMessage])
+
   // const balanceFormatted = formatUnits(position.balance, poolInfo.)
   if (!position.legs[0]) {
     return <></>
   }
   if (position.legs.filter(l => !!l).length === 1) {
+    const numContracts = formatUnits(position.balance ?? 0n, position.legs[0].asset === 'token1' ? poolInfo.token1.decimals : poolInfo.token0.decimals)
     return <Box>
-      <Text>- {formatUnits(position.balance ?? 0n, position.legs[0].tokenType === 'token0' ? poolInfo.token1.decimals : poolInfo.token0.decimals)} contracts of </Text>
+      <Text>- {numContracts} contracts of </Text>
       <SingleLeg leg={position.legs[0]} poolInfo={poolInfo} />
     </Box>
   }
