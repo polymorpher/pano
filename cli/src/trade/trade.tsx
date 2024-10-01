@@ -4,7 +4,7 @@ import {
   ConfirmationSelector,
   getOptionRange, type Leg,
   MultiChoiceSelector,
-  type Token01
+  type Token01, type ValidatedPair
 } from '../common.js'
 import { priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
 import { Box, Text } from 'ink'
@@ -23,6 +23,7 @@ export enum TradeStage {
 }
 
 interface LegMakerProps {
+  chosenPair?: ValidatedPair
   chosenPairInfo: PanopticPoolInfo
   onLegConfirm: (leg: Leg, positionSize: bigint) => any
   stage: TradeStage
@@ -30,7 +31,7 @@ interface LegMakerProps {
   position: 'short' | 'long'
 }
 
-export const LegMaker = ({ chosenPairInfo, onLegConfirm, position, stage, setStage }: LegMakerProps) => {
+export const LegMaker = ({ chosenPair, chosenPairInfo, onLegConfirm, position, stage, setStage }: LegMakerProps) => {
   const { addMessage } = useContext(NotificationContext)
   const [putCall, setPutCall] = useState<Token01>('token0')
   const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
@@ -145,8 +146,8 @@ export const LegMaker = ({ chosenPairInfo, onLegConfirm, position, stage, setSta
 
   return <Box flexDirection={'column'}>
     { stage === TradeStage.QuoteAsset && <MultiChoiceSelector options={[
-      chosenPairInfo.c0Info.symbol + (chosenPairInfo.pair?.baseAsset === 'token1' ? ' (Recommended)' : ''),
-      chosenPairInfo.c1Info.symbol + (chosenPairInfo.pair?.baseAsset === 'token0' ? ' (Recommended)' : '')
+      chosenPairInfo.c0Info.symbol + (chosenPair?.baseAsset === 'token1' ? ' (Recommended)' : ''),
+      chosenPairInfo.c1Info.symbol + (chosenPair?.baseAsset === 'token0' ? ' (Recommended)' : '')
     ]} onSelected={onQuoteAssetSubmit} onExit={() => {
       setQuoteAsset('token0')
       setStage(TradeStage.PoolSelection)

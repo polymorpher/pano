@@ -14,7 +14,7 @@ import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
 
 export const SellControl = () => {
-  const { stage, setStage, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
+  const { stage, setStage, chosenPair, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
   const { positionIds, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
 
   const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
@@ -44,6 +44,6 @@ export const SellControl = () => {
   return <Box flexDirection={'column'}>
     <SectionTitle>Selling simple options</SectionTitle>
     {stage === TradeStage.PoolSelection && <PoolSelector onSelected={onPoolSelected}/>}
-    <LegMaker chosenPairInfo={chosenPairInfo} onLegConfirm={onLegConfirm} position={'short'} setStage={setStage} stage={stage}/>
+    <LegMaker chosenPair={chosenPair} chosenPairInfo={chosenPairInfo} onLegConfirm={onLegConfirm} position={'short'} setStage={setStage} stage={stage}/>
   </Box>
 }

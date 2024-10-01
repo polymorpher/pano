@@ -5,7 +5,7 @@ import { type PairedPoolAddresses, type TickSpacing, type ValidatedPair } from '
 import { NotificationContext } from '../../notification.js'
 import { pairs as initPairs } from '../../config.js'
 import { getTokenAddress, pairToStr, tickToPrice } from '../../util.js'
-import { Address, formatUnits, getContract, zeroAddress } from 'viem'
+import { getContract, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
   EmptyPriceTickInfo,
@@ -16,7 +16,6 @@ import {
 } from './common.js'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../../constants.js'
 import { useWallet } from '../../wallet.js'
-import { useUniswapPoolBasicInfo } from './uniswap.js'
 
 export const usePools = () => {
   const { network, client } = usePublicClient()
@@ -126,23 +125,22 @@ export const usePoolStatsByContracts = ({ panopticPool, uniswapPool }: PoolContr
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [uniswapPool, addMessage])
 
-  return { c0Info, c1Info, priceTick, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing, pair }
+  return { c0Info, c1Info, priceTick, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing }
 }
 
-export const usePortfolioValue = ({ panopticPool, uniswapPool }: PoolContracts) => {
+export interface PoolValues {
+  value0: bigint
+  value1: bigint
+}
+
+export const useCalculatePortfolioValue = ({ panopticPool }: PoolContracts) => {
   const { wallet } = useWallet()
-  const { addMessage } = useContext(NotificationContext)
-  const calculatePortfolioValue = useCallback(async (positionIds, tick) => {
+  const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number): Promise<undefined | PoolValues> => {
     if (!panopticPool || !wallet.address) {
-      return
+      return { value0: 0n, value1: 0n }
     }
     const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
     return { value0, value1 }
   }, [wallet.address, panopticPool])
-
-  useEffect(() => {
-    async function init () {
-    }
-    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [calculatePortfolioValue, addMessage])
+  return { calculatePortfolioValue }
 }
