@@ -112,11 +112,13 @@ export interface PositionWithId extends Position {
   id: Hex
 }
 
-export interface PositionWithData extends PositionWithId {
+export interface PositionData {
   balance?: bigint
   utilization0?: number
   utilization1?: number
 }
+
+export interface PositionWithData extends PositionWithId, PositionData {}
 
 export function extractLR64 (n: bigint): [bigint, bigint] {
   const left = (n >> 64n) & 0xffffffffffffffffn

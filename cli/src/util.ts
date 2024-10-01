@@ -6,7 +6,7 @@ import {
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import type { PrivateKeyAccount } from 'viem/accounts'
-import { type Token01 } from './common.js'
+import { type PositionData, type Token01 } from './common.js'
 
 export const getTokenAddress = (token: string, network: Network): Address | undefined => {
   return knownAssets[network?.id ?? '']?.[token]
@@ -106,4 +106,13 @@ export function findBaseAsset (token0Symbol: string, token1Symbol: string): Toke
       return pair.baseAsset
     }
   }
+}
+
+export function parseBalanceWithUtilization (balanceWithUtilization: bigint): PositionData {
+  const balance = balanceWithUtilization & 0xffffffffffffffffffffffffffffffffn
+  const u0 = (balanceWithUtilization >> 128n) & 0xffffffffffffffffn
+  const utilization0 = Number(u0) / ScalingFactor
+  const u1 = (balanceWithUtilization >> 192n) & 0xffffffffffffffffn
+  const utilization1 = Number(u1) / ScalingFactor
+  return { balance, utilization0, utilization1 }
 }

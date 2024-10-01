@@ -1,11 +1,17 @@
 import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { EmptyTickSpacing, type PairedPoolAddresses, type TickSpacing, type ValidatedPair } from '../../common.js'
+import {
+  EmptyTickSpacing,
+  type PairedPoolAddresses,
+  type PositionData,
+  type TickSpacing,
+  type ValidatedPair
+} from '../../common.js'
 import { NotificationContext } from '../../notification.js'
 import { pairs as initPairs } from '../../config.js'
-import { getTokenAddress, pairToStr, tickToPrice } from '../../util.js'
-import { getContract, zeroAddress } from 'viem'
+import { getTokenAddress, pairToStr, parseBalanceWithUtilization, tickToPrice } from '../../util.js'
+import { getContract, type Hex, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
   EmptyPriceTick,
@@ -142,6 +148,15 @@ export interface PoolValues {
   value1: bigint
 }
 
+export interface PremiumValues {
+  premium0: bigint
+  premium1: bigint
+}
+
+export interface PremiumValuesWithBalanceAndUtilization extends PremiumValues {
+  balanceMap: Record<Hex, PositionData>
+}
+
 export const useCalculatePortfolioValue = ({ panopticPool }: PoolContracts) => {
   const { wallet } = useWallet()
   const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number): Promise<undefined | PoolValues> => {
@@ -151,5 +166,18 @@ export const useCalculatePortfolioValue = ({ panopticPool }: PoolContracts) => {
     const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
     return { value0, value1 }
   }, [wallet.address, panopticPool])
-  return { calculatePortfolioValue }
+  const calculateAccumulatedFeesBatch = useCallback(async (positionIds: bigint[]): Promise<undefined | PremiumValuesWithBalanceAndUtilization> => {
+    if (!panopticPool || !wallet.address) {
+      return undefined
+    }
+    const [premium0, premium1, balancesAndUtilizations] = await panopticPool.read.calculateAccumulatedFeesBatch([wallet.address, positionIds])
+    const balanceMap: Record<Hex, PositionData> = {}
+    for (const [tokenId, balanceWithUtilization] of balancesAndUtilizations) {
+      const { balance, utilization0, utilization1 } = parseBalanceWithUtilization(balanceWithUtilization)
+      const hex = ('0x' + tokenId.toString(16)) as Hex
+      balanceMap[hex] = { balance, utilization0, utilization1 }
+    }
+    return { premium0, premium1, balanceMap }
+  }, [wallet.address, panopticPool])
+  return { calculatePortfolioValue, calculateAccumulatedFeesBatch }
 }

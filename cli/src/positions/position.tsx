@@ -7,7 +7,7 @@ import { findBaseAsset, stringify, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
-import { type PoolValues, usePoolStatsByContracts } from '../pools/hooks/panoptic.js'
+import { type PoolValues, useCalculatePortfolioValue, usePoolStatsByContracts } from '../pools/hooks/panoptic.js'
 
 interface PositionProps {
   position: PositionWithData
@@ -111,26 +111,27 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
   const { c0Info, c1Info, priceTick, ready } = usePoolStatsByContracts({ panopticPool, uniswapPool })
-  // const { calculatePortfolioValue } = useCalculatePortfolioValue({ panopticPool })
+  const { calculatePortfolioValue } = useCalculatePortfolioValue({ panopticPool })
   const [values, setPoolValues] = useState<PoolValues>()
   const { wallet } = useWallet()
 
   useEffect(() => {
     async function init () {
-      if (!ready || !panopticPool || !wallet.address) {
+      if (!ready || !wallet.address) {
         return
       }
       const positionIds = poolPositions.map(p => BigInt(p.id))
-      const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
-      // const values = await calculatePortfolioValue(positionIds, priceTick)
-      // if (!values) {
-      //   return
-      // }
+      // const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
+      const values = await calculatePortfolioValue(positionIds, priceTick)
+      if (!values) {
+        return
+      }
+      const { value0, value1 } = values
       addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick })}`)
       setPoolValues({ value0, value1 })
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [panopticPool, ready, priceTick, poolPositions, wallet.address, addMessage])
+  }, [calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
   if (!values) {
     return <Box flexDirection={'column'} marginY={1}>
       <Text>Pool Portfolio Value</Text>
@@ -144,7 +145,7 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
 
   return <Box flexDirection={'column'} marginY={1}>
     <Text>Pool Portfolio Value</Text>
-    <Box><Text>{c0Info.symbol} Profit/Loss: </Text><Text color={color0}>{pnl0}</Text></Box>
-    <Box><Text>{c1Info.symbol} Profit/Loss: </Text><Text color={color1}>{pnl1}</Text></Box>
+    <Text color={color0}>{c0Info.symbol} Profit/Loss: {pnl0}</Text>
+    <Text color={color1}>{c1Info.symbol} Profit/Loss: {pnl1}</Text>
   </Box>
 }
