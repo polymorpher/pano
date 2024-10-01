@@ -93,7 +93,24 @@ export const usePoolContractFromPair = (pair?: PairedPoolAddresses): PoolContrac
 
 export const usePoolStats = (pair?: PairedPoolAddresses): PanopticPoolInfo => {
   const { panopticPool, uniswapPool } = usePoolContractFromPair(pair)
-  return usePoolStatsByContracts({ panopticPool, uniswapPool })
+  const {
+    c0Info, c1Info,
+    priceTick, price, priceInverse, recentPrices, recentPricesInverse,
+    tickSpacing, ready
+  } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+  return {
+    c0Info,
+    c1Info,
+    priceTick,
+    price,
+    priceInverse,
+    recentPrices,
+    recentPricesInverse,
+    panopticPool,
+    uniswapPool,
+    tickSpacing,
+    ready
+  }
 }
 
 export const usePoolStatsByContracts = ({ panopticPool, uniswapPool }: PoolContracts): PanopticPoolInfo => {

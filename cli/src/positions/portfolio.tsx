@@ -44,7 +44,6 @@ export const PortfolioControl = () => {
     const positionsByPool = groupBy(positions, p => p.uniswapPoolAddress) as Record<Address, PositionWithData[]>
     const positionsByPoolEntries = Object.entries(positionsByPool) as Array<[Address, PositionWithData[]]>
     setPositionsByPoolEntries(positionsByPoolEntries)
-    // addMessage('Position updated!')
   }, [positions])
   useEffect(() => {
     async function init () {

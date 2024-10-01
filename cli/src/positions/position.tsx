@@ -7,7 +7,12 @@ import { findBaseAsset, stringify, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
-import { type PoolValues, useCalculatePortfolioValue, usePoolStatsByContracts } from '../pools/hooks/panoptic.js'
+import {
+  type PoolValues,
+  type PremiumValuesWithBalanceAndUtilization,
+  useCalculatePortfolioValue,
+  usePoolStatsByContracts
+} from '../pools/hooks/panoptic.js'
 
 interface PositionProps {
   position: PositionWithData
@@ -95,6 +100,10 @@ interface PoolPositionsProps {
 export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositionsProps) => {
   const poolInfo = useUniswapPoolBasicInfo(uniswapPoolAddress)
   const name = `${poolInfo.token0.symbol}/${poolInfo.token1.symbol}`
+  const { addMessage } = useContext(NotificationContext)
+  // useEffect(() => {
+  //   addMessage(`poolPositions: ${stringify(poolPositions)}`)
+  // }, [poolPositions, addMessage])
   return <Box flexDirection={'column'} marginY={1}>
     <Text>Pool {name} ({uniswapPoolAddress})</Text>
     {!poolInfo.ready && <Text>- Loading pool data...</Text>}
@@ -111,8 +120,9 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
   const { c0Info, c1Info, priceTick, ready } = usePoolStatsByContracts({ panopticPool, uniswapPool })
-  const { calculatePortfolioValue } = useCalculatePortfolioValue({ panopticPool })
+  const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useCalculatePortfolioValue({ panopticPool })
   const [values, setPoolValues] = useState<PoolValues>()
+  const [premiums, setPoolPremiums] = useState<PremiumValuesWithBalanceAndUtilization>()
   const { wallet } = useWallet()
 
   useEffect(() => {
@@ -122,17 +132,33 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       }
       const positionIds = poolPositions.map(p => BigInt(p.id))
       // const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
+      // const positionIdsDebug = poolPositions.filter(p => p.legs[0]?.tokenType !== 'token0').map(p => BigInt(p.id))
+      // const values = await calculatePortfolioValue(positionIdsDebug, priceTick)
       const values = await calculatePortfolioValue(positionIds, priceTick)
       if (!values) {
         return
       }
       const { value0, value1 } = values
-      addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick })}`)
+      const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
+      const priceInverse = 1 / price
+      // addMessage(`calculatePortfolioValue ${stringify({ values, positionIdsDebug, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
+      addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
       setPoolValues({ value0, value1 })
+      const premiums = await calculateAccumulatedFeesBatch(positionIds)
+      if (!premiums) {
+        return
+      }
+      const { premium0, premium1, balanceMap } = premiums
+      setPoolPremiums({ premium0, premium1, balanceMap })
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
-  if (!values) {
+  }, [c0Info.decimals, c1Info.decimals, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
+
+  // useEffect(() => {
+  //   addMessage(`Collateral updated... ${c0Info.symbol} ${c1Info.symbol}`)
+  // }, [c0Info, c1Info, addMessage])
+
+  if (!values || !premiums) {
     return <Box flexDirection={'column'} marginY={1}>
       <Text>Pool Portfolio Value</Text>
       <Text color={'yellow'}>[Loading...]</Text>
@@ -142,10 +168,16 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const color1 = values.value1 === 0n ? 'yellow' : values.value1 > 0n ? 'green' : 'red'
   const pnl0 = formatUnits(values.value0, c0Info.decimals)
   const pnl1 = formatUnits(values.value1, c1Info.decimals)
+  const premium0f = formatUnits(premiums.premium0 ?? 0n, c0Info.decimals)
+  const premium1f = formatUnits(premiums.premium1, c1Info.decimals)
+  const color0p = premiums.premium0 === 0n ? 'yellow' : values.value0 > 0n ? 'green' : 'red'
+  const color1p = premiums.premium1 === 0n ? 'yellow' : values.value1 > 0n ? 'green' : 'red'
 
   return <Box flexDirection={'column'} marginY={1}>
     <Text>Pool Portfolio Value</Text>
-    <Text color={color0}>{c0Info.symbol} Profit/Loss: {pnl0}</Text>
-    <Text color={color1}>{c1Info.symbol} Profit/Loss: {pnl1}</Text>
+    <Text color={color0}>{c0Info.symbol} Profit/Loss: {toFixed(Number(pnl0))}</Text>
+    <Text color={color1}>{c1Info.symbol} Profit/Loss: {toFixed(Number(pnl1))}</Text>
+    <Text color={color0p}>{c0Info.symbol} Premium Balance: {toFixed(Number(premium0f))}</Text>
+    <Text color={color1p}>{c1Info.symbol} Premium Balance: {toFixed(Number(premium1f))}</Text>
   </Box>
 }
