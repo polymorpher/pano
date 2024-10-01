@@ -100,7 +100,7 @@ interface PoolPositionsProps {
 export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositionsProps) => {
   const poolInfo = useUniswapPoolBasicInfo(uniswapPoolAddress)
   const name = `${poolInfo.token0.symbol}/${poolInfo.token1.symbol}`
-  const { addMessage } = useContext(NotificationContext)
+  // const { addMessage } = useContext(NotificationContext)
   // useEffect(() => {
   //   addMessage(`poolPositions: ${stringify(poolPositions)}`)
   // }, [poolPositions, addMessage])
