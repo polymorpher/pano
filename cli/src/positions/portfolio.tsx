@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import {
   AmountSelector,
   getUniswapPoolId, InProgressSelector,
-  MultiChoiceSelector,
+  MultiChoiceSelector, type PositionWithData,
   SectionTitle, type TickSpacing, tokenIdToPosition, type ValidatedPair
 } from 'src/common.js'
 import { Box, Text } from 'ink'
@@ -32,7 +32,7 @@ export const PortfolioControl = () => {
   const { wallet } = useWallet()
   const { pairs } = usePools()
   const { positions } = usePositions()
-  const positionsByPool = groupBy(positions, p => p.uniswapPoolAddress)
+  const [positionsByPoolEntries, setPositionsByPoolEntries] = useState<Array<[Address, PositionWithData[]]>>([])
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
   const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
@@ -40,7 +40,12 @@ export const PortfolioControl = () => {
   const poolIdMapping: Record<string, Address> = Object.fromEntries(filteredPairs.map(([p]) => [getUniswapPoolId(p.uniswapPoolAddress).toString(16), p.uniswapPoolAddress]))
   const [stage, setStage] = useState<PortfolioStage>(PortfolioStage.SelectAction)
   const [scanInterrupt, setScanInterrupt] = useState<boolean>(false)
-
+  useEffect(() => {
+    const positionsByPool = groupBy(positions, p => p.uniswapPoolAddress) as Record<Address, PositionWithData[]>
+    const positionsByPoolEntries = Object.entries(positionsByPool) as Array<[Address, PositionWithData[]]>
+    setPositionsByPoolEntries(positionsByPoolEntries)
+    // addMessage('Position updated!')
+  }, [positions])
   useEffect(() => {
     async function init () {
       if (!client || !wallet.address) {
@@ -139,8 +144,8 @@ export const PortfolioControl = () => {
     {filteredPairs.map(([p, n]) => {
       return <Text key={p.panopticPoolAddress}>Pool {p.token0}/{p.token1}: {n.toString()} open positions</Text>
     })}
-    {Object.entries(positionsByPool).map(([uniswapPoolAddress, poolPositions]) => {
-      return <PoolPositions key={uniswapPoolAddress} uniswapPoolAddress={uniswapPoolAddress as Address} poolPositions={poolPositions}/>
+    {positionsByPoolEntries.map(([uniswapPoolAddress, poolPositions]) => {
+      return <PoolPositions key={uniswapPoolAddress} uniswapPoolAddress={uniswapPoolAddress} poolPositions={poolPositions}/>
     })}
     {stage === PortfolioStage.SelectAction &&
     <MultiChoiceSelector options={[

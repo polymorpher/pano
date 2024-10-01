@@ -1,9 +1,9 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { type Leg, type PositionWithData } from '../common.js'
 import { Box, Text } from 'ink'
-import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
+import { EmptyPriceTick, type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
-import { findBaseAsset, tickToPrice, toFixed } from '../util.js'
+import { findBaseAsset, stringify, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
@@ -98,23 +98,32 @@ export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositio
   </Box>
 }
 
-type PoolValue = PoolPositionsProps
+type PoolValueProps = PoolPositionsProps
 
-export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValue) => {
+export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps) => {
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
-  const { c0Info, c1Info, priceTick } = usePoolStatsByContracts({ panopticPool, uniswapPool })
-  const { calculatePortfolioValue } = useCalculatePortfolioValue({ panopticPool })
+  const { c0Info, c1Info, priceTick, ready } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+  // const { calculatePortfolioValue } = useCalculatePortfolioValue({ panopticPool })
   const [values, setPoolValues] = useState<PoolValues>()
+  const { wallet } = useWallet()
 
   useEffect(() => {
     async function init () {
+      if (!ready || !panopticPool || !wallet.address) {
+        return
+      }
       const positionIds = poolPositions.map(p => BigInt(p.id))
-      const values = await calculatePortfolioValue(positionIds, priceTick)
-      setPoolValues(values)
+      const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
+      // const values = await calculatePortfolioValue(positionIds, priceTick)
+      // if (!values) {
+      //   return
+      // }
+      addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick })}`)
+      setPoolValues({ value0, value1 })
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [priceTick, poolPositions, calculatePortfolioValue, addMessage])
+  }, [panopticPool, ready, priceTick, poolPositions, wallet.address, addMessage])
   if (!values) {
     return <Box flexDirection={'column'} marginY={1}>
       <Text>Pool Portfolio Value</Text>

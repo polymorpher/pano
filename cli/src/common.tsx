@@ -41,7 +41,9 @@ export interface Leg {
 
 export type FeeTier = 100 | 500 | 3_000 | 10_000
 
-export type TickSpacing = 1 | 10 | 60 | 200
+export const EmptyTickSpacing = 0
+
+export type TickSpacing = 0 | 1 | 10 | 60 | 200
 
 // adapted from Panoptic SDK
 export const calculateLegId = (leg: Leg, tickSpacing: TickSpacing) => {

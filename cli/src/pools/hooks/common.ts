@@ -34,7 +34,7 @@ export interface CollateralInfo {
   tokenContract?: IERC20
 }
 
-export type CollateralFullInfo = CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker, address?: Address }
+export type CollateralFullInfo = CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker, address?: Address, ready: boolean }
 
 export const EmptyTokenPair: [Address | undefined, Address | undefined] = [undefined, undefined]
 
@@ -43,8 +43,10 @@ export interface CollateralAddresses {
   collateral1?: Address
 }
 
+export const EmptyPriceTick = 1e-36
+
 export const EmptyPriceTickInfo = {
-  priceTick: 1e-36,
+  priceTick: EmptyPriceTick,
   recentPriceTicks: []
 }
 
@@ -57,6 +59,7 @@ export interface PanopticPoolInfo extends PoolContracts {
   recentPrices: number[]
   recentPricesInverse: number[]
   tickSpacing: TickSpacing
+  ready: boolean
 }
 
 export function getPoolAddress ({ panopticPool, uniswapPool }: PoolContracts): PairedPoolAddresses | undefined {

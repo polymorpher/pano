@@ -1,13 +1,14 @@
 import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { type PairedPoolAddresses, type TickSpacing, type ValidatedPair } from '../../common.js'
+import { EmptyTickSpacing, type PairedPoolAddresses, type TickSpacing, type ValidatedPair } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
 import { pairs as initPairs } from '../../config.js'
 import { getTokenAddress, pairToStr, tickToPrice } from '../../util.js'
 import { getContract, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
+  EmptyPriceTick,
   EmptyPriceTickInfo,
   type PanopticPool,
   type PanopticPoolInfo,
@@ -95,7 +96,8 @@ export const usePoolStatsByContracts = ({ panopticPool, uniswapPool }: PoolContr
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [{ priceTick, recentPriceTicks }, setPriceTickInfo] = useState<{ priceTick: number, recentPriceTicks: number[] }>(EmptyPriceTickInfo)
-  const [tickSpacing, setTickSpacing] = useState<TickSpacing>(1)
+  const [tickSpacing, setTickSpacing] = useState<TickSpacing>(EmptyTickSpacing)
+  const [ready, setReady] = useState<boolean>(false)
   const c0Info = useCollateralInfo(collateral0)
   const c1Info = useCollateralInfo(collateral1)
   const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
@@ -125,7 +127,14 @@ export const usePoolStatsByContracts = ({ panopticPool, uniswapPool }: PoolContr
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [uniswapPool, addMessage])
 
-  return { c0Info, c1Info, priceTick, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing }
+  useEffect(() => {
+    if (!c0Info.ready || !c1Info.ready || priceTick === EmptyPriceTick || tickSpacing === EmptyTickSpacing) {
+      return
+    }
+    setReady(true)
+  }, [c0Info.ready, c1Info.ready, priceTick, tickSpacing])
+
+  return { c0Info, c1Info, priceTick, price, priceInverse, recentPrices, recentPricesInverse, panopticPool, uniswapPool, tickSpacing, ready }
 }
 
 export interface PoolValues {
@@ -137,7 +146,7 @@ export const useCalculatePortfolioValue = ({ panopticPool }: PoolContracts) => {
   const { wallet } = useWallet()
   const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number): Promise<undefined | PoolValues> => {
     if (!panopticPool || !wallet.address) {
-      return { value0: 0n, value1: 0n }
+      return undefined
     }
     const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
     return { value0, value1 }

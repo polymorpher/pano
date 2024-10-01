@@ -65,6 +65,8 @@ export const useCollateralInfo = (address?: Address): CollateralFullInfo => {
   const [tokenAddress, setTokenAddress] = useState<Address | undefined>()
   const { name, symbol, decimals, contract: tokenContract } = useERC20(tokenAddress)
   const { addMessage } = useContext(NotificationContext)
+  const [ready, setReady] = useState<boolean>(false)
+
   useEffect(() => {
     async function getStats () {
       if (!tracker) {
@@ -78,11 +80,12 @@ export const useCollateralInfo = (address?: Address): CollateralFullInfo => {
       setPoolState({ poolAssets, inAmm, utilization: Number(utilization) / DECIMALS })
       const tokenAddress = await tracker.read.asset()
       setTokenAddress(tokenAddress)
+      setReady(true)
       // console.log({ totalAssets, shares, poolAssets, inAmm, tokenAddress })
     }
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, tracker])
-  return { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets, tokenContract }
+  return { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets, tokenContract, ready }
 }
 
 export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
