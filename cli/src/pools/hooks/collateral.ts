@@ -122,7 +122,7 @@ export interface AccountCollateralMarginDetails {
   accountBalance: bigint
 }
 
-export const useAccountCollateralFunctions = (collateral: CollateralTracker) => {
+export const useAccountCollateralFunctions = (collateral?: CollateralTracker) => {
   const { wallet } = useWallet()
   const getAccountMarginDetails = useCallback(async (
     tick: number,

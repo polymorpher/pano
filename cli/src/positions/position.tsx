@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { type Leg, type PositionWithData } from '../common.js'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { type Leg, type PositionWithData, tokenIdToLeg } from '../common.js'
 import { Box, Text } from 'ink'
 import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { findBaseAsset, stringify, tickToPrice, toFixed } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 import { useWallet } from '../wallet.js'
@@ -13,6 +15,7 @@ import {
   useAccountPoolFunctions,
   usePoolStatsByContracts
 } from '../pools/hooks/panoptic.js'
+import { type AccountCollateralMarginDetails, useAccountCollateralFunctions } from '../pools/hooks/collateral.js'
 
 interface PositionProps {
   position: PositionWithData
@@ -119,10 +122,14 @@ type PoolValueProps = PoolPositionsProps
 export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps) => {
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
-  const { c0Info, c1Info, priceTick, ready } = usePoolStatsByContracts({ panopticPool, uniswapPool })
-  const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useAccountPoolFunctions(panopticPool)
+  const { c0Info, c1Info, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+  const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
+  const { getAccountMarginDetails: getAccountMarginDetails0 } = useAccountCollateralFunctions(c0Info.tracker)
+  const { getAccountMarginDetails: getAccountMarginDetails1 } = useAccountCollateralFunctions(c1Info.tracker)
   const [values, setPoolValues] = useState<PoolValues>()
   const [premiums, setPoolPremiums] = useState<PremiumValuesWithBalanceAndUtilization>()
+  const [accountMargin0, setAccountMargin0] = useState<AccountCollateralMarginDetails>()
+  const [accountMargin1, setAccountMargin1] = useState<AccountCollateralMarginDetails>()
   const { wallet } = useWallet()
 
   useEffect(() => {
@@ -148,12 +155,26 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       if (!premiums) {
         return
       }
-      const { premium0, premium1, balanceMap } = premiums
-      setPoolPremiums({ premium0, premium1, balanceMap })
+      const { premium0, premium1, balanceMap, balancesAndUtilizations } = premiums
+      setPoolPremiums({ premium0, premium1, balanceMap, balancesAndUtilizations })
+      // const balancesAndUtilizationsDebug = premiums.balancesAndUtilizations.slice(2, 3)
+      // addMessage(`pos0=${stringify(tokenIdToLeg(balancesAndUtilizationsDebug[0][0], 0, tickSpacing))} balancesAndUtilizationsDebug ${stringify(balancesAndUtilizationsDebug)}`)
+      // const margin0 = await getAccountMarginDetails0(priceTick, balancesAndUtilizationsDebug, premiums.premium0)
+      const margin0 = await getAccountMarginDetails0(priceTick, premiums.balancesAndUtilizations, premiums.premium0)
+      if (!margin0) {
+        return
+      }
+      setAccountMargin0(margin0)
+      // const margin1 = await getAccountMarginDetails1(priceTick, balancesAndUtilizationsDebug, premiums.premium0)
+      const margin1 = await getAccountMarginDetails1(priceTick, premiums.balancesAndUtilizations, premiums.premium1)
+      if (!margin1) {
+        return
+      }
+      setAccountMargin1(margin1)
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   // }, [c0Info.decimals, c1Info.decimals, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
-  }, [calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
+  }, [getAccountMarginDetails0, getAccountMarginDetails1, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
 
   // useEffect(() => {
   //   addMessage(`Collateral updated... ${c0Info.symbol} ${c1Info.symbol}`)
@@ -173,12 +194,20 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const premium1f = formatUnits(premiums.premium1, c1Info.decimals)
   const color0p = premiums.premium0 === 0n ? 'yellow' : values.value0 > 0n ? 'green' : 'red'
   const color1p = premiums.premium1 === 0n ? 'yellow' : values.value1 > 0n ? 'green' : 'red'
-
+  const margin0f = formatUnits(accountMargin0?.requiredBalance ?? 0n, c0Info.decimals)
+  const balance0f = formatUnits(accountMargin0?.accountBalance ?? 0n, c0Info.decimals)
+  const margin1f = formatUnits(accountMargin1?.requiredBalance ?? 0n, c1Info.decimals)
+  const balance1f = formatUnits(accountMargin1?.accountBalance ?? 0n, c1Info.decimals)
   return <Box flexDirection={'column'} marginY={1}>
     <Text>Pool Portfolio Value</Text>
     <Text color={color0}>{c0Info.symbol} Profit/Loss: {toFixed(Number(pnl0))}</Text>
-    <Text color={color1}>{c1Info.symbol} Profit/Loss: {toFixed(Number(pnl1))}</Text>
     <Text color={color0p}>{c0Info.symbol} Premium Balance: {toFixed(Number(premium0f))}</Text>
+    <Text>{c0Info.symbol} Margin Requirement: {toFixed(Number(margin0f))}</Text>
+    <Text>{c0Info.symbol} Deposit Balance: {toFixed(Number(balance0f))}</Text>
+
+    <Text color={color1}>{c1Info.symbol} Profit/Loss: {toFixed(Number(pnl1))}</Text>
     <Text color={color1p}>{c1Info.symbol} Premium Balance: {toFixed(Number(premium1f))}</Text>
+    <Text>{c1Info.symbol} Margin Requirement: {toFixed(Number(margin1f))}</Text>
+    <Text>{c1Info.symbol} Deposit Balance: {toFixed(Number(balance1f))}</Text>
   </Box>
 }
