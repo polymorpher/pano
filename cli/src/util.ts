@@ -110,16 +110,16 @@ export function findBaseAsset (token0Symbol: string, token1Symbol: string): Toke
 
 export function parseBalanceWithUtilization (balanceWithUtilization: bigint): PositionData {
   const balance = balanceWithUtilization & 0xffffffffffffffffffffffffffffffffn
-  const u0 = (balanceWithUtilization >> 128n) & 0xffffffffffffffffn
-  const utilization0 = Number(u0) / ScalingFactor
-  const u1 = (balanceWithUtilization >> 192n) & 0xffffffffffffffffn
+  const u1 = (balanceWithUtilization >> 128n) & 0xffffffffffffffffn
   const utilization1 = Number(u1) / ScalingFactor
+  const u0 = (balanceWithUtilization >> 192n) & 0xffffffffffffffffn
+  const utilization0 = Number(u0) / ScalingFactor
   return { balance, utilization0, utilization1 }
 }
 
 export function packBalanceWithUtilization (data: PositionData): bigint {
-  let out = BigInt(Math.round((data.utilization1 ?? 0) * ScalingFactor)) << 192n
-  out += BigInt(Math.round((data.utilization0 ?? 0) * ScalingFactor)) << 128n
+  let out = BigInt(Math.round((data.utilization1 ?? 0) * ScalingFactor)) << 128n
+  out += BigInt(Math.round((data.utilization0 ?? 0) * ScalingFactor)) << 192n
   out += data.balance ?? 0n
   return out
 }
