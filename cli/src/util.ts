@@ -116,3 +116,16 @@ export function parseBalanceWithUtilization (balanceWithUtilization: bigint): Po
   const utilization1 = Number(u1) / ScalingFactor
   return { balance, utilization0, utilization1 }
 }
+
+export function packBalanceWithUtilization (data: PositionData): bigint {
+  let out = BigInt(Math.round((data.utilization1 ?? 0) * ScalingFactor)) << 192n
+  out += BigInt(Math.round((data.utilization0 ?? 0) * ScalingFactor)) << 128n
+  out += data.balance ?? 0n
+  return out
+}
+
+export function unpackLeftRight256 (data: bigint): [bigint, bigint] {
+  const left = (data >> 128n) & 0xffffffffffffffffffffffffffffffffn
+  const right = data & 0xffffffffffffffffffffffffffffffffn
+  return [left, right]
+}

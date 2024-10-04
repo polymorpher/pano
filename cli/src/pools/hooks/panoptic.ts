@@ -10,10 +10,11 @@ import {
 } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
 import { pairs as initPairs } from '../../config.js'
-import { getTokenAddress, pairToStr, parseBalanceWithUtilization, tickToPrice } from '../../util.js'
+import { getTokenAddress, pairToStr, parseBalanceWithUtilization, tickToPrice, unpackLeftRight256 } from '../../util.js'
 import { getContract, type Hex, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
+  type CollateralTracker,
   EmptyPriceTick,
   EmptyPriceTickInfo,
   type PanopticPool,
@@ -172,9 +173,11 @@ export interface PremiumValues {
 
 export interface PremiumValuesWithBalanceAndUtilization extends PremiumValues {
   balanceMap: Record<Hex, PositionData>
+  // to prevent loss of precision, and for ease of use in subsequent calls to useAccountCollateralFunctions
+  balancesAndUtilizations: ReadonlyArray<readonly [bigint, bigint]>
 }
 
-export const useCalculatePortfolioValue = ({ panopticPool }: PoolContracts) => {
+export const useAccountPoolFunctions = ({ panopticPool }: PoolContracts) => {
   const { wallet } = useWallet()
   const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number): Promise<undefined | PoolValues> => {
     if (!panopticPool || !wallet.address) {
@@ -194,7 +197,7 @@ export const useCalculatePortfolioValue = ({ panopticPool }: PoolContracts) => {
       const hex = ('0x' + tokenId.toString(16)) as Hex
       balanceMap[hex] = { balance, utilization0, utilization1 }
     }
-    return { premium0, premium1, balanceMap }
+    return { premium0, premium1, balanceMap, balancesAndUtilizations }
   }, [wallet.address, panopticPool])
   return { calculatePortfolioValue, calculateAccumulatedFeesBatch }
 }

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { NotificationContext } from '../../notification.js'
 import { type Address, getContract, zeroAddress } from 'viem'
 import { usePublicClient } from '../../client.js'
@@ -13,6 +13,7 @@ import {
   type PanopticPool
 } from './common.js'
 import { useWallet } from '../../wallet.js'
+import { unpackLeftRight256 } from '../../util.js'
 
 export const useCollateralAddresses = (panopticPool?: PanopticPool): CollateralAddresses => {
   const { addMessage } = useContext(NotificationContext)
@@ -114,4 +115,26 @@ export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, collateralTracker, wallet.wallet.address])
   return { shares, value }
+}
+
+export interface AccountCollateralMarginDetails {
+  requiredBalance: bigint
+  accountBalance: bigint
+}
+
+export const useAccountCollateralFunctions = (collateral: CollateralTracker) => {
+  const { wallet } = useWallet()
+  const getAccountMarginDetails = useCallback(async (
+    tick: number,
+    balancesAndUtilizations: ReadonlyArray<readonly [bigint, bigint]>,
+    premium: bigint
+  ): Promise<AccountCollateralMarginDetails | undefined> => {
+    if (!collateral || !wallet.address) {
+      return undefined
+    }
+    const tokenData = await collateral.read.getAccountMarginDetails([wallet.address, tick, balancesAndUtilizations, premium])
+    const [requiredBalance, accountBalance] = unpackLeftRight256(tokenData)
+    return { requiredBalance, accountBalance }
+  }, [wallet.address, collateral])
+  return { getAccountMarginDetails }
 }

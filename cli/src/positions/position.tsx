@@ -10,7 +10,7 @@ import { NotificationContext } from '../notification.js'
 import {
   type PoolValues,
   type PremiumValuesWithBalanceAndUtilization,
-  useCalculatePortfolioValue,
+  useAccountPoolFunctions,
   usePoolStatsByContracts
 } from '../pools/hooks/panoptic.js'
 
@@ -120,7 +120,7 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
   const { c0Info, c1Info, priceTick, ready } = usePoolStatsByContracts({ panopticPool, uniswapPool })
-  const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useCalculatePortfolioValue({ panopticPool })
+  const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useAccountPoolFunctions(panopticPool)
   const [values, setPoolValues] = useState<PoolValues>()
   const [premiums, setPoolPremiums] = useState<PremiumValuesWithBalanceAndUtilization>()
   const { wallet } = useWallet()
@@ -139,10 +139,10 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
         return
       }
       const { value0, value1 } = values
-      const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
-      const priceInverse = 1 / price
-      // addMessage(`calculatePortfolioValue ${stringify({ values, positionIdsDebug, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
-      addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
+      // const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
+      // const priceInverse = 1 / price
+      // // addMessage(`calculatePortfolioValue ${stringify({ values, positionIdsDebug, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
+      // addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
       setPoolValues({ value0, value1 })
       const premiums = await calculateAccumulatedFeesBatch(positionIds)
       if (!premiums) {
@@ -152,7 +152,8 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       setPoolPremiums({ premium0, premium1, balanceMap })
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [c0Info.decimals, c1Info.decimals, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
+  // }, [c0Info.decimals, c1Info.decimals, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
+  }, [calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
 
   // useEffect(() => {
   //   addMessage(`Collateral updated... ${c0Info.symbol} ${c1Info.symbol}`)
