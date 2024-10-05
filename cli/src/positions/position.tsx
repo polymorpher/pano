@@ -122,6 +122,7 @@ type PoolValueProps = PoolPositionsProps
 export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps) => {
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { c0Info, c1Info, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
   const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
   const { getAccountMarginDetails: getAccountMarginDetails0 } = useAccountCollateralFunctions(c0Info.tracker)
@@ -140,6 +141,7 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       const positionIds = poolPositions.map(p => BigInt(p.id))
       // const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
       // const positionIdsDebug = poolPositions.filter(p => p.legs[0]?.tokenType !== 'token0').map(p => BigInt(p.id))
+      // const positionIdsDebug = poolPositions.slice(0, 1).map(p => BigInt(p.id))
       // const values = await calculatePortfolioValue(positionIdsDebug, priceTick)
       const values = await calculatePortfolioValue(positionIds, priceTick)
       if (!values) {
