@@ -1,12 +1,8 @@
 import { knownAssets, type Network, pairs } from './config.js'
-import {
-  type Address, type Hex,
-  isAddress, parseUnits,
-  zeroAddress
-} from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { type Address, type Hex, isAddress, parseUnits, zeroAddress } from 'viem'
 import type { PrivateKeyAccount } from 'viem/accounts'
-import { type PositionData, type Token01 } from './common.js'
+import { privateKeyToAccount } from 'viem/accounts'
+import { type PositionData, PutCall, type Token01 } from './common.js'
 
 export const getTokenAddress = (token: string, network: Network): Address | undefined => {
   return knownAssets[network?.id ?? '']?.[token]
@@ -128,4 +124,45 @@ export function unpackLeftRight256 (data: bigint): [bigint, bigint] {
   const left = (data >> 128n) & 0xffffffffffffffffffffffffffffffffn
   const right = data & 0xffffffffffffffffffffffffffffffffn
   return [left, right]
+}
+
+export function isLegITM (tokenId: bigint, legIndex: number, tick: number): boolean {
+  const masked = (tokenId >> 64n >> (48n * BigInt(legIndex))) & 0xffffffffffffn
+  const strike = Number((masked >> 12n) & 0xffffffn)
+  const tokenType = ((masked >> 9n) & 0x1n) === 0n ? PutCall.Put : PutCall.Call
+  if (tokenType === PutCall.Put && tick < strike) {
+    return true
+  }
+  return tokenType === PutCall.Call && tick > strike
+}
+
+export function isITM (tokenId: bigint, tick: number): boolean {
+  for (let i = 0; i < 4; i++) {
+    const itm = isLegITM(tokenId, i, tick)
+    if (itm) {
+      return true
+    }
+  }
+  return false
+}
+
+const mask256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffn
+
+export function toITMLegs (tokenId: bigint, tick: number): bigint {
+  let newTokenId = tokenId
+  for (let i = 0; i < 4; i++) {
+    const itm = isLegITM(tokenId, i, tick)
+    if (!itm) {
+      const shiftBits = 48n * BigInt(i + 1) + 64n
+      const leadingMask = shiftBits === 256n ? (((mask256 + 1n) >> shiftBits) << shiftBits) : ((mask256 >> shiftBits) << shiftBits)
+      const trailingMask = mask256 >> (48n * BigInt(4 - i))
+      const mask = leadingMask | trailingMask
+      newTokenId = newTokenId & mask
+    }
+  }
+  return newTokenId
+}
+
+export function hasLeg (tokenId: bigint): boolean {
+  return (tokenId >> 64n) !== 0n
 }
