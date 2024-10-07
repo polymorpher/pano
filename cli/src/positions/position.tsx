@@ -1,11 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { type Leg, type PositionWithData, tokenIdToLeg } from '../common.js'
+import { extractPoolId, type Leg, type PositionWithData, tokenIdToLeg, tokenIdToPosition } from '../common.js'
 import { Box, Text } from 'ink'
 import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { findBaseAsset, stringify, tickToPrice, toFixed } from '../util.js'
+import { findBaseAsset, hasLeg, isITM, stringify, tickToPrice, toFixed, toITMLegs } from '../util.js'
 import { type Address, formatUnits } from 'viem'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
@@ -138,12 +138,29 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       if (!ready || !wallet.address) {
         return
       }
-      const positionIds = poolPositions.map(p => BigInt(p.id))
+
       // const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
       // const positionIdsDebug = poolPositions.filter(p => p.legs[0]?.tokenType !== 'token0').map(p => BigInt(p.id))
       // const positionIdsDebug = poolPositions.slice(0, 1).map(p => BigInt(p.id))
       // const values = await calculatePortfolioValue(positionIdsDebug, priceTick)
-      const values = await calculatePortfolioValue(positionIds, priceTick)
+      const itmPositions = poolPositions.filter(p => {
+        const id = BigInt(p.id)
+        const newId = toITMLegs(id, priceTick)
+        return hasLeg(newId)
+      })
+      // TODO: this is quite complex, need more debugging and testing later, when we have multi-leg positions. Pay extra attention to risk partners
+      // const itmPositions = poolPositions.map(p => {
+      //   const id = BigInt(p.id)
+      //   const newId = toITMLegs(id, priceTick)
+      //   const legs = tokenIdToPosition(newId, p.tickSpacing, { [extractPoolId(id).toString(16)]: p.uniswapPoolAddress }).legs
+      //   return { ...p, legs, id: `0x${newId.toString(16)}` } satisfies PositionWithData
+      // }).filter(p => hasLeg(BigInt(p.id)))
+
+      // NOTE: simply using all position ids for calculating portfolio value would result in incorrect portfolio value, since OTM options have no value upon exercisin (burning), but the uniswap position it represents still have value (see details of the smart contract code for clarification)
+      const positionIds = poolPositions.map(p => BigInt(p.id))
+
+      const itmPositionIds = itmPositions.map(p => BigInt(p.id))
+      const values = await calculatePortfolioValue(itmPositionIds, priceTick)
       if (!values) {
         return
       }
@@ -152,7 +169,9 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       // const priceInverse = 1 / price
       // // addMessage(`calculatePortfolioValue ${stringify({ values, positionIdsDebug, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
       // addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
-      setPoolValues({ value0, value1 })
+
+      // NOTE: the values being calculated are actually values to the pool, not values to the user, i.e. the values represents debt owed by the user to the pool. The values to the user should be exactly the opposite
+      setPoolValues({ value0: -value0, value1: -value1 })
       const premiums = await calculateAccumulatedFeesBatch(positionIds)
       if (!premiums) {
         return
