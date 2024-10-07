@@ -16,6 +16,18 @@ export type Token01 = 'token0' | 'token1'
 export type PositionType = 'long' | 'short'
 export type RiskPartnerIndexType = 0 | 1 | 2 | 3
 
+// TODO: use this in legs, to replace Token01
+export enum AssetType {
+  Token0 = 'token0',
+  Token1 = 'token1'
+}
+
+// TODO: use this in legs, to replace Token01
+export enum PutCall {
+  Put = 'token0',
+  Call = 'token1'
+}
+
 export interface PairedPoolAddresses {
   uniswapPoolAddress: Address
   panopticPoolAddress: Address
