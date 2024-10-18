@@ -123,7 +123,7 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { c0Info, c1Info, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+  const { c0Info, c1Info, priceInverse, price, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
   const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
   const { getAccountMarginDetails: getAccountMarginDetails0 } = useAccountCollateralFunctions(c0Info.tracker)
   const { getAccountMarginDetails: getAccountMarginDetails1 } = useAccountCollateralFunctions(c1Info.tracker)
@@ -219,8 +219,14 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const balance0f = formatUnits(accountMargin0?.accountBalance ?? 0n, c0Info.decimals)
   const margin1f = formatUnits(accountMargin1?.requiredBalance ?? 0n, c1Info.decimals)
   const balance1f = formatUnits(accountMargin1?.accountBalance ?? 0n, c1Info.decimals)
+  const baseAsset = findBaseAsset(c0Info.symbol, c1Info.symbol)
+  const displayPrice = baseAsset === 'token0' ? price : priceInverse
+  const displayPriceSymbol = baseAsset === 'token0' ? c1Info.symbol : c0Info.symbol
+
   return <Box flexDirection={'column'} marginY={1}>
     <Text>Pool Portfolio Value</Text>
+    <Text>Current price: {toFixed(displayPrice)} {displayPriceSymbol} </Text>
+    <Text> </Text>
     <Text color={color0}>{c0Info.symbol} Profit/Loss: {toFixed(Number(pnl0))}</Text>
     <Text color={color0p}>{c0Info.symbol} Premium Balance: {toFixed(Number(premium0f))}</Text>
     <Text>{c0Info.symbol} Margin Requirement: {toFixed(Number(margin0f))}</Text>
