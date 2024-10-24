@@ -118,6 +118,7 @@ export interface Position {
   tickSpacing: TickSpacing
   legs: Tuple<Leg | undefined, 4>
   ts?: number
+  atTick?: number
 }
 
 export interface PositionWithId extends Position {

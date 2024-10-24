@@ -16,7 +16,7 @@ import { usePositions } from '../positions/hooks.js'
 export const BuyControl = () => {
   const { stage, setStage, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
   const { positionIds, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
-  const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
+  const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint, atTick: number) => {
     const position: Position = { uniswapPoolAddress: chosenPairInfo.uniswapPool!.address, tickSpacing: chosenPairInfo.tickSpacing, legs: [leg, undefined, undefined, undefined] }
     const id = calculateTokenId(position)
     const positionIdList = [...positionIds, id]
@@ -29,7 +29,7 @@ export const BuyControl = () => {
     })
     try {
       const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
-      await addPosition(position)
+      await addPosition(position, atTick)
       exit()
       addMessage(`Executed transaction ${hash}. Option purchased!`, { color: 'green' })
     } catch (ex: any) {

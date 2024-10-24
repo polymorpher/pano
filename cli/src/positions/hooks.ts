@@ -53,12 +53,12 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
     return sortedPositions
   }, [client, panopticFactory, addMessage, wallet.address, uniswapPoolAddress])
 
-  const addPosition = useCallback(async (position: Position): Promise<boolean | undefined> => {
+  const addPosition = useCallback(async (position: Position, atTick: number): Promise<boolean | undefined> => {
     if (!wallet.address || !uniswapPoolAddress) {
       return undefined
     }
     const tokenId = calculateTokenId(position)
-    const updated = await storePosition(wallet.address, position)
+    const updated = await storePosition(wallet.address, position, atTick)
     const id: Hex = `0x${tokenId.toString(16)}`
     if (updated) {
       setPositions(ps =>

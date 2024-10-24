@@ -91,7 +91,7 @@ export const PortfolioControl = () => {
         for (const entry of update.entries) {
           const position = tokenIdToPosition(entry.tokenId, tickSpacing, poolIdMapping)
           position.ts = Number(entry.blockTimestamp) * 1000
-          const added = await storePosition(wallet.address!, position)
+          const added = await storePosition(wallet.address!, position, entry.tick)
           if (added) {
             addMessage(`Synced new position: ${stringify(position)}`)
           } else if (added === undefined) {

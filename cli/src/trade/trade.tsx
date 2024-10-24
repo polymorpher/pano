@@ -25,7 +25,7 @@ export enum TradeStage {
 interface LegMakerProps {
   chosenPair?: ValidatedPair
   chosenPairInfo: PanopticPoolInfo
-  onLegConfirm: (leg: Leg, positionSize: bigint) => any
+  onLegConfirm: (leg: Leg, positionSize: bigint, atTick: number) => any
   stage: TradeStage
   setStage: (stage: TradeStage) => any
   position: 'short' | 'long'
@@ -139,7 +139,7 @@ export const LegMaker = ({ chosenPair, chosenPairInfo, onLegConfirm, position, s
         tickLower,
         tickUpper
       }
-      onLegConfirm(leg, positionSize)
+      onLegConfirm(leg, positionSize, chosenPairInfo.priceTick)
       // addMessage(`leg=${JSON.stringify(leg)} tickSpacing=${chosenPairInfo.tickSpacing} radius=${range}`)
     }
   }, [position, setStage, onLegConfirm, addMessage, chosenPairInfo, positionSize, putCall, quoteAsset, strikeTick, range])

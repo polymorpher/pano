@@ -70,7 +70,7 @@ function buildId (address: Address, position: Position): IdData {
   return { id: makeKey(address, POSITIONS, poolId.toString(16), tokenId.toString(16)), tokenId, poolId }
 }
 
-export async function storePosition (address: Address, position: Position): Promise<boolean> {
+export async function storePosition (address: Address, position: Position, atTick: number): Promise<boolean> {
   const { tokenId, id: _id } = buildId(address, position)
   const hasPosition = await positionExists(address, tokenId)
   if (hasPosition) {
@@ -82,6 +82,7 @@ export async function storePosition (address: Address, position: Position): Prom
     uniswapPoolAddress,
     tickSpacing,
     legs,
+    atTick,
     ts: position.ts ?? Date.now()
   }
   await db.put<Position>(doc)

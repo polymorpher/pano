@@ -17,7 +17,7 @@ export const SellControl = () => {
   const { stage, setStage, chosenPair, chosenPairInfo, client, addMessage, onPoolSelected, exit } = useTrade()
   const { positionIds, addPosition } = usePositions(chosenPairInfo.uniswapPool?.address)
 
-  const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint) => {
+  const onLegConfirm = useCallback(async (leg: Leg, positionSize: bigint, atTick: number) => {
     // TODO: check collateral requirement first
     const position: Position = { uniswapPoolAddress: chosenPairInfo.uniswapPool!.address, tickSpacing: chosenPairInfo.tickSpacing, legs: [leg, undefined, undefined, undefined] }
     const id = calculateTokenId(position)
@@ -32,7 +32,7 @@ export const SellControl = () => {
     try {
       const hash = await c.write.mintOptions([positionIdList, positionSize, effectiveLiquidityLimitX32, tickLowerLimit, tickUpperLimit])
       addMessage(`Executed transaction ${hash}. Option sold!`, { color: 'green' })
-      await addPosition(position)
+      await addPosition(position, atTick)
       exit()
       // TODO: reset state, go back to pool selection / main menu
     } catch (ex: any) {
