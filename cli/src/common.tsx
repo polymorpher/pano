@@ -14,7 +14,7 @@ export const SectionTitle = ({ children }: PropsWithChildren) => {
 
 export type Token01 = 'token0' | 'token1'
 export type PositionType = 'long' | 'short'
-export type RiskPartnerIndexType = 0 | 1 | 2 | 3
+export type LegIndex = 0 | 1 | 2 | 3
 
 // TODO: use this in legs, to replace Token01
 export enum AssetType {
@@ -33,6 +33,11 @@ export interface BigInt01 {
   token1: bigint
 }
 
+export const Zero01: BigInt01 = {
+  token0: 0n,
+  token1: 0n
+}
+
 export interface PairedPoolAddresses {
   uniswapPoolAddress: Address
   panopticPoolAddress: Address
@@ -46,11 +51,11 @@ export interface ValidatedPair extends Pair, PairedPoolAddresses {
 export interface Leg {
   // "asset" is used for calculating number of tokens being moved, as well as the option's notional value
   // Learn more at https://github.com/polymorpher/panoptic-v1-core/blob/1432f9152e3e16c9c692b14bd7160bff7ce20737/contracts/libraries/PanopticMath.sol#L427
-  asset: Token01
+  asset: AssetType
   optionRatio: number
   position: PositionType
   tokenType: Token01
-  riskPartnerIndex: RiskPartnerIndexType
+  riskPartnerIndex: LegIndex
   // always follows pool's tick (token1/token0 price) - no conversion necessary regardless of the value of `asset`
   tickLower: number
   tickUpper: number
@@ -84,7 +89,7 @@ export function tokenIdToLeg (tokenId: bigint, legIndex: number, tickSpacing: Ti
   const optionRatio = Number((masked >> 1n) & 0x8fn)
   const position = ((masked >> 8n) & 0x1n) === 0n ? 'short' : 'long'
   const tokenType = ((masked >> 9n) & 0x1n) === 0n ? 'token0' : 'token1'
-  const riskPartnerIndex = Number((masked >> 10n) & 0x3n) as RiskPartnerIndexType
+  const riskPartnerIndex = Number((masked >> 10n) & 0x3n) as LegIndex
   const strike = Number((masked >> 12n) & 0xffffffn)
   const width = Number((masked >> 36n) & 0xfffn)
   const tickLower = strike - width * tickSpacing

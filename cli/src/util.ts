@@ -2,7 +2,16 @@ import { knownAssets, type Network, pairs } from './config.js'
 import { type Address, type Hex, isAddress, parseUnits, zeroAddress } from 'viem'
 import type { PrivateKeyAccount } from 'viem/accounts'
 import { privateKeyToAccount } from 'viem/accounts'
-import { type BigInt01, type PositionData, PutCall, type Token01 } from './common.js'
+import {
+  type AssetType,
+  type BigInt01,
+  type Leg,
+  LegIndex,
+  type PositionData,
+  PutCall,
+  type Token01,
+  Zero01
+} from './common.js'
 
 export const getTokenAddress = (token: string, network: Network): Address | undefined => {
   return knownAssets[network?.id ?? '']?.[token]
@@ -30,6 +39,12 @@ export const tickToPrice = (tick: number, decimals: number, precision: number = 
     return Infinity
   }
   return scaled
+}
+
+export function tickToPriceBigInt (tick: number): bigint {
+  // TODO: use the uniswap math lib later to make more accurate
+  const raw = TickBase ** tick
+  return BigInt(Math.round(raw))
 }
 
 export const priceToTick = (price: number, decimals: number): number => {
@@ -170,4 +185,70 @@ export function toITMLegs (tokenId: bigint, tick: number): bigint {
 
 export function hasLeg (tokenId: bigint): boolean {
   return (tokenId >> 64n) !== 0n
+}
+
+// don't need squared price here or X96 number, since we have infinite precision in js bigint
+export function convert0to1 (amount: bigint, price: bigint): bigint {
+  return amount * price
+}
+
+export function convert1to0 (amount: bigint, price: bigint): bigint {
+  return amount / price
+}
+
+export function convertNotional (positionSize: bigint, tickLower: number, tickUpper: number, asset: AssetType) {
+  const tick = (tickLower + tickUpper) / 2
+  const price = tickToPriceBigInt(tick)
+  if (asset === 'token0') {
+    return convert0to1(positionSize, price)
+  } else {
+    return convert1to0(positionSize, price)
+  }
+}
+
+export function getAmountMoved (leg: Leg, positionSize: bigint): BigInt01 {
+  if (leg.asset === 'token0') {
+    const token0 = positionSize * BigInt(leg.optionRatio)
+    return {
+      token0,
+      token1: convertNotional(token0, leg.tickLower, leg.tickUpper, leg.asset)
+    }
+  } else {
+    const token1 = positionSize * BigInt(leg.optionRatio)
+    return {
+      token0: convertNotional(token1, leg.tickLower, leg.tickUpper, leg.asset),
+      token1
+    }
+  }
+}
+
+export interface IOAmount {
+  longs: BigInt01
+  shorts: BigInt01
+}
+export function calculateIOAmounts (leg: Leg, positionSize: bigint) {
+  const moved = getAmountMoved(leg, positionSize)
+  const isShort = leg.position === 'short'
+  const isPut = leg.tokenType === 'token0'
+  if (isPut && isShort) {
+    return {
+      shorts: { token0: moved.token0, token1: 0n },
+      longs: Zero01
+    }
+  } else if (isPut && !isShort) {
+    return {
+      longs: { token0: moved.token0, token1: 0n },
+      shorts: Zero01
+    }
+  } else if (!isPut && isShort) {
+    return {
+      shorts: { token1: moved.token0, token0: 0n },
+      longs: Zero01
+    }
+  } else {
+    return {
+      longs: { token1: moved.token0, token0: 0n },
+      shorts: Zero01
+    }
+  }
 }
