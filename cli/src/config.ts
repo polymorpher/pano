@@ -81,6 +81,8 @@ export const defaultUniswapFactoryAddress: Address = (process.env.UNISWAP_FACTOR
 
 export const defaultPanopticHelperAddress: Address = (process.env.PANOPTIC_HELPER_ADDRESS ?? '0x0bfc626b583e93a5f793bc2caa195bdbb2ed9f20') as Address
 
+export const defaultSFPMAddress: Address = (process.env.PANOPTIC_SFPM_ADDRESS ?? '0x9bdd64340d3ce0607f51bbc7508ca40d45849ab8') as Address
+
 export const defaultEffectiveLiquidityRatio = Number(process.env.EFFECTIVE_LIQUIDITY_RATIO ?? 1.5)
 
 export const defaultSlippageTolerance = Number(process.env.SLIPPAGE_TOLERANCE ?? 0.01)

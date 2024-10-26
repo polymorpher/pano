@@ -28,6 +28,11 @@ export enum PutCall {
   Call = 'token1'
 }
 
+export interface BigInt01 {
+  token0: bigint
+  token1: bigint
+}
+
 export interface PairedPoolAddresses {
   uniswapPoolAddress: Address
   panopticPoolAddress: Address

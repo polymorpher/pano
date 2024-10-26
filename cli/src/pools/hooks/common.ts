@@ -1,5 +1,5 @@
 import type { Address, GetContractReturnType, PublicClient } from 'viem'
-import { type CollateralTrackerAbi, type PanopticPoolAbi, type UniswapPoolAbi } from '../../constants.js'
+import { type CollateralTrackerAbi, type PanopticPoolAbi, type UniswapPoolAbi, type SFPMAbi } from '../../constants.js'
 import type { ERC20Info, ERC20Metadata, IERC20 } from '../../token.js'
 import type { PairedPoolAddresses, TickSpacing } from '../../common.js'
 
@@ -18,6 +18,7 @@ export interface PoolContracts {
 }
 
 export type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
+export type SFPM = GetContractReturnType<typeof SFPMAbi, PublicClient>
 export type UniswapPool = GetContractReturnType<typeof UniswapPoolAbi, PublicClient>
 export type CollateralTracker = GetContractReturnType<typeof CollateralTrackerAbi, PublicClient>
 

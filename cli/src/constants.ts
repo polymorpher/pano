@@ -27,3 +27,6 @@ export const DefaultAssets: Record<string, Record<string, string>> = {
 DefaultAssets.local = DefaultAssets.ethereum
 
 export const DECIMALS = 10_000
+
+export const MAX_V3POOL_TICK = 887272
+export const MIN_V3POOL_TICK = -887272

@@ -2,6 +2,7 @@ import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import {
+  type BigInt01,
   EmptyTickSpacing,
   type PairedPoolAddresses,
   type PositionData,
@@ -9,9 +10,16 @@ import {
   type ValidatedPair
 } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
-import { pairs as initPairs } from '../../config.js'
-import { getTokenAddress, pairToStr, parseBalanceWithUtilization, tickToPrice, unpackLeftRight256 } from '../../util.js'
-import { getContract, type Hex, zeroAddress } from 'viem'
+import { defaultSFPMAddress, pairs as initPairs } from '../../config.js'
+import {
+  getTokenAddress,
+  pairToStr,
+  parseBalanceWithUtilization,
+  tickToPrice,
+  unpack01,
+  unpackLeftRight256
+} from '../../util.js'
+import { type Address, getContract, type Hex, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
   type CollateralTracker,
@@ -19,10 +27,10 @@ import {
   EmptyPriceTickInfo,
   type PanopticPool,
   type PanopticPoolInfo,
-  type PoolContracts,
+  type PoolContracts, type SFPM,
   type UniswapPool
 } from './common.js'
-import { PanopticPoolAbi, UniswapPoolAbi } from '../../constants.js'
+import { MAX_V3POOL_TICK, MIN_V3POOL_TICK, PanopticPoolAbi, SFPMAbi, UniswapPoolAbi } from '../../constants.js'
 import { useWallet } from '../../wallet.js'
 
 export const usePools = () => {
@@ -175,6 +183,54 @@ export interface PremiumValuesWithBalanceAndUtilization extends PremiumValues {
   balanceMap: Record<Hex, PositionData>
   // to prevent loss of precision, and for ease of use in subsequent calls to useAccountCollateralFunctions
   balancesAndUtilizations: ReadonlyArray<readonly [bigint, bigint]>
+}
+
+export interface SimulateBurnResult {
+  totalCollected: BigInt01
+  totalSwapped: BigInt01
+  newTick: number
+}
+
+export const useSFPM = () => {
+  const { addMessage } = useContext(NotificationContext)
+  const { client } = usePublicClient()
+  const [sfpm, setSfpm] = useState<SFPM>()
+
+  //  function burnTokenizedPosition(
+  //       uint256 tokenId,
+  //       uint128 positionSize,
+  //       int24 slippageTickLimitLow,
+  //       int24 slippageTickLimitHigh
+  // )
+  const simulateBurn = useCallback(async (pool: Address, tokenId: bigint, positionSize: bigint): Promise<SimulateBurnResult | undefined> => {
+    if (!sfpm) {
+      return
+    }
+    const { result } = await sfpm.simulate.burnTokenizedPosition(
+      [tokenId, positionSize, MAX_V3POOL_TICK - 1, MIN_V3POOL_TICK + 1],
+      { account: pool }
+    )
+    const [totalCollectedPacked, totalSwappedPacked, newTick] = result as [bigint, bigint, number]
+    const totalCollected = unpack01(totalCollectedPacked)
+    const totalSwapped = unpack01(totalSwappedPacked)
+    return { totalCollected, totalSwapped, newTick }
+  }, [sfpm])
+
+  useEffect(() => {
+    if (!client) {
+      return
+    }
+    const init = async () => {
+      if (!client) {
+        return
+      }
+      const c = getContract({ address: defaultSFPMAddress, abi: SFPMAbi, client })
+      setSfpm(c)
+    }
+    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+  }, [addMessage, client])
+
+  return { sfpm, simulateBurn }
 }
 
 export const useAccountPoolFunctions = ({ panopticPool }: PoolContracts) => {

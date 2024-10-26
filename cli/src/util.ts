@@ -2,7 +2,7 @@ import { knownAssets, type Network, pairs } from './config.js'
 import { type Address, type Hex, isAddress, parseUnits, zeroAddress } from 'viem'
 import type { PrivateKeyAccount } from 'viem/accounts'
 import { privateKeyToAccount } from 'viem/accounts'
-import { type PositionData, PutCall, type Token01 } from './common.js'
+import { type BigInt01, type PositionData, PutCall, type Token01 } from './common.js'
 
 export const getTokenAddress = (token: string, network: Network): Address | undefined => {
   return knownAssets[network?.id ?? '']?.[token]
@@ -124,6 +124,11 @@ export function unpackLeftRight256 (data: bigint): [bigint, bigint] {
   const left = (data >> 128n) & 0xffffffffffffffffffffffffffffffffn
   const right = data & 0xffffffffffffffffffffffffffffffffn
   return [left, right]
+}
+
+export function unpack01 (data: bigint): BigInt01 {
+  const [token0, token1] = unpackLeftRight256(data)
+  return { token0, token1 }
 }
 
 export function isLegITM (tokenId: bigint, legIndex: number, tick: number): boolean {
