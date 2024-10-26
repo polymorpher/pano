@@ -124,7 +124,7 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { c0Info, c1Info, priceInverse, price, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
-  const { calculatePortfolioValue, calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
+  const { calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
   const { getAccountMarginDetails: getAccountMarginDetails0 } = useAccountCollateralFunctions(c0Info.tracker)
   const { getAccountMarginDetails: getAccountMarginDetails1 } = useAccountCollateralFunctions(c1Info.tracker)
   const [values, setPoolValues] = useState<PoolValues>()

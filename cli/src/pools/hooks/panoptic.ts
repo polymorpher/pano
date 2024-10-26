@@ -179,13 +179,16 @@ export interface PremiumValuesWithBalanceAndUtilization extends PremiumValues {
 
 export const useAccountPoolFunctions = ({ panopticPool }: PoolContracts) => {
   const { wallet } = useWallet()
-  const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number): Promise<undefined | PoolValues> => {
-    if (!panopticPool || !wallet.address) {
-      return undefined
-    }
-    const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
-    return { value0, value1 }
-  }, [wallet.address, panopticPool])
+
+  // NOTE: this function is deprecated in v1.0. Do not use.
+  // const calculatePortfolioValue = useCallback(async (positionIds: bigint[], tick: number): Promise<undefined | PoolValues> => {
+  //   if (!panopticPool || !wallet.address) {
+  //     return undefined
+  //   }
+  //   const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, tick, positionIds])
+  //   return { value0, value1 }
+  // }, [wallet.address, panopticPool])
+
   const calculateAccumulatedFeesBatch = useCallback(async (positionIds: bigint[]): Promise<undefined | PremiumValuesWithBalanceAndUtilization> => {
     if (!panopticPool || !wallet.address) {
       return undefined
@@ -199,5 +202,5 @@ export const useAccountPoolFunctions = ({ panopticPool }: PoolContracts) => {
     }
     return { premium0, premium1, balanceMap, balancesAndUtilizations }
   }, [wallet.address, panopticPool])
-  return { calculatePortfolioValue, calculateAccumulatedFeesBatch }
+  return { calculateAccumulatedFeesBatch }
 }
