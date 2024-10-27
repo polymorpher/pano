@@ -6,8 +6,8 @@ import {
   type AssetType,
   type BigInt01,
   type Leg,
-  LegIndex,
-  type PositionData,
+  LegIndex, type Position,
+  type PositionData, type PositionWithData,
   PutCall,
   type Token01,
   Zero01
@@ -226,7 +226,8 @@ export interface IOAmount {
   longs: BigInt01
   shorts: BigInt01
 }
-export function calculateIOAmounts (leg: Leg, positionSize: bigint) {
+
+export function calculateIOAmounts (leg: Leg, positionSize: bigint): IOAmount {
   const moved = getAmountMoved(leg, positionSize)
   const isShort = leg.position === 'short'
   const isPut = leg.tokenType === 'token0'
@@ -251,4 +252,30 @@ export function calculateIOAmounts (leg: Leg, positionSize: bigint) {
       shorts: Zero01
     }
   }
+}
+export const ZeroIOAmount: IOAmount = { longs: Zero01, shorts: Zero01 }
+export function addBigInt01 (a: BigInt01, b: BigInt01): BigInt01 {
+  return { token0: a.token0 + b.token0, token1: a.token1 + b.token1 }
+}
+export function addIOAmounts (a: IOAmount, b: IOAmount): IOAmount {
+  return { longs: addBigInt01(a.longs, b.longs), shorts: addBigInt01(a.shorts, b.shorts) }
+}
+
+export function computeExercisedAmounts (p: PositionWithData): IOAmount {
+  let amounts = ZeroIOAmount
+  for (const l of p.legs) {
+    if (!l) {
+      break
+    }
+    if (!p.balance || p.balance <= 0n) {
+      continue
+    }
+    const legAmounts = calculateIOAmounts(l, p.balance)
+    amounts = addIOAmounts(amounts, legAmounts)
+  }
+  return amounts
+}
+
+export function countLegs (p: Position): number {
+  return p.legs.filter(e => e !== undefined).length
 }

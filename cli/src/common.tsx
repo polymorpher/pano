@@ -15,12 +15,13 @@ export const SectionTitle = ({ children }: PropsWithChildren) => {
 export type Token01 = 'token0' | 'token1'
 export type PositionType = 'long' | 'short'
 export type LegIndex = 0 | 1 | 2 | 3
+export type AssetType = Token01
 
 // TODO: use this in legs, to replace Token01
-export enum AssetType {
-  Token0 = 'token0',
-  Token1 = 'token1'
-}
+// export enum AssetType {
+//   Token0 = 'token0',
+//   Token1 = 'token1'
+// }
 
 // TODO: use this in legs, to replace Token01
 export enum PutCall {

@@ -5,24 +5,24 @@ import {
   type BigInt01,
   EmptyTickSpacing,
   type PairedPoolAddresses,
-  type PositionData,
+  type PositionData, type PositionWithData,
   type TickSpacing,
   type ValidatedPair
 } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
 import { defaultSFPMAddress, pairs as initPairs } from '../../config.js'
 import {
+  computeExercisedAmounts,
+  countLegs, getAmountMoved,
   getTokenAddress,
   pairToStr,
   parseBalanceWithUtilization,
   tickToPrice,
-  unpack01,
-  unpackLeftRight256
+  unpack01
 } from '../../util.js'
 import { type Address, getContract, type Hex, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
-  type CollateralTracker,
   EmptyPriceTick,
   EmptyPriceTickInfo,
   type PanopticPool,
@@ -202,10 +202,12 @@ export const useSFPM = () => {
   //       int24 slippageTickLimitLow,
   //       int24 slippageTickLimitHigh
   // )
-  const simulateBurn = useCallback(async (pool: Address, tokenId: bigint, positionSize: bigint): Promise<SimulateBurnResult | undefined> => {
+  const simulateBurn = useCallback(async (pool: Address, position: PositionWithData): Promise<SimulateBurnResult | undefined> => {
     if (!sfpm) {
       return
     }
+    const tokenId = BigInt(position.id)
+    const positionSize = position.balance ?? 0n
     const { result } = await sfpm.simulate.burnTokenizedPosition(
       [tokenId, positionSize, MAX_V3POOL_TICK - 1, MIN_V3POOL_TICK + 1],
       { account: pool }
@@ -215,6 +217,22 @@ export const useSFPM = () => {
     const totalSwapped = unpack01(totalSwappedPacked)
     return { totalCollected, totalSwapped, newTick }
   }, [sfpm])
+
+  const computeIntrinsicValue = useCallback(async (pool: Address, positions: PositionWithData[]): Promise<Record<Hex, BigInt01>> => {
+    const intrinsicValues: Record<Hex, BigInt01> = {}
+    for (const p of positions) {
+      const burnResult = await simulateBurn(pool, p)
+      if (!burnResult) {
+        continue
+      }
+      const amounts = computeExercisedAmounts(p)
+      const { totalSwapped } = burnResult
+      const token0 = totalSwapped.token0 - amounts.longs.token0 + amounts.shorts.token0
+      const token1 = totalSwapped.token1 - amounts.longs.token1 + amounts.shorts.token1
+      intrinsicValues[p.id] = { token0, token1 }
+    }
+    return intrinsicValues
+  }, [simulateBurn])
 
   useEffect(() => {
     if (!client) {
@@ -230,7 +248,7 @@ export const useSFPM = () => {
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [addMessage, client])
 
-  return { sfpm, simulateBurn }
+  return { sfpm, simulateBurn, computeIntrinsicValue }
 }
 
 export const useAccountPoolFunctions = ({ panopticPool }: PoolContracts) => {
