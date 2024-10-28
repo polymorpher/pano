@@ -64,7 +64,7 @@ const useSFPMHook = () => {
         continue
       }
       const amounts = computeExercisedAmounts(p)
-      addMessage(`amounts ${stringify(amounts)} positionSize ${p.balance}`)
+      // addMessage(`amounts ${stringify(amounts)} positionSize ${p.balance}`)
       const { totalSwapped } = burnResult
       const token0 = totalSwapped.token0 - amounts.longs.token0 + amounts.shorts.token0
       const token1 = totalSwapped.token1 - amounts.longs.token1 + amounts.shorts.token1

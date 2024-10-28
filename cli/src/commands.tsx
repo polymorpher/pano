@@ -22,7 +22,7 @@ export enum CommandKeys {
   Sell = 'sell',
   Buy = 'buy',
   Mint = 'mint',
-  Admin = 'admin',
+  Manage = 'manage',
   Quit = 'quit',
 }
 
@@ -32,10 +32,10 @@ export const Commands: Record<CommandKeys, Command> = {
   wallet: { short: 'w', full: 'wallet', desc: 'set private key for wallet (if not already set through .env, environment variable, or command line)', submenu: true },
   deposit: { short: 'd', full: 'deposit', desc: 'deposit or withdraw funds as collateral in one of the trading pools', submenu: true, wallet: true },
   portfolio: { short: 'p', full: 'portfolio', desc: 'show your deposited assets, option positions, estimated profit and loss', wallet: true, submenu: true },
-  sell: { short: 's', full: 'sell', desc: 'sell (short) a simple option (single leg)', wallet: true, submenu: true },
-  buy: { short: 'b', full: 'buy', desc: 'buy (long) a simple option (single leg)', wallet: true, submenu: true },
-  mint: { short: 'm', full: 'mint', desc: 'mint a complex option (multi-leg, potentially mixing long and short)', tbd: true, submenu: true },
-  admin: { short: 'a', full: 'admin', desc: 'enter admin mode to perform management operations (liquidation, forced exercise)', wallet: true, tbd: true },
+  sell: { short: 's', full: 'sell', desc: 'sell a simple option (open a short position with a single leg)', wallet: true, submenu: true },
+  buy: { short: 'b', full: 'buy', desc: 'buy a simple option (option a long position with a single leg)', wallet: true, submenu: true },
+  mint: { short: 'a', full: 'advanced', desc: 'mint a complex option (open a position with multiple legs that potentially hedge against each other, mixing long and short)', tbd: true, submenu: true },
+  manage: { short: 'm', full: 'manage', desc: 'perform market management operations (permissionless liquidation, forced exercise)', wallet: true, tbd: true },
   quit: { short: 'q', full: 'quit', desc: 'exit the program' }
 }
 

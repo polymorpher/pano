@@ -13,7 +13,9 @@ import {
   addBigInt01, countLegs,
   findBaseAsset, flipPutCall,
   hasLeg,
-  negate01, stringify,
+  negate01,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  stringify,
   tickToPrice,
   toFixed,
   toITMLegs
@@ -78,16 +80,16 @@ interface IntrinsicValueBlockProps {
 const IntrinsicValueBlock = ({ intrinsicValue, poolInfo }: IntrinsicValueBlockProps) => {
   const token0ValueFormatted = formatUnits(intrinsicValue.token0, poolInfo.token0.decimals)
   const token1ValueFormatted = formatUnits(intrinsicValue.token1, poolInfo.token1.decimals)
-  return <Text>Value if exercised: {toFixed(Number(token0ValueFormatted))} {poolInfo.token0.symbol}, {toFixed(Number(token1ValueFormatted))} {poolInfo.token1.symbol}</Text>
+  return <Text>Value if closed (burned): {toFixed(Number(token0ValueFormatted))} {poolInfo.token0.symbol}, {toFixed(Number(token1ValueFormatted))} {poolInfo.token1.symbol}</Text>
 }
 
 export const Position = ({ position, poolInfo, isItm, intrinsicValue }: PositionProps) => {
   const iv = negate01(intrinsicValue)
-  const { addMessage } = useContext(NotificationContext)
-  useEffect(() => {
-    addMessage(`Position:position ${stringify(position)}`)
-    addMessage(`Position:intrinsicValue ${stringify(intrinsicValue)}`)
-  }, [position, addMessage, intrinsicValue])
+  // const { addMessage } = useContext(NotificationContext)
+  // useEffect(() => {
+  //   addMessage(`Position:position ${stringify(position)}`)
+  //   addMessage(`Position:intrinsicValue ${stringify(intrinsicValue)}`)
+  // }, [position, addMessage, intrinsicValue])
 
   if (!position.legs[0]) {
     return <></>
