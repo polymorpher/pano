@@ -80,7 +80,7 @@ interface IntrinsicValueBlockProps {
 const IntrinsicValueBlock = ({ intrinsicValue, poolInfo }: IntrinsicValueBlockProps) => {
   const token0ValueFormatted = formatUnits(intrinsicValue.token0, poolInfo.token0.decimals)
   const token1ValueFormatted = formatUnits(intrinsicValue.token1, poolInfo.token1.decimals)
-  return <Text>Value if closed (burned): {toFixed(Number(token0ValueFormatted))} {poolInfo.token0.symbol}, {toFixed(Number(token1ValueFormatted))} {poolInfo.token1.symbol}</Text>
+  return <Text>Net value (when closed / burned, excluding premium): {toFixed(Number(token0ValueFormatted))} {poolInfo.token0.symbol}, {toFixed(Number(token1ValueFormatted))} {poolInfo.token1.symbol}</Text>
 }
 
 export const Position = ({ position, poolInfo, isItm, intrinsicValue }: PositionProps) => {
