@@ -1,34 +1,27 @@
 import React, { useContext, useEffect, useState } from 'react'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {
   type BigInt01,
-  extractPoolId,
   type Leg,
   type PositionWithData,
-  tokenIdToLeg,
-  tokenIdToPosition,
   Zero01
 } from '../common.js'
 import { Box, Text } from 'ink'
-import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
+import { type CollateralFullInfo, type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {
   addBigInt01,
   findBaseAsset,
   hasLeg,
-  isITM,
   negate01,
-  stringify,
   tickToPrice,
   toFixed,
   toITMLegs
 } from '../util.js'
 import { type Address, formatUnits, type Hex } from 'viem'
-import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
 import {
-  type PoolValues,
+  type PremiumValues,
   type PremiumValuesWithBalanceAndUtilization,
   useAccountPoolFunctions,
   usePoolStatsByContracts
@@ -39,6 +32,8 @@ import { useSFPM } from '../pools/sfpm.js'
 interface PositionProps {
   position: PositionWithData
   poolInfo: UniswapPoolBasicInfo
+  intrinsicValue: BigInt01
+  isItm: boolean
 }
 
 interface LegProps {
@@ -80,7 +75,6 @@ export const Position = ({ position, poolInfo }: PositionProps) => {
   //   addMessage(stringify(position))
   // }, [position, addMessage])
 
-  // const balanceFormatted = formatUnits(position.balance, poolInfo.)
   if (!position.legs[0]) {
     return <></>
   }
@@ -110,7 +104,7 @@ export const Position = ({ position, poolInfo }: PositionProps) => {
           return <></>
         }
         return <React.Fragment key={`leg-${index}`}>
-          <Text>(TODO))</Text>
+          <Text>(TODO)</Text>
         </React.Fragment>
       })}
   </Box>
@@ -120,44 +114,33 @@ interface PoolPositionsProps {
   poolPositions: PositionWithData[]
 }
 export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositionsProps) => {
+  const { addMessage } = useContext(NotificationContext)
   const poolInfo = useUniswapPoolBasicInfo(uniswapPoolAddress)
   const name = `${poolInfo.token0.symbol}/${poolInfo.token1.symbol}`
-  // const { addMessage } = useContext(NotificationContext)
-  // useEffect(() => {
-  //   addMessage(`poolPositions: ${stringify(poolPositions)}`)
-  // }, [poolPositions, addMessage])
-  return <Box flexDirection={'column'} marginY={1}>
-    <Text>Pool {name} ({uniswapPoolAddress})</Text>
-    {!poolInfo.ready && <Text>- Loading pool data...</Text>}
-    {poolInfo.ready && poolPositions.map(position => {
-      return <Position key={position.id} position={position} poolInfo={poolInfo}/>
-    })}
-    {poolInfo.ready && <PoolValue uniswapPoolAddress={uniswapPoolAddress} poolPositions={poolPositions} />}
-  </Box>
-}
 
-type PoolValueProps = PoolPositionsProps
-
-export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps) => {
-  const { addMessage } = useContext(NotificationContext)
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { c0Info, c1Info, priceInverse, price, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+  const { c0Info, c1Info, priceInverse, price, priceTick, ready: poolStatsReady, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
+
   const { calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
   const { computeIntrinsicValue } = useSFPM()
   const { getAccountMarginDetails: getAccountMarginDetails0 } = useAccountCollateralFunctions(c0Info.tracker)
   const { getAccountMarginDetails: getAccountMarginDetails1 } = useAccountCollateralFunctions(c1Info.tracker)
-  const [totalIntrisicValue, setTotalIntrinsicValue] = useState<BigInt01>()
-  const [intrisicValues, setIntrinsicValues] = useState<Record<Hex, BigInt01>>({})
+  const [totalIntrinsicValue, setTotalIntrinsicValue] = useState<BigInt01>()
+  const [intrinsicValues, setIntrinsicValues] = useState<Record<Hex, BigInt01>>({})
   const [itmLookup, setItmLookup] = useState<Record<Hex, boolean>>({})
   const [premiums, setPoolPremiums] = useState<PremiumValuesWithBalanceAndUtilization>()
   const [accountMargin0, setAccountMargin0] = useState<AccountCollateralMarginDetails>()
   const [accountMargin1, setAccountMargin1] = useState<AccountCollateralMarginDetails>()
-  const { wallet } = useWallet()
+
+  // const { addMessage } = useContext(NotificationContext)
+  // useEffect(() => {
+  //   addMessage(`poolPositions: ${stringify(poolPositions)}`)
+  // }, [poolPositions, addMessage])
 
   useEffect(() => {
     async function init () {
-      if (!ready || !wallet.address || !panopticPool) {
+      if (!poolStatsReady || !panopticPool) {
         return
       }
 
@@ -214,41 +197,78 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       setAccountMargin1(margin1)
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [panopticPool, getAccountMarginDetails0, getAccountMarginDetails1, calculateAccumulatedFeesBatch, computeIntrinsicValue, ready, priceTick, poolPositions, wallet.address, addMessage])
+  }, [panopticPool, getAccountMarginDetails0, getAccountMarginDetails1, calculateAccumulatedFeesBatch, computeIntrinsicValue, poolStatsReady, priceTick, poolPositions, addMessage])
 
-  if (!totalIntrisicValue || !premiums) {
+  const ready = poolInfo.ready && poolStatsReady && premiums && totalIntrinsicValue && accountMargin0 && accountMargin1
+
+  return <Box flexDirection={'column'} marginY={1}>
+    <Text>Pool {name} ({uniswapPoolAddress})</Text>
+    {!ready && <Text>- Loading pool data...</Text>}
+    {ready && poolPositions.map(position => {
+      return <Position
+          key={position.id}
+          position={position}
+          poolInfo={poolInfo}
+          isItm={itmLookup[position.id]}
+          intrinsicValue={intrinsicValues[position.id]}
+      />
+    })}
+    {ready && <PoolValue
+        premiums={premiums}
+        totalIntrinsicValue={totalIntrinsicValue}
+        c0Info={c0Info} c1Info={c1Info}
+        accountMargin0={accountMargin0}
+        accountMargin1={accountMargin1}
+        price={price}/>}
+  </Box>
+}
+
+interface PoolValueProps {
+  premiums: PremiumValues
+  totalIntrinsicValue: BigInt01
+  c0Info: CollateralFullInfo
+  c1Info: CollateralFullInfo
+  accountMargin0: AccountCollateralMarginDetails
+  accountMargin1: AccountCollateralMarginDetails
+  price: number
+}
+
+export const PoolValue = ({ totalIntrinsicValue, premiums, c0Info, c1Info, accountMargin0, accountMargin1, price }: PoolValueProps) => {
+  if (!totalIntrinsicValue || !premiums) {
     return <Box flexDirection={'column'} marginY={1}>
       <Text>Pool Portfolio Value</Text>
       <Text color={'yellow'}>[Loading...]</Text>
     </Box>
   }
-  const color0 = totalIntrisicValue.token0 === 0n ? 'yellow' : totalIntrisicValue.token0 > 0n ? 'green' : 'red'
-  const color1 = totalIntrisicValue.token1 === 0n ? 'yellow' : totalIntrisicValue.token1 > 0n ? 'green' : 'red'
+  const color0 = totalIntrinsicValue.token0 === 0n ? 'yellow' : totalIntrinsicValue.token0 > 0n ? 'green' : 'red'
+  const color1 = totalIntrinsicValue.token1 === 0n ? 'yellow' : totalIntrinsicValue.token1 > 0n ? 'green' : 'red'
 
-  const pnl0 = formatUnits(values.value0, c0Info.decimals)
-  const pnl1 = formatUnits(values.value1, c1Info.decimals)
+  const iv0 = formatUnits(totalIntrinsicValue.token0, c0Info.decimals)
+  const iv1 = formatUnits(totalIntrinsicValue.token1, c1Info.decimals)
+
   const premium0f = formatUnits(premiums.premium0 ?? 0n, c0Info.decimals)
   const premium1f = formatUnits(premiums.premium1, c1Info.decimals)
-  const color0p = premiums.premium0 === 0n ? 'yellow' : values.value0 > 0n ? 'green' : 'red'
-  const color1p = premiums.premium1 === 0n ? 'yellow' : values.value1 > 0n ? 'green' : 'red'
+  const color0p = premiums.premium0 === 0n ? 'yellow' : premiums.premium0 > 0n ? 'green' : 'red'
+  const color1p = premiums.premium1 === 0n ? 'yellow' : premiums.premium1 > 0n ? 'green' : 'red'
+
   const margin0f = formatUnits(accountMargin0?.requiredBalance ?? 0n, c0Info.decimals)
   const balance0f = formatUnits(accountMargin0?.accountBalance ?? 0n, c0Info.decimals)
   const margin1f = formatUnits(accountMargin1?.requiredBalance ?? 0n, c1Info.decimals)
   const balance1f = formatUnits(accountMargin1?.accountBalance ?? 0n, c1Info.decimals)
   const baseAsset = findBaseAsset(c0Info.symbol, c1Info.symbol)
-  const displayPrice = baseAsset === 'token0' ? price : priceInverse
+  const displayPrice = baseAsset === 'token0' ? price : 1 / price
   const displayPriceSymbol = baseAsset === 'token0' ? c1Info.symbol : c0Info.symbol
 
   return <Box flexDirection={'column'} marginY={1}>
-    <Text>Pool Portfolio Value</Text>
+    <Text>Pool Portfolio</Text>
     <Text>Current price: {toFixed(displayPrice)} {displayPriceSymbol} </Text>
     <Text> </Text>
-    <Text color={color0}>{c0Info.symbol} Profit/Loss: {toFixed(Number(pnl0))}</Text>
+    <Text color={color0}>{c0Info.symbol} Aggregated Intrinsic Value: {toFixed(Number(iv0))}</Text>
     <Text color={color0p}>{c0Info.symbol} Premium Balance: {toFixed(Number(premium0f))}</Text>
     <Text>{c0Info.symbol} Margin Requirement: {toFixed(Number(margin0f))}</Text>
     <Text>{c0Info.symbol} Deposit Balance: {toFixed(Number(balance0f))}</Text>
 
-    <Text color={color1}>{c1Info.symbol} Profit/Loss: {toFixed(Number(pnl1))}</Text>
+    <Text color={color1}>{c1Info.symbol} Aggregated Intrinsic Value: {toFixed(Number(iv1))}</Text>
     <Text color={color1p}>{c1Info.symbol} Premium Balance: {toFixed(Number(premium1f))}</Text>
     <Text>{c1Info.symbol} Margin Requirement: {toFixed(Number(margin1f))}</Text>
     <Text>{c1Info.symbol} Deposit Balance: {toFixed(Number(balance1f))}</Text>
