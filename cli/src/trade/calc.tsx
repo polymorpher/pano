@@ -2,7 +2,8 @@
 import { type TickSpacing, type Token01 } from '../common.js'
 import { formatUnits, parseUnits } from 'viem'
 import { priceToTick } from '../util.js'
-export function getPositionSizeInBaseAsset (positionSize: bigint,
+export function getPositionSizeInBaseAsset(
+  positionSize: bigint,
   putCall: Token01,
   quoteAsset: Token01,
   strikePrice: number,
@@ -24,7 +25,11 @@ export function getPositionSizeInBaseAsset (positionSize: bigint,
   }
 }
 
-export function getTickRange (priceTick: number, slippage: number, tickSpacing: TickSpacing): [number, number] {
+export function getTickRange(
+  priceTick: number,
+  slippage: number,
+  tickSpacing: TickSpacing
+): [number, number] {
   const slippageTickPlus = priceToTick(1 + slippage, 0)
   // note: this is a negative number
   const slippageTickMinus = priceToTick(1 - slippage, 0)

@@ -1,11 +1,18 @@
 import { usePublicClient } from './client.js'
 
 import { useEffect, useState } from 'react'
-import { getContract, type GetContractReturnType, type PublicClient } from 'viem'
+import {
+  getContract,
+  type GetContractReturnType,
+  type PublicClient
+} from 'viem'
 import { PanopticHelperAbi } from './constants.js'
 import { getPanopticHelperAddress } from './cmd.js'
 
-export type PanopticHelper = GetContractReturnType<typeof PanopticHelperAbi, PublicClient>
+export type PanopticHelper = GetContractReturnType<
+  typeof PanopticHelperAbi,
+  PublicClient
+>
 
 // for making use of Panoptic helper specifically, to create option combos (that have multiple legs which hedge against each other)
 // Need to call the smart contract because Panoptic SDK does not replicate the Solidity implementation

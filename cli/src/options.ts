@@ -4,10 +4,11 @@ const options: Record<string, Options> = {
     alias: 'n',
     type: 'string',
     default: 'local',
-    describe: 'The network you want to use, which provides a set of default values for RPC, chain id, and contract addresses, so you don\'t need to specify them one by one\n' +
-        '  - local (forked ETH mainnet): RPC=http://localhost:8545 chainId=1\n' +
-        '  - anvil: RPC=http://localhost:8545 chainId=31337\n' +
-        '  - harmony: RPC=https://api.harmony.one chainId=1666600000'
+    describe:
+      "The network you want to use, which provides a set of default values for RPC, chain id, and contract addresses, so you don't need to specify them one by one\n" +
+      '  - local (forked ETH mainnet): RPC=http://localhost:8545 chainId=1\n' +
+      '  - anvil: RPC=http://localhost:8545 chainId=31337\n' +
+      '  - harmony: RPC=https://api.harmony.one chainId=1666600000'
   },
   rpc: {
     alias: 'r',

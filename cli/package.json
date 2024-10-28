@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "format": "prettier --write .",
+    "lint": "eslint . --fix",
     "start": "tsx src/index.ts",
     "help": "tsx src/index.ts --help",
     "genTypes": "tsx scripts/genTypes.ts; eslint types-contract --fix"
@@ -33,14 +35,17 @@
     "@types/node": "^22.1.0",
     "@types/react": "^18.3.3",
     "@types/yargs": "^17.0.33",
-    "eslint": "^8",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-config-standard-with-typescript": "^43.0.1",
     "eslint-plugin-compat": "^6.0.0",
     "eslint-plugin-n": "^16",
+    "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-promise": "^6",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "^4",
     "globals": "^15.9.0",
+    "prettier": "^3.3.3",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.0.1"
   }
