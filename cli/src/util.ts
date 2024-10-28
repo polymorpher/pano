@@ -142,10 +142,29 @@ export function unpackLeftRight256 (data: bigint): [bigint, bigint] {
 }
 
 export function unpack01 (data: bigint): BigInt01 {
-  const [token0, token1] = unpackLeftRight256(data)
+  const [token1, token0] = unpackLeftRight256(data)
   return { token0, token1 }
 }
 
+function parseSignedBigInt (data: string | Hex): bigint {
+  if (data.startsWith('0x')) {
+    data = data.slice(2)
+  }
+  const bitLength = data.length * 4
+  const value = BigInt(`0x${data}`)
+  const isNegative = (value >> BigInt(bitLength - 1)) & 1n
+  if (isNegative) {
+    // Calculate two's complement
+    const mask = (1n << BigInt(bitLength)) - 1n
+    return -(((~value) & mask) + 1n)
+  }
+  return value
+}
+
+export function unpack01Signed (data: bigint): BigInt01 {
+  const [token1s, token0s] = unpackLeftRight256(data)
+  return { token0: parseSignedBigInt(token0s.toString(16)), token1: parseSignedBigInt(token1s.toString(16)) }
+}
 
 export function isLegITM (tokenId: bigint, legIndex: number, tick: number): boolean {
   const masked = (tokenId >> 64n >> (48n * BigInt(legIndex))) & 0xffffffffffffn
@@ -244,12 +263,12 @@ export function calculateIOAmounts (leg: Leg, positionSize: bigint): IOAmount {
     }
   } else if (!isPut && isShort) {
     return {
-      shorts: { token1: moved.token0, token0: 0n },
+      shorts: { token1: moved.token1, token0: 0n },
       longs: Zero01
     }
   } else {
     return {
-      longs: { token1: moved.token0, token0: 0n },
+      longs: { token1: moved.token1, token0: 0n },
       shorts: Zero01
     }
   }
@@ -282,7 +301,7 @@ export function computeExercisedAmounts (p: PositionWithData): IOAmount {
 }
 
 export function countLegs (p: Position): number {
-  return p.legs.filter(e => e !== undefined).length
+  return p.legs.filter(e => e !== undefined && e !== null).length
 }
 
 export function getOptionRange (strike: number, width: number, tickSpacing: number): [number, number] {

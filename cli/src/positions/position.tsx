@@ -82,24 +82,25 @@ const IntrinsicValueBlock = ({ intrinsicValue, poolInfo }: IntrinsicValueBlockPr
 }
 
 export const Position = ({ position, poolInfo, isItm, intrinsicValue }: PositionProps) => {
+  const iv = negate01(intrinsicValue)
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
-    addMessage(stringify(position))
-    addMessage(stringify(intrinsicValue))
+    addMessage(`Position:position ${stringify(position)}`)
+    addMessage(`Position:intrinsicValue ${stringify(intrinsicValue)}`)
   }, [position, addMessage, intrinsicValue])
 
   if (!position.legs[0]) {
     return <></>
   }
   const itmBlock = isItm ? <Text color={'red'}>[ITM]</Text> : ''
-
+  // addMessage(`countLegs(position) ${countLegs(position)} ${stringify(position.legs)}`)
   if (countLegs(position) === 1) {
     const numContracts = formatUnits(position.balance ?? 0n, position.legs[0].asset === 'token1' ? poolInfo.token1.decimals : poolInfo.token0.decimals)
     return <Box>
       <Text>- {itmBlock} {numContracts} contracts of </Text>
       <SingleLeg leg={position.legs[0]} poolInfo={poolInfo} />
       <Text> | </Text>
-      <IntrinsicValueBlock intrinsicValue={intrinsicValue} poolInfo={poolInfo}/>
+      <IntrinsicValueBlock intrinsicValue={iv} poolInfo={poolInfo}/>
     </Box>
   }
 
@@ -120,18 +121,6 @@ export const Position = ({ position, poolInfo, isItm, intrinsicValue }: Position
     {token1Legs.map(({ leg, index }) => {
       return <SingleLeg key={`leg-${index}`} leg={leg} poolInfo={poolInfo} showRatio />
     })}
-
-    {/* <Text>{position.balance?.toString()} contracts of </Text> */}
-    {/* {position.legs.filter(l => !!l).length === 1 */}
-    {/*  ? <SingleLeg leg={position.legs[0]} poolInfo={poolInfo} /> */}
-    {/*  : position.legs.map((leg, index) => { */}
-    {/*    if (!leg) { */}
-    {/*      return <></> */}
-    {/*    } */}
-    {/*    return <React.Fragment key={`leg-${index}`}> */}
-    {/*      <Text>(TODO)</Text> */}
-    {/*    </React.Fragment> */}
-    {/*  })} */}
   </Box>
 }
 interface PoolPositionsProps {
@@ -158,7 +147,6 @@ export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositio
   const [accountMargin0, setAccountMargin0] = useState<AccountCollateralMarginDetails>()
   const [accountMargin1, setAccountMargin1] = useState<AccountCollateralMarginDetails>()
 
-  // const { addMessage } = useContext(NotificationContext)
   // useEffect(() => {
   //   addMessage(`poolPositions: ${stringify(poolPositions)}`)
   // }, [poolPositions, addMessage])

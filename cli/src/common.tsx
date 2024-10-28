@@ -127,7 +127,8 @@ export const getUniswapPoolId = (poolAddress: Address): bigint => {
 export interface Position {
   uniswapPoolAddress: Address
   tickSpacing: TickSpacing
-  legs: Tuple<Leg | undefined, 4>
+  // DB may load empty leg as either null or undefined. For leveldb and pouchdb, it is null
+  legs: Tuple<Leg | null | undefined, 4>
   ts?: number
   atTick?: number
 }

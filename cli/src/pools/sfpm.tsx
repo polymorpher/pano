@@ -4,7 +4,7 @@ import { usePublicClient } from 'src/client.js'
 import { type Address, getContract, type GetContractReturnType, type Hex, type PublicClient } from 'viem'
 import type { BigInt01, PositionWithData } from 'src/common.js'
 import { MAX_V3POOL_TICK, MIN_V3POOL_TICK, SFPMAbi } from 'src/constants.js'
-import { computeExercisedAmounts, unpack01 } from 'src/util.js'
+import { computeExercisedAmounts, stringify, unpack01, unpack01Signed } from 'src/util.js'
 import { defaultSFPMAddress } from 'src/config.js'
 
 export type SFPM = GetContractReturnType<typeof SFPMAbi, PublicClient>
@@ -49,8 +49,10 @@ const useSFPMHook = () => {
       { account: pool }
     )
     const [totalCollectedPacked, totalSwappedPacked, newTick] = result as [bigint, bigint, number]
-    const totalCollected = unpack01(totalCollectedPacked)
-    const totalSwapped = unpack01(totalSwappedPacked)
+    // addMessage(stringify({ totalCollectedPacked, totalSwappedPacked, newTick }))
+    const totalCollected = unpack01Signed(totalCollectedPacked)
+    const totalSwapped = unpack01Signed(totalSwappedPacked)
+    // addMessage(stringify({ totalSwapped, totalCollected }))
     return { totalCollected, totalSwapped, newTick }
   }, [sfpm])
 
@@ -62,13 +64,14 @@ const useSFPMHook = () => {
         continue
       }
       const amounts = computeExercisedAmounts(p)
+      addMessage(`amounts ${stringify(amounts)} positionSize ${p.balance}`)
       const { totalSwapped } = burnResult
       const token0 = totalSwapped.token0 - amounts.longs.token0 + amounts.shorts.token0
       const token1 = totalSwapped.token1 - amounts.longs.token1 + amounts.shorts.token1
       intrinsicValues[p.id] = { token0, token1 }
     }
     return intrinsicValues
-  }, [simulateBurn])
+  }, [addMessage, simulateBurn])
 
   useEffect(() => {
     if (!client) {
