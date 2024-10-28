@@ -257,6 +257,10 @@ export const ZeroIOAmount: IOAmount = { longs: Zero01, shorts: Zero01 }
 export function addBigInt01 (a: BigInt01, b: BigInt01): BigInt01 {
   return { token0: a.token0 + b.token0, token1: a.token1 + b.token1 }
 }
+export function negate01 (n: BigInt01): BigInt01 {
+  return { token0: -n.token0, token1: -n.token1 }
+}
+
 export function addIOAmounts (a: IOAmount, b: IOAmount): IOAmount {
   return { longs: addBigInt01(a.longs, b.longs), shorts: addBigInt01(a.shorts, b.shorts) }
 }

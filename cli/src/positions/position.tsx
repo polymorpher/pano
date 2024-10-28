@@ -1,12 +1,30 @@
 import React, { useContext, useEffect, useState } from 'react'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { extractPoolId, type Leg, type PositionWithData, tokenIdToLeg, tokenIdToPosition } from '../common.js'
+import {
+  type BigInt01,
+  extractPoolId,
+  type Leg,
+  type PositionWithData,
+  tokenIdToLeg,
+  tokenIdToPosition,
+  Zero01
+} from '../common.js'
 import { Box, Text } from 'ink'
 import { type UniswapPoolBasicInfo } from '../pools/hooks/common.js'
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { findBaseAsset, hasLeg, isITM, stringify, tickToPrice, toFixed, toITMLegs } from '../util.js'
-import { type Address, formatUnits } from 'viem'
+import {
+  addBigInt01,
+  findBaseAsset,
+  hasLeg,
+  isITM,
+  negate01,
+  stringify,
+  tickToPrice,
+  toFixed,
+  toITMLegs
+} from '../util.js'
+import { type Address, formatUnits, type Hex } from 'viem'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
 import {
@@ -16,6 +34,7 @@ import {
   usePoolStatsByContracts
 } from '../pools/hooks/panoptic.js'
 import { type AccountCollateralMarginDetails, useAccountCollateralFunctions } from '../pools/hooks/collateral.js'
+import { useSFPM } from '../pools/sfpm.js'
 
 interface PositionProps {
   position: PositionWithData
@@ -125,9 +144,12 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { c0Info, c1Info, priceInverse, price, priceTick, ready, tickSpacing } = usePoolStatsByContracts({ panopticPool, uniswapPool })
   const { calculateAccumulatedFeesBatch } = useAccountPoolFunctions({ panopticPool })
+  const { computeIntrinsicValue } = useSFPM()
   const { getAccountMarginDetails: getAccountMarginDetails0 } = useAccountCollateralFunctions(c0Info.tracker)
   const { getAccountMarginDetails: getAccountMarginDetails1 } = useAccountCollateralFunctions(c1Info.tracker)
-  const [values, setPoolValues] = useState<PoolValues>()
+  const [totalIntrisicValue, setTotalIntrinsicValue] = useState<BigInt01>()
+  const [intrisicValues, setIntrinsicValues] = useState<Record<Hex, BigInt01>>({})
+  const [itmLookup, setItmLookup] = useState<Record<Hex, boolean>>({})
   const [premiums, setPoolPremiums] = useState<PremiumValuesWithBalanceAndUtilization>()
   const [accountMargin0, setAccountMargin0] = useState<AccountCollateralMarginDetails>()
   const [accountMargin1, setAccountMargin1] = useState<AccountCollateralMarginDetails>()
@@ -135,20 +157,25 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
 
   useEffect(() => {
     async function init () {
-      if (!ready || !wallet.address) {
+      if (!ready || !wallet.address || !panopticPool) {
         return
       }
 
-      // const [value0, value1] = await panopticPool.read.calculatePortfolioValue([wallet.address, priceTick, positionIds])
-      // const positionIdsDebug = poolPositions.filter(p => p.legs[0]?.tokenType !== 'token0').map(p => BigInt(p.id))
-      // const positionIdsDebug = poolPositions.slice(0, 1).map(p => BigInt(p.id))
-      // const values = await calculatePortfolioValue(positionIdsDebug, priceTick)
-      const itmPositions = poolPositions.filter(p => {
+      const itmLookup: Record<Hex, boolean> = {}
+      for (const p of poolPositions) {
         const id = BigInt(p.id)
         const newId = toITMLegs(id, priceTick)
-        return hasLeg(newId)
-      })
-      // TODO: this is quite complex, need more debugging and testing later, when we have multi-leg positions. Pay extra attention to risk partners
+        itmLookup[p.id] = hasLeg(newId)
+      }
+      setItmLookup(itmLookup)
+
+      // NOTE: alternatively if we need to store itmPositions and compute something based on it...
+      // const itmPositions = poolPositions.filter(p => {
+      //   const id = BigInt(p.id)
+      //   const newId = toITMLegs(id, priceTick)
+      //   return hasLeg(newId)
+      // })
+      // Another implementation which drops all positions' non-itm legs. This is probably too complex to be useful, and needs more debugging and testing later, when we have multi-leg positions. Pay extra attention to risk partners
       // const itmPositions = poolPositions.map(p => {
       //   const id = BigInt(p.id)
       //   const newId = toITMLegs(id, priceTick)
@@ -156,22 +183,15 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       //   return { ...p, legs, id: `0x${newId.toString(16)}` } satisfies PositionWithData
       // }).filter(p => hasLeg(BigInt(p.id)))
 
-      // NOTE: simply using all position ids for calculating portfolio value would result in incorrect portfolio value, since OTM options have no value upon exercisin (burning), but the uniswap position it represents still have value (see details of the smart contract code for clarification)
-      const positionIds = poolPositions.map(p => BigInt(p.id))
-
-      const itmPositionIds = itmPositions.map(p => BigInt(p.id))
-      const values = await calculatePortfolioValue(itmPositionIds, priceTick)
-      if (!values) {
-        return
-      }
-      const { value0, value1 } = values
-      // const price = tickToPrice(priceTick, c1Info.decimals - c0Info.decimals)
-      // const priceInverse = 1 / price
-      // // addMessage(`calculatePortfolioValue ${stringify({ values, positionIdsDebug, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
-      // addMessage(`calculatePortfolioValue ${stringify({ values, positionIds, priceTick, price, priceInverse, decimalDiff: c1Info.decimals - c0Info.decimals })}`)
-
+      const intrinsicValues = await computeIntrinsicValue(panopticPool.address, poolPositions)
       // NOTE: the values being calculated are actually values to the pool, not values to the user, i.e. the values represents debt owed by the user to the pool. The values to the user should be exactly the opposite
-      setPoolValues({ value0: -value0, value1: -value1 })
+      setIntrinsicValues(intrinsicValues)
+      let totalIntrinsicValue = Zero01
+      for (const intrinsicValue of Object.values(intrinsicValues)) {
+        totalIntrinsicValue = addBigInt01(totalIntrinsicValue, intrinsicValue)
+      }
+      setTotalIntrinsicValue(negate01(totalIntrinsicValue))
+      const positionIds = poolPositions.map(p => BigInt(p.id))
       const premiums = await calculateAccumulatedFeesBatch(positionIds)
       if (!premiums) {
         return
@@ -194,21 +214,17 @@ export const PoolValue = ({ uniswapPoolAddress, poolPositions }: PoolValueProps)
       setAccountMargin1(margin1)
     }
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  // }, [c0Info.decimals, c1Info.decimals, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
-  }, [getAccountMarginDetails0, getAccountMarginDetails1, calculateAccumulatedFeesBatch, calculatePortfolioValue, ready, priceTick, poolPositions, wallet.address, addMessage])
+  }, [panopticPool, getAccountMarginDetails0, getAccountMarginDetails1, calculateAccumulatedFeesBatch, computeIntrinsicValue, ready, priceTick, poolPositions, wallet.address, addMessage])
 
-  // useEffect(() => {
-  //   addMessage(`Collateral updated... ${c0Info.symbol} ${c1Info.symbol}`)
-  // }, [c0Info, c1Info, addMessage])
-
-  if (!values || !premiums) {
+  if (!totalIntrisicValue || !premiums) {
     return <Box flexDirection={'column'} marginY={1}>
       <Text>Pool Portfolio Value</Text>
       <Text color={'yellow'}>[Loading...]</Text>
     </Box>
   }
-  const color0 = values.value0 === 0n ? 'yellow' : values.value0 > 0n ? 'green' : 'red'
-  const color1 = values.value1 === 0n ? 'yellow' : values.value1 > 0n ? 'green' : 'red'
+  const color0 = totalIntrisicValue.token0 === 0n ? 'yellow' : totalIntrisicValue.token0 > 0n ? 'green' : 'red'
+  const color1 = totalIntrisicValue.token1 === 0n ? 'yellow' : totalIntrisicValue.token1 > 0n ? 'green' : 'red'
+
   const pnl0 = formatUnits(values.value0, c0Info.decimals)
   const pnl1 = formatUnits(values.value1, c1Info.decimals)
   const premium0f = formatUnits(premiums.premium0 ?? 0n, c0Info.decimals)

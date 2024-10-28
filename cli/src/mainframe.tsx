@@ -10,7 +10,8 @@ import { DepositControl } from './deposit.js'
 import { WalletRequired } from './errors.js'
 import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
-import {PortfolioControl} from "./positions/portfolio.js";
+import { PortfolioControl } from './positions/portfolio.js'
+import { SFPMProvider } from './pools/sfpm.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
@@ -37,8 +38,8 @@ const Mainframe = () => {
       <WalletProvider>
         <WalletClientProvider>
           <CommandProvider>
-            <Router/>
-            <CommandControl/>
+              <Router/>
+              <CommandControl/>
             <NotificationBar/>
           </CommandProvider>
         </WalletClientProvider>

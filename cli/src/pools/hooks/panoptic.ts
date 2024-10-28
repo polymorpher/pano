@@ -5,32 +5,27 @@ import {
   type BigInt01,
   EmptyTickSpacing,
   type PairedPoolAddresses,
-  type PositionData, type PositionWithData,
-  type TickSpacing,
+  type PositionData, type TickSpacing,
   type ValidatedPair
 } from '../../common.js'
 import { NotificationContext } from '../../notification.js'
-import { defaultSFPMAddress, pairs as initPairs } from '../../config.js'
+import { pairs as initPairs } from '../../config.js'
 import {
-  computeExercisedAmounts,
-  countLegs, getAmountMoved,
   getTokenAddress,
   pairToStr,
   parseBalanceWithUtilization,
-  tickToPrice,
-  unpack01
+  tickToPrice
 } from '../../util.js'
-import { type Address, getContract, type Hex, zeroAddress } from 'viem'
+import { getContract, type Hex, zeroAddress } from 'viem'
 import { useCollateralAddresses, useCollateralInfo } from './collateral.js'
 import {
   EmptyPriceTick,
   EmptyPriceTickInfo,
   type PanopticPool,
   type PanopticPoolInfo,
-  type PoolContracts, type SFPM,
-  type UniswapPool
+  type PoolContracts, type UniswapPool
 } from './common.js'
-import { MAX_V3POOL_TICK, MIN_V3POOL_TICK, PanopticPoolAbi, SFPMAbi, UniswapPoolAbi } from '../../constants.js'
+import { PanopticPoolAbi, UniswapPoolAbi } from '../../constants.js'
 import { useWallet } from '../../wallet.js'
 
 export const usePools = () => {
@@ -185,71 +180,6 @@ export interface PremiumValuesWithBalanceAndUtilization extends PremiumValues {
   balancesAndUtilizations: ReadonlyArray<readonly [bigint, bigint]>
 }
 
-export interface SimulateBurnResult {
-  totalCollected: BigInt01
-  totalSwapped: BigInt01
-  newTick: number
-}
-
-export const useSFPM = () => {
-  const { addMessage } = useContext(NotificationContext)
-  const { client } = usePublicClient()
-  const [sfpm, setSfpm] = useState<SFPM>()
-
-  //  function burnTokenizedPosition(
-  //       uint256 tokenId,
-  //       uint128 positionSize,
-  //       int24 slippageTickLimitLow,
-  //       int24 slippageTickLimitHigh
-  // )
-  const simulateBurn = useCallback(async (pool: Address, position: PositionWithData): Promise<SimulateBurnResult | undefined> => {
-    if (!sfpm) {
-      return
-    }
-    const tokenId = BigInt(position.id)
-    const positionSize = position.balance ?? 0n
-    const { result } = await sfpm.simulate.burnTokenizedPosition(
-      [tokenId, positionSize, MAX_V3POOL_TICK - 1, MIN_V3POOL_TICK + 1],
-      { account: pool }
-    )
-    const [totalCollectedPacked, totalSwappedPacked, newTick] = result as [bigint, bigint, number]
-    const totalCollected = unpack01(totalCollectedPacked)
-    const totalSwapped = unpack01(totalSwappedPacked)
-    return { totalCollected, totalSwapped, newTick }
-  }, [sfpm])
-
-  const computeIntrinsicValue = useCallback(async (pool: Address, positions: PositionWithData[]): Promise<Record<Hex, BigInt01>> => {
-    const intrinsicValues: Record<Hex, BigInt01> = {}
-    for (const p of positions) {
-      const burnResult = await simulateBurn(pool, p)
-      if (!burnResult) {
-        continue
-      }
-      const amounts = computeExercisedAmounts(p)
-      const { totalSwapped } = burnResult
-      const token0 = totalSwapped.token0 - amounts.longs.token0 + amounts.shorts.token0
-      const token1 = totalSwapped.token1 - amounts.longs.token1 + amounts.shorts.token1
-      intrinsicValues[p.id] = { token0, token1 }
-    }
-    return intrinsicValues
-  }, [simulateBurn])
-
-  useEffect(() => {
-    if (!client) {
-      return
-    }
-    const init = async () => {
-      if (!client) {
-        return
-      }
-      const c = getContract({ address: defaultSFPMAddress, abi: SFPMAbi, client })
-      setSfpm(c)
-    }
-    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
-  }, [addMessage, client])
-
-  return { sfpm, simulateBurn, computeIntrinsicValue }
-}
 
 export const useAccountPoolFunctions = ({ panopticPool }: PoolContracts) => {
   const { wallet } = useWallet()

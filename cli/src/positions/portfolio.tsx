@@ -21,6 +21,7 @@ import { storePosition } from '../db.js'
 import { usePositions } from './hooks.js'
 import { groupBy } from 'remeda'
 import { PoolPositions } from './position.js'
+import { SFPMProvider } from '../pools/sfpm.js'
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
@@ -138,32 +139,34 @@ export const PortfolioControl = () => {
     addMessage('Terminating scan...')
   }, [addMessage])
 
-  return <Box flexDirection={'column'}>
-    <SectionTitle>Portfolio and Positions</SectionTitle>
-    {filteredPairs.map(([p, n]) => {
-      return <Text key={p.panopticPoolAddress}>Pool {p.token0}/{p.token1}: {n.toString()} open positions</Text>
-    })}
-    {positionsByPoolEntries.map(([uniswapPoolAddress, poolPositions]) => {
-      return <PoolPositions key={uniswapPoolAddress} uniswapPoolAddress={uniswapPoolAddress} poolPositions={poolPositions}/>
-    })}
-    {stage === PortfolioStage.SelectAction &&
-    <MultiChoiceSelector options={[
-      'Sync positions on chain'
-    ]} onSelected={onAction}
+  return <SFPMProvider>
+    <Box flexDirection={'column'}>
+      <SectionTitle>Portfolio and Positions</SectionTitle>
+      {filteredPairs.map(([p, n]) => {
+        return <Text key={p.panopticPoolAddress}>Pool {p.token0}/{p.token1}: {n.toString()} open positions</Text>
+      })}
+      {positionsByPoolEntries.map(([uniswapPoolAddress, poolPositions]) => {
+        return <PoolPositions key={uniswapPoolAddress} uniswapPoolAddress={uniswapPoolAddress} poolPositions={poolPositions}/>
+      })}
+      {stage === PortfolioStage.SelectAction &&
+      <MultiChoiceSelector options={[
+        'Sync positions on chain'
+      ]} onSelected={onAction}
        onExit={() => { setUserCommandDisabled(false) }} prompt={'Choose an action'}
        intro={<Box marginY={1} flexDirection={'column'}>
          <Text>If you experience errors in buying or selling options, your positions might need to be re-synced with the data on-chain .</Text>
        </Box>}
     />}
-    {stage === PortfolioStage.SetScanDuration &&
-    <AmountSelector
+      {stage === PortfolioStage.SetScanDuration &&
+      <AmountSelector
       intro={'Scan for how far back?'}
       prompt={'Enter the time duration (e.g. 10s, 5h, 3d, 1m, ... or in number of blocks, e.g. 1024)'}
       onRawSubmit={onDurationSubmit}
       onBack={() => { setStage(PortfolioStage.SelectAction) }}
       />}
-    {stage === PortfolioStage.ScanInProgress &&
+      {stage === PortfolioStage.ScanInProgress &&
       <InProgressSelector intro={'Scan in progress...'} onExit={onScanInterrupted}/>}
 
-  </Box>
+    </Box>
+  </SFPMProvider>
 }

@@ -18,7 +18,6 @@ export interface PoolContracts {
 }
 
 export type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
-export type SFPM = GetContractReturnType<typeof SFPMAbi, PublicClient>
 export type UniswapPool = GetContractReturnType<typeof UniswapPoolAbi, PublicClient>
 export type CollateralTracker = GetContractReturnType<typeof CollateralTrackerAbi, PublicClient>
 
