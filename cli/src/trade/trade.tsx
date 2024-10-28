@@ -2,11 +2,11 @@ import React, { useCallback, useContext, useState } from 'react'
 import {
   AmountSelector,
   ConfirmationSelector,
-  getOptionRange, type Leg,
+  type Leg,
   MultiChoiceSelector,
   type Token01, type ValidatedPair
 } from '../common.js'
-import { priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
+import { getOptionRange, priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
 import { Box, Text } from 'ink'
 import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'

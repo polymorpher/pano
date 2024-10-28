@@ -6,7 +6,7 @@ import {
   type AssetType,
   type BigInt01,
   type Leg,
-  LegIndex, type Position,
+  type Position,
   type PositionData, type PositionWithData,
   PutCall,
   type Token01,
@@ -282,4 +282,12 @@ export function computeExercisedAmounts (p: PositionWithData): IOAmount {
 
 export function countLegs (p: Position): number {
   return p.legs.filter(e => e !== undefined).length
+}
+
+export const getOptionRange = (strike: number, width: number, tickSpacing: number): [number, number] => {
+  const ticks = width * tickSpacing
+  const multiplier = TickBase ** ticks
+  const lower = strike / multiplier
+  const upper = strike * multiplier
+  return [lower, upper]
 }

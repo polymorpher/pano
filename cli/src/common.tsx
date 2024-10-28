@@ -6,7 +6,6 @@ import type { Tuple } from 'reverse-mirage'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
-import { TickBase } from './util.js'
 
 export const SectionTitle = ({ children }: PropsWithChildren) => {
   return <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1} marginY={1}><Text color={'yellow'}>{children}</Text></Box>
@@ -333,12 +332,4 @@ export const InProgressSelector = ({ intro, prompt, onExit, inactive }: InProgre
       <TextInput focus={!inactive && disabled} showCursor value={textInput} onChange={setTextInput} onSubmit={onSubmit} />
     </Box>
   </Box>
-}
-
-export const getOptionRange = (strike: number, width: number, tickSpacing: number): [number, number] => {
-  const ticks = width * tickSpacing
-  const multiplier = TickBase ** ticks
-  const lower = strike / multiplier
-  const upper = strike * multiplier
-  return [lower, upper]
 }
