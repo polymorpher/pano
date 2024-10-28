@@ -133,6 +133,7 @@ export const useAccountCollateralFunctions = (collateral?: CollateralTracker) =>
       return undefined
     }
     const tokenData = await collateral.read.getAccountMarginDetails([wallet.address, tick, balancesAndUtilizations, premium])
+    // console.log(tokenData)
     const [requiredBalance, accountBalance] = unpackLeftRight256(tokenData)
     return { requiredBalance, accountBalance }
   }, [wallet.address, collateral])

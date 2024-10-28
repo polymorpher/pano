@@ -8,7 +8,7 @@ import {
   type Leg,
   type Position,
   type PositionData, type PositionWithData,
-  PutCall,
+  PutCall, type PutCallType,
   type Token01,
   Zero01
 } from './common.js'
@@ -145,6 +145,7 @@ export function unpack01 (data: bigint): BigInt01 {
   const [token0, token1] = unpackLeftRight256(data)
   return { token0, token1 }
 }
+
 
 export function isLegITM (tokenId: bigint, legIndex: number, tick: number): boolean {
   const masked = (tokenId >> 64n >> (48n * BigInt(legIndex))) & 0xffffffffffffn
@@ -284,10 +285,17 @@ export function countLegs (p: Position): number {
   return p.legs.filter(e => e !== undefined).length
 }
 
-export const getOptionRange = (strike: number, width: number, tickSpacing: number): [number, number] => {
+export function getOptionRange (strike: number, width: number, tickSpacing: number): [number, number] {
   const ticks = width * tickSpacing
   const multiplier = TickBase ** ticks
   const lower = strike / multiplier
   const upper = strike * multiplier
   return [lower, upper]
+}
+
+export function flipPutCall (tokenType: PutCallType): PutCallType {
+  if (tokenType === 'token0') {
+    return 'token1'
+  }
+  return 'token0'
 }

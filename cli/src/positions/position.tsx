@@ -10,10 +10,10 @@ import { type CollateralFullInfo, type UniswapPoolBasicInfo } from '../pools/hoo
 import { usePoolContract, useUniswapPoolBasicInfo } from '../pools/hooks/uniswap.js'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {
-  addBigInt01,
-  findBaseAsset,
+  addBigInt01, countLegs,
+  findBaseAsset, flipPutCall,
   hasLeg,
-  negate01,
+  negate01, stringify,
   tickToPrice,
   toFixed,
   toITMLegs
@@ -54,10 +54,11 @@ const SingleLeg = ({ leg, poolInfo, showRatio }: LegProps) => {
   const lower = baseAsset === 'token0' ? lowerPrice : 1 / upperPrice
   const upper = baseAsset === 'token0' ? upperPrice : 1 / lowerPrice
   const premiumState = leg.position === 'short' ? 'Earning' : 'Paying'
+  const putCall = leg.asset === 'token1' ? flipPutCall(leg.tokenType) : leg.tokenType
   return <Box>
     {showRatio ? <Text>[{leg.optionRatio} options per contract] </Text> : <></>}
     <Text>{leg.position === 'long' ? 'Long' : 'Short' } </Text>
-    <Text>{leg.tokenType === 'token0' ? 'PUT' : 'CALL' } </Text>
+    <Text>{putCall === 'token0' ? 'PUT' : 'CALL' } </Text>
     <Text>@ {toFixed(strike)} {quoteSymbol} </Text>
     <Text>±{(radius * 100).toFixed(2)}% </Text>
     <Text>| {premiumState} premium in range [{toFixed(lower)}, {toFixed(upper)}]</Text>
@@ -69,44 +70,68 @@ interface IndexedLeg {
   index: number
 }
 
-export const Position = ({ position, poolInfo }: PositionProps) => {
-  // const { addMessage } = useContext(NotificationContext)
-  // useEffect(() => {
-  //   addMessage(stringify(position))
-  // }, [position, addMessage])
+interface IntrinsicValueBlockProps {
+  poolInfo: UniswapPoolBasicInfo
+  intrinsicValue: BigInt01
+}
+
+const IntrinsicValueBlock = ({ intrinsicValue, poolInfo }: IntrinsicValueBlockProps) => {
+  const token0ValueFormatted = formatUnits(intrinsicValue.token0, poolInfo.token0.decimals)
+  const token1ValueFormatted = formatUnits(intrinsicValue.token1, poolInfo.token1.decimals)
+  return <Text>Value if exercised: {toFixed(Number(token0ValueFormatted))} {poolInfo.token0.symbol}, {toFixed(Number(token1ValueFormatted))} {poolInfo.token1.symbol}</Text>
+}
+
+export const Position = ({ position, poolInfo, isItm, intrinsicValue }: PositionProps) => {
+  const { addMessage } = useContext(NotificationContext)
+  useEffect(() => {
+    addMessage(stringify(position))
+    addMessage(stringify(intrinsicValue))
+  }, [position, addMessage, intrinsicValue])
 
   if (!position.legs[0]) {
     return <></>
   }
-  if (position.legs.filter(l => !!l).length === 1) {
+  const itmBlock = isItm ? <Text color={'red'}>[ITM]</Text> : ''
+
+  if (countLegs(position) === 1) {
     const numContracts = formatUnits(position.balance ?? 0n, position.legs[0].asset === 'token1' ? poolInfo.token1.decimals : poolInfo.token0.decimals)
     return <Box>
-      <Text>- {numContracts} contracts of </Text>
+      <Text>- {itmBlock} {numContracts} contracts of </Text>
       <SingleLeg leg={position.legs[0]} poolInfo={poolInfo} />
+      <Text> | </Text>
+      <IntrinsicValueBlock intrinsicValue={intrinsicValue} poolInfo={poolInfo}/>
     </Box>
   }
-  const token0Legs: IndexedLeg[] = position.legs.filter(e => !!e).map((leg, index) => ({ leg, index } satisfies IndexedLeg)).filter(({ leg, index }) => leg.asset === 'token0')
-  const token1Legs: IndexedLeg[] = position.legs.filter(e => !!e).map((leg, index) => ({ leg, index } satisfies IndexedLeg)).filter(({ leg, index }) => leg.asset === 'token1')
+
+  const token0Legs: IndexedLeg[] = position.legs.filter(e => !!e)
+    .map((leg, index) => ({ leg, index } satisfies IndexedLeg))
+    .filter(({ leg, index }) => leg.asset === 'token0')
+
+  const token1Legs: IndexedLeg[] = position.legs.filter(e => !!e)
+    .map((leg, index) => ({ leg, index } satisfies IndexedLeg))
+    .filter(({ leg, index }) => leg.asset === 'token1')
+
   return <Box flexDirection={'column'}>
-    <Text>- {formatUnits(position.balance ?? 0n, poolInfo.token1.decimals)} contracts of </Text>
+    <Text>- {itmBlock} {formatUnits(position.balance ?? 0n, poolInfo.token1.decimals)} contracts of </Text>
     {token0Legs.map(({ leg, index }) => {
       return <SingleLeg key={`leg-${index}`} leg={leg} poolInfo={poolInfo} showRatio />
     })}
-    <Text>- {formatUnits(position.balance ?? 0n, poolInfo.token0.decimals)} contracts of </Text>
+    <Text>- {itmBlock} {formatUnits(position.balance ?? 0n, poolInfo.token0.decimals)} contracts of </Text>
     {token1Legs.map(({ leg, index }) => {
       return <SingleLeg key={`leg-${index}`} leg={leg} poolInfo={poolInfo} showRatio />
     })}
-    <Text>{position.balance?.toString()} contracts of </Text>
-    {position.legs.filter(l => !!l).length === 1
-      ? <SingleLeg leg={position.legs[0]} poolInfo={poolInfo} />
-      : position.legs.map((leg, index) => {
-        if (!leg) {
-          return <></>
-        }
-        return <React.Fragment key={`leg-${index}`}>
-          <Text>(TODO)</Text>
-        </React.Fragment>
-      })}
+
+    {/* <Text>{position.balance?.toString()} contracts of </Text> */}
+    {/* {position.legs.filter(l => !!l).length === 1 */}
+    {/*  ? <SingleLeg leg={position.legs[0]} poolInfo={poolInfo} /> */}
+    {/*  : position.legs.map((leg, index) => { */}
+    {/*    if (!leg) { */}
+    {/*      return <></> */}
+    {/*    } */}
+    {/*    return <React.Fragment key={`leg-${index}`}> */}
+    {/*      <Text>(TODO)</Text> */}
+    {/*    </React.Fragment> */}
+    {/*  })} */}
   </Box>
 }
 interface PoolPositionsProps {
@@ -167,6 +192,7 @@ export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositio
       // }).filter(p => hasLeg(BigInt(p.id)))
 
       const intrinsicValues = await computeIntrinsicValue(panopticPool.address, poolPositions)
+      // addMessage(`intrinsicValues=${stringify(intrinsicValues)}`)
       // NOTE: the values being calculated are actually values to the pool, not values to the user, i.e. the values represents debt owed by the user to the pool. The values to the user should be exactly the opposite
       setIntrinsicValues(intrinsicValues)
       let totalIntrinsicValue = Zero01
@@ -196,10 +222,11 @@ export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositio
       }
       setAccountMargin1(margin1)
     }
+    // addMessage('PoolPositions')
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [panopticPool, getAccountMarginDetails0, getAccountMarginDetails1, calculateAccumulatedFeesBatch, computeIntrinsicValue, poolStatsReady, priceTick, poolPositions, addMessage])
 
-  const ready = poolInfo.ready && poolStatsReady && premiums && totalIntrinsicValue && accountMargin0 && accountMargin1
+  const ready: boolean = poolInfo.ready && poolStatsReady && premiums !== undefined && totalIntrinsicValue !== undefined && accountMargin0 !== undefined && accountMargin1 !== undefined
 
   return <Box flexDirection={'column'} marginY={1}>
     <Text>Pool {name} ({uniswapPoolAddress})</Text>
@@ -214,11 +241,11 @@ export const PoolPositions = ({ uniswapPoolAddress, poolPositions }: PoolPositio
       />
     })}
     {ready && <PoolValue
-        premiums={premiums}
-        totalIntrinsicValue={totalIntrinsicValue}
+        premiums={premiums!}
+        totalIntrinsicValue={totalIntrinsicValue!}
         c0Info={c0Info} c1Info={c1Info}
-        accountMargin0={accountMargin0}
-        accountMargin1={accountMargin1}
+        accountMargin0={accountMargin0!}
+        accountMargin1={accountMargin1!}
         price={price}/>}
   </Box>
 }

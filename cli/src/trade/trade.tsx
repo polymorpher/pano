@@ -3,10 +3,10 @@ import {
   AmountSelector,
   ConfirmationSelector,
   type Leg,
-  MultiChoiceSelector,
+  MultiChoiceSelector, type PutCallType,
   type Token01, type ValidatedPair
 } from '../common.js'
-import { getOptionRange, priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
+import { flipPutCall, getOptionRange, priceToTick, tickToPrice, toFixed, tryParseUnits } from '../util.js'
 import { Box, Text } from 'ink'
 import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
@@ -33,7 +33,7 @@ interface LegMakerProps {
 
 export const LegMaker = ({ chosenPair, chosenPairInfo, onLegConfirm, position, stage, setStage }: LegMakerProps) => {
   const { addMessage } = useContext(NotificationContext)
-  const [putCall, setPutCall] = useState<Token01>('token0')
+  const [putCall, setPutCall] = useState<PutCallType>('token0')
   const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
   const baseAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c1Info : chosenPairInfo.c0Info
   const quoteAssetInfo = quoteAsset === 'token0' ? chosenPairInfo.c0Info : chosenPairInfo.c1Info
@@ -130,11 +130,15 @@ export const LegMaker = ({ chosenPair, chosenPairInfo, onLegConfirm, position, s
     } else if (yes) {
       const tickLower = strikeTick - range * chosenPairInfo.tickSpacing
       const tickUpper = strikeTick + range * chosenPairInfo.tickSpacing
+      // price is displayed as inverse, so when the user perceives the price goes up, it is in fact that 1/price going up, which means actual price goes down, and the tick goes down
+      // therefore, put should be transformed to calls, and calls should be transformed to puts
+      const parsedPutCall = quoteAsset === 'token0' ? flipPutCall(putCall) : putCall
+
       const leg: Leg = {
         asset: quoteAsset === 'token0' ? 'token1' : 'token0',
         optionRatio: 1,
         position,
-        tokenType: putCall,
+        tokenType: parsedPutCall,
         riskPartnerIndex: 0,
         tickLower,
         tickUpper

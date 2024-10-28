@@ -37,7 +37,7 @@ const useSFPMHook = () => {
   //       uint128 positionSize,
   //       int24 slippageTickLimitLow,
   //       int24 slippageTickLimitHigh
-  // )
+  // )  returns (int256 totalCollected, int256 totalSwapped, int24 newTick)
   const simulateBurn = useCallback(async (pool: Address, position: PositionWithData): Promise<SimulateBurnResult | undefined> => {
     if (!sfpm) {
       return

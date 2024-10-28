@@ -15,6 +15,7 @@ export type Token01 = 'token0' | 'token1'
 export type PositionType = 'long' | 'short'
 export type LegIndex = 0 | 1 | 2 | 3
 export type AssetType = Token01
+export type PutCallType = Token01
 
 // TODO: use this in legs, to replace Token01
 // export enum AssetType {
@@ -54,7 +55,7 @@ export interface Leg {
   asset: AssetType
   optionRatio: number
   position: PositionType
-  tokenType: Token01
+  tokenType: PutCallType
   riskPartnerIndex: LegIndex
   // always follows pool's tick (token1/token0 price) - no conversion necessary regardless of the value of `asset`
   tickLower: number

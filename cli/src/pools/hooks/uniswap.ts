@@ -32,6 +32,7 @@ export const usePoolContract = (uniswapPoolAddress?: Address): PoolContracts => 
       const pp = getContract({ address: ppAddress, abi: PanopticPoolAbi, client })
       setPanopticPool(pp)
     }
+    // addMessage('usePoolContract')
     init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [client, addMessage, panopticFactory, uniswapPoolAddress])
   return { panopticPool, uniswapPool }

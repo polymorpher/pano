@@ -140,6 +140,7 @@ export const usePoolStatsByContracts = ({ panopticPool, uniswapPool }: PoolContr
       const [priceArray, medianTick] = await panopticPool.read.getPriceArray()
       setPriceTickInfo({ priceTick: medianTick, recentPriceTicks: priceArray as number[] })
     }
+    // console.log('usePoolStatsByContracts')
     getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
   }, [panopticPool, addMessage])
 
