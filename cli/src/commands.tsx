@@ -28,6 +28,7 @@ export enum CommandKeys {
   Sell = 'sell',
   Buy = 'buy',
   Mint = 'mint',
+  Burn = 'burn',
   Manage = 'manage',
   Quit = 'quit'
 }
@@ -69,7 +70,14 @@ export const Commands: Record<CommandKeys, Command> = {
   buy: {
     short: 'b',
     full: 'buy',
-    desc: 'buy a simple option (option a long position with a single leg)',
+    desc: 'buy a simple option (open a long position with a single leg)',
+    wallet: true,
+    submenu: true
+  },
+  burn: {
+    short: 'u',
+    full: 'burn',
+    desc: 'Burn an option (close an existing position you minted)',
     wallet: true,
     submenu: true
   },

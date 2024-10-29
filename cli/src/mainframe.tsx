@@ -17,7 +17,7 @@ import { WalletRequired } from './errors.js'
 import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
-import { SFPMProvider } from './pools/sfpm.js'
+import { BurnControl } from './trade/burn.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
@@ -36,6 +36,7 @@ const Router = () => {
       {m === CommandKeys.Deposit && <DepositControl />}
       {m === CommandKeys.Sell && <SellControl />}
       {m === CommandKeys.Buy && <BuyControl />}
+      {m === CommandKeys.Burn && <BurnControl />}
     </>
   )
 }
