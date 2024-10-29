@@ -15,12 +15,15 @@ import {
 import { useWallet } from '../../wallet.js'
 import { unpackLeftRight256 } from '../../util.js'
 
-export const useCollateralAddresses = (panopticPool?: PanopticPool): CollateralAddresses => {
+export const useCollateralAddresses = (
+  panopticPool?: PanopticPool
+): CollateralAddresses => {
   const { addMessage } = useContext(NotificationContext)
 
-  const [[collateral0, collateral1], setTokens] = useState<[Address | undefined, Address | undefined]>(EmptyTokenPair)
+  const [[collateral0, collateral1], setTokens] =
+    useState<[Address | undefined, Address | undefined]>(EmptyTokenPair)
   useEffect(() => {
-    async function init () {
+    async function init() {
       if (!panopticPool) {
         return
       }
@@ -36,24 +39,34 @@ export const useCollateralAddresses = (panopticPool?: PanopticPool): CollateralA
       }
       setTokens([t0, t1])
     }
-    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+    init().catch((ex) => {
+      addMessage((ex as Error).toString(), { color: 'red' })
+    })
   }, [panopticPool, addMessage])
   return { collateral0, collateral1 }
 }
 
-export const useCollateralContract = (collateralAddress?: Address): CollateralTracker | undefined => {
+export const useCollateralContract = (
+  collateralAddress?: Address
+): CollateralTracker | undefined => {
   const { addMessage } = useContext(NotificationContext)
   const { client } = usePublicClient()
   const [tracker, setTracker] = useState<CollateralTracker>()
   useEffect(() => {
-    async function init () {
+    async function init() {
       if (!client || !collateralAddress) {
         return
       }
-      const tracker = getContract({ address: collateralAddress, abi: CollateralTrackerAbi, client })
+      const tracker = getContract({
+        address: collateralAddress,
+        abi: CollateralTrackerAbi,
+        client
+      })
       setTracker(tracker)
     }
-    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+    init().catch((ex) => {
+      addMessage((ex as Error).toString(), { color: 'red' })
+    })
   }, [addMessage, client, collateralAddress])
   return tracker
 }
@@ -62,15 +75,26 @@ export const useCollateralInfo = (address?: Address): CollateralFullInfo => {
   const [shares, setShares] = useState<bigint>(0n)
   const [totalAssets, setTotalAssets] = useState<bigint>(0n)
   const tracker = useCollateralContract(address)
-  const [{ poolAssets, inAmm, utilization }, setPoolState] = useState<CollateralPoolState>({ poolAssets: 0n, inAmm: 0n, utilization: 0 })
+  const [{ poolAssets, inAmm, utilization }, setPoolState] =
+    useState<CollateralPoolState>({
+      poolAssets: 0n,
+      inAmm: 0n,
+      utilization: 0
+    })
   const [tokenAddress, setTokenAddress] = useState<Address | undefined>()
-  const { name, symbol, decimals, contract: tokenContract, ready: tokenReady } = useERC20(tokenAddress)
+  const {
+    name,
+    symbol,
+    decimals,
+    contract: tokenContract,
+    ready: tokenReady
+  } = useERC20(tokenAddress)
   const { addMessage } = useContext(NotificationContext)
   const [initReady, setInitReady] = useState<boolean>(false)
   const [ready, setReady] = useState<boolean>(false)
 
   useEffect(() => {
-    async function getStats () {
+    async function getStats() {
       if (!tracker) {
         return
       }
@@ -79,20 +103,40 @@ export const useCollateralInfo = (address?: Address): CollateralFullInfo => {
       const shares = await tracker.read.totalSupply()
       setShares(shares)
       const [poolAssets, inAmm, utilization] = await tracker.read.getPoolData()
-      setPoolState({ poolAssets, inAmm, utilization: Number(utilization) / DECIMALS })
+      setPoolState({
+        poolAssets,
+        inAmm,
+        utilization: Number(utilization) / DECIMALS
+      })
       const tokenAddress = await tracker.read.asset()
       setTokenAddress(tokenAddress)
       setInitReady(true)
       // addMessage(JSON.stringify({ totalAssets, shares, poolAssets, inAmm, tokenAddress }))
     }
-    getStats().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+    getStats().catch((ex) => {
+      addMessage((ex as Error).toString(), { color: 'red' })
+    })
   }, [addMessage, tracker])
   useEffect(() => {
     if (tokenReady && initReady) {
       setReady(true)
     }
   }, [tokenReady, initReady])
-  return { address, name, symbol, decimals, tokenAddress, poolAssets, inAmm, utilization, tracker, shares, totalAssets, tokenContract, ready }
+  return {
+    address,
+    name,
+    symbol,
+    decimals,
+    tokenAddress,
+    poolAssets,
+    inAmm,
+    utilization,
+    tracker,
+    shares,
+    totalAssets,
+    tokenContract,
+    ready
+  }
 }
 
 export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
@@ -101,18 +145,22 @@ export const useCollateralBalance = (collateralTracker?: CollateralTracker) => {
   const wallet = useWallet()
   const { addMessage } = useContext(NotificationContext)
   useEffect(() => {
-    async function init () {
+    async function init() {
       if (!collateralTracker || !wallet.wallet.address) {
         setShares(0n)
         setValue(0n)
         return
       }
-      const balance = await collateralTracker.read.balanceOf([wallet.wallet.address])
+      const balance = await collateralTracker.read.balanceOf([
+        wallet.wallet.address
+      ])
       setShares(balance)
       const shareValue = await collateralTracker.read.convertToAssets([balance])
       setValue(shareValue)
     }
-    init().catch(ex => { addMessage((ex as Error).toString(), { color: 'red' }) })
+    init().catch((ex) => {
+      addMessage((ex as Error).toString(), { color: 'red' })
+    })
   }, [addMessage, collateralTracker, wallet.wallet.address])
   return { shares, value }
 }
@@ -122,20 +170,30 @@ export interface AccountCollateralMarginDetails {
   accountBalance: bigint
 }
 
-export const useAccountCollateralFunctions = (collateral?: CollateralTracker) => {
+export const useAccountCollateralFunctions = (
+  collateral?: CollateralTracker
+) => {
   const { wallet } = useWallet()
-  const getAccountMarginDetails = useCallback(async (
-    tick: number,
-    balancesAndUtilizations: ReadonlyArray<readonly [bigint, bigint]>,
-    premium: bigint
-  ): Promise<AccountCollateralMarginDetails | undefined> => {
-    if (!collateral || !wallet.address) {
-      return undefined
-    }
-    const tokenData = await collateral.read.getAccountMarginDetails([wallet.address, tick, balancesAndUtilizations, premium])
-    // console.log(tokenData)
-    const [requiredBalance, accountBalance] = unpackLeftRight256(tokenData)
-    return { requiredBalance, accountBalance }
-  }, [wallet.address, collateral])
+  const getAccountMarginDetails = useCallback(
+    async (
+      tick: number,
+      balancesAndUtilizations: ReadonlyArray<readonly [bigint, bigint]>,
+      premium: bigint
+    ): Promise<AccountCollateralMarginDetails | undefined> => {
+      if (!collateral || !wallet.address) {
+        return undefined
+      }
+      const tokenData = await collateral.read.getAccountMarginDetails([
+        wallet.address,
+        tick,
+        balancesAndUtilizations,
+        premium
+      ])
+      // console.log(tokenData)
+      const [requiredBalance, accountBalance] = unpackLeftRight256(tokenData)
+      return { requiredBalance, accountBalance }
+    },
+    [wallet.address, collateral]
+  )
   return { getAccountMarginDetails }
 }

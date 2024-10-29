@@ -2,10 +2,11 @@ import fs from 'fs/promises'
 import path from 'path'
 import * as process from 'process'
 
-const CONTRACTS_IN = process.env.CONTRACTS_OUT ?? '../panoptic-v1-core/artifacts/contracts'
+const CONTRACTS_IN =
+  process.env.CONTRACTS_OUT ?? '../panoptic-v1-core/artifacts/contracts'
 const TYPES_OUT = process.env.TYPES_OUT ?? './types-contract'
 
-function tryParse (str: string): any {
+function tryParse(str: string): any {
   try {
     return JSON.parse(str)
   } catch (ex: any) {
@@ -14,7 +15,7 @@ function tryParse (str: string): any {
   }
 }
 
-async function main () {
+async function main() {
   const sols = await fs.readdir(CONTRACTS_IN)
   for (const sol of sols) {
     if (!sol.endsWith('.sol')) {

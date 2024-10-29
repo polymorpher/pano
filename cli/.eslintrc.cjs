@@ -2,7 +2,7 @@ module.exports = {
   env: {
     browser: true,
     node: false,
-    es2020: true,
+    es2020: true
   },
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -17,15 +17,17 @@ module.exports = {
     'eslint:recommended',
     'plugin:react/recommended',
     'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended'
   ],
-  plugins: ['compat', 'react', 'react-hooks'],
+  plugins: ['compat', 'react', 'react-hooks', 'prettier'],
   settings: {
     react: {
-      version: 'detect',
+      version: 'detect'
     },
-    'import/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx'] },
+    'import/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx'] }
   },
   rules: {
+    'prettier/prettier': 'error',
     'no-await-in-loop': 0,
     'no-underscore-dangle': 0,
     'import/prefer-default-export': 0,
@@ -40,7 +42,6 @@ module.exports = {
     'no-shadow': 'off',
     '@typescript-eslint/no-shadow': 'off',
     'import/extensions': 'off',
-    'object-curly-newline': ['error', { multiline: true }],
     '@typescript-eslint/restrict-template-expressions': 0,
     '@typescript-eslint/no-misused-promises': 0,
     'react/jsx-indent': ['error', 2],
@@ -48,15 +49,21 @@ module.exports = {
     'react/prop-types': [0],
     'react/button-has-type': 'off',
     'react/jsx-props-no-spreading': [0],
-    'react/jsx-filename-extension': [2, { extensions: ['.js', '.jsx', '.ts', '.tsx'] }],
-    'react/function-component-definition': [2, { namedComponents: 'arrow-function' }],
+    'react/jsx-filename-extension': [
+      2,
+      { extensions: ['.js', '.jsx', '.ts', '.tsx'] }
+    ],
+    'react/function-component-definition': [
+      2,
+      { namedComponents: 'arrow-function' }
+    ],
     'react-hooks/rules-of-hooks': 'error', // Checks rules of Hooks
     'react-hooks/exhaustive-deps': 'error', // Checks effect dependencies
     '@typescript-eslint/no-explicit-any': 0,
     '@typescript-eslint/no-floating-promises': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/promise-function-async': 'off',
-    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off'
     // '@typescript-eslint/no-non-null-asserted-optional-chain': 'off'
-  },
+  }
 }

@@ -1,5 +1,10 @@
 import type { Address, GetContractReturnType, PublicClient } from 'viem'
-import { type CollateralTrackerAbi, type PanopticPoolAbi, type UniswapPoolAbi, type SFPMAbi } from '../../constants.js'
+import {
+  type CollateralTrackerAbi,
+  type PanopticPoolAbi,
+  type UniswapPoolAbi,
+  type SFPMAbi
+} from '../../constants.js'
 import type { ERC20Info, ERC20Metadata, IERC20 } from '../../token.js'
 import type { PairedPoolAddresses, TickSpacing } from '../../common.js'
 
@@ -17,9 +22,18 @@ export interface PoolContracts {
   uniswapPool?: UniswapPool
 }
 
-export type PanopticPool = GetContractReturnType<typeof PanopticPoolAbi, PublicClient>
-export type UniswapPool = GetContractReturnType<typeof UniswapPoolAbi, PublicClient>
-export type CollateralTracker = GetContractReturnType<typeof CollateralTrackerAbi, PublicClient>
+export type PanopticPool = GetContractReturnType<
+  typeof PanopticPoolAbi,
+  PublicClient
+>
+export type UniswapPool = GetContractReturnType<
+  typeof UniswapPoolAbi,
+  PublicClient
+>
+export type CollateralTracker = GetContractReturnType<
+  typeof CollateralTrackerAbi,
+  PublicClient
+>
 
 export interface CollateralPoolState {
   poolAssets: bigint
@@ -34,9 +48,18 @@ export interface CollateralInfo {
   tokenContract?: IERC20
 }
 
-export type CollateralFullInfo = CollateralInfo & CollateralPoolState & ERC20Metadata & { tracker?: CollateralTracker, address?: Address, ready: boolean }
+export type CollateralFullInfo = CollateralInfo &
+  CollateralPoolState &
+  ERC20Metadata & {
+    tracker?: CollateralTracker
+    address?: Address
+    ready: boolean
+  }
 
-export const EmptyTokenPair: [Address | undefined, Address | undefined] = [undefined, undefined]
+export const EmptyTokenPair: [Address | undefined, Address | undefined] = [
+  undefined,
+  undefined
+]
 
 export interface CollateralAddresses {
   collateral0?: Address
@@ -62,7 +85,10 @@ export interface PanopticPoolInfo extends PoolContracts {
   ready: boolean
 }
 
-export function getPoolAddress ({ panopticPool, uniswapPool }: PoolContracts): PairedPoolAddresses | undefined {
+export function getPoolAddress({
+  panopticPool,
+  uniswapPool
+}: PoolContracts): PairedPoolAddresses | undefined {
   if (!panopticPool || !uniswapPool) {
     return undefined
   }

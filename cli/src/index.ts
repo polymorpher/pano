@@ -3,7 +3,7 @@ import { buildPublicClient } from './client.js'
 import { isCommand, parseInitialNetwork } from './cmd.js'
 import { renderMainframe } from './mainframe.js'
 
-async function main () {
+async function main() {
   const network = parseInitialNetwork()
   const client = buildPublicClient(network)
   console.log('Testing RPC connection...')
@@ -13,7 +13,9 @@ async function main () {
   }
   const resChainId = await client.getChainId()
   if (network.chainId !== resChainId) {
-    console.error(`Chain ID mismatch! RPC Response: ${resChainId}, Expected: ${network.chainId}`)
+    console.error(
+      `Chain ID mismatch! RPC Response: ${resChainId}, Expected: ${network.chainId}`
+    )
     process.exit(1)
   }
   console.log('RPC Connection test completed. Retrieving option pool stats...')

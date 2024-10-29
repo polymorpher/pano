@@ -19,7 +19,7 @@ export const useTrade = () => {
     setStage(TradeStage.PoolSelection)
     setUserCommandDisabled(false)
   }, [setUserCommandDisabled])
-  const onPoolSelected = ({ pair }: { text: string, pair?: ValidatedPair }) => {
+  const onPoolSelected = ({ pair }: { text: string; pair?: ValidatedPair }) => {
     if (!pair) {
       setChosenPair(undefined)
       return
@@ -28,5 +28,16 @@ export const useTrade = () => {
     setStage(TradeStage.QuoteAsset)
   }
 
-  return { stage, setStage, chosenPairInfo, chosenPair, setChosenPair, client, wallet, addMessage, onPoolSelected, exit }
+  return {
+    stage,
+    setStage,
+    chosenPairInfo,
+    chosenPair,
+    setChosenPair,
+    client,
+    wallet,
+    addMessage,
+    onPoolSelected,
+    exit
+  }
 }

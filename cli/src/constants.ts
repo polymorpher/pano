@@ -8,7 +8,17 @@ import IERC20Abi from '../types-contract/IERC20.sol/IERC20.json.ts'
 import IERC20MetadataAbi from '../types-contract/IERC20Metadata.sol/IERC20Metadata.json.ts'
 import PanopticHelperAbi from '../types-contract/PanopticHelper.sol/PanopticHelper.json.ts'
 
-export { UniswapFactoryAbi, UniswapPoolAbi, PanopticFactoryAbi, PanopticPoolAbi, SFPMAbi, CollateralTrackerAbi, IERC20Abi, IERC20MetadataAbi, PanopticHelperAbi }
+export {
+  UniswapFactoryAbi,
+  UniswapPoolAbi,
+  PanopticFactoryAbi,
+  PanopticPoolAbi,
+  SFPMAbi,
+  CollateralTrackerAbi,
+  IERC20Abi,
+  IERC20MetadataAbi,
+  PanopticHelperAbi
+}
 
 export const DefaultAssets: Record<string, Record<string, string>> = {
   ethereum: {
