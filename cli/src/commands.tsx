@@ -34,39 +34,39 @@ export const Commands: Record<CommandKeys, Command> = {
   list: {
     short: 'l',
     full: 'list',
-    desc: 'list all available pools, and show their pool and collateral statistics'
+    desc: 'List all available pools, and show their pool and collateral statistics'
   },
   wallet: {
     short: 'w',
     full: 'wallet',
-    desc: 'set private key for wallet (if not already set through .env, environment variable, or command line)',
+    desc: 'Set private key for wallet (if not already set through .env, environment variable, or command line)',
     submenu: true
   },
   deposit: {
     short: 'd',
     full: 'deposit',
-    desc: 'deposit or withdraw funds as collateral in one of the trading pools',
+    desc: 'Deposit or withdraw funds as collateral in one of the trading pools',
     submenu: true,
     wallet: true
   },
   portfolio: {
     short: 'p',
     full: 'portfolio',
-    desc: 'show your deposited assets collateral value, open positions, margin requirement, and net value of each position',
+    desc: 'Show your deposited assets collateral value, open positions, margin requirement, and net value of each position',
     wallet: true,
     submenu: true
   },
   sell: {
     short: 's',
     full: 'sell',
-    desc: 'sell a simple option (open a short position with a single leg)',
+    desc: 'Sell a simple option (open a short position with a single leg)',
     wallet: true,
     submenu: true
   },
   buy: {
     short: 'b',
     full: 'buy',
-    desc: 'buy a simple option (open a long position with a single leg)',
+    desc: 'Buy a simple option (open a long position with a single leg)',
     wallet: true,
     submenu: true
   },
@@ -80,14 +80,14 @@ export const Commands: Record<CommandKeys, Command> = {
   mint: {
     short: 'a',
     full: 'advanced',
-    desc: 'mint a complex option (open a position with multiple legs that potentially hedge against each other, mixing long and short)',
+    desc: 'Mint a complex option (open a position with multiple legs that potentially hedge against each other, mixing long and short)',
     tbd: true,
     submenu: true
   },
   manage: {
     short: 'm',
     full: 'manage',
-    desc: 'perform market management operations (permissionless liquidation, forced exercise)',
+    desc: 'Perform market management operations (permissionless liquidation, forced exercise)',
     wallet: true,
     tbd: true
   },

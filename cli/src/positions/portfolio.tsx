@@ -13,7 +13,7 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import { UserInputContext } from '../commands.js'
+import { type CommandKeys, useCli, UserInputContext } from '../commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'
@@ -27,6 +27,8 @@ import { usePositions } from './hooks.js'
 import { groupBy } from 'remeda'
 import { PoolPositions } from './position.js'
 import { SFPMProvider } from '../pools/sfpm.js'
+import CommandArgs from 'src/command-args.tsx'
+import { commandOptions } from 'src/options.ts'
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
@@ -43,7 +45,7 @@ export const PortfolioControl = () => {
   >([])
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
-  const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
+  const { input, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const [filteredPairs, setFilteredPairs] = useState<
     Array<[ValidatedPair, bigint]>
   >([])
@@ -70,6 +72,9 @@ export const PortfolioControl = () => {
     // addMessage('pool positions set')
     setPositionsByPoolEntries(positionsByPoolEntries)
   }, [positions])
+
+  const cli = useCli()
+
   useEffect(() => {
     async function init() {
       if (!client || !wallet.address) {
@@ -95,7 +100,7 @@ export const PortfolioControl = () => {
     init().catch((ex) => {
       addMessage((ex as Error).toString(), { color: 'red' })
     })
-  }, [filteredPairs, addMessage, wallet.address, scan, client, pairs])
+  }, [addMessage, wallet.address, client, pairs])
 
   const doScan = useCallback(
     async (duration: number) => {
@@ -258,7 +263,13 @@ export const PortfolioControl = () => {
             />
           )
         })}
-        {stage === PortfolioStage.SelectAction && (
+        {cli && (
+          <CommandArgs
+            title="Please use the following flags to sync positions on chain"
+            args={commandOptions[input as CommandKeys]!}
+          />
+        )}
+        {!cli && stage === PortfolioStage.SelectAction && (
           <MultiChoiceSelector
             options={['Sync positions on chain']}
             onSelected={onAction}
@@ -276,7 +287,7 @@ export const PortfolioControl = () => {
             }
           />
         )}
-        {stage === PortfolioStage.SetScanDuration && (
+        {!cli && stage === PortfolioStage.SetScanDuration && (
           <AmountSelector
             intro={'Scan for how far back?'}
             prompt={
@@ -288,7 +299,7 @@ export const PortfolioControl = () => {
             }}
           />
         )}
-        {stage === PortfolioStage.ScanInProgress && (
+        {!cli && stage === PortfolioStage.ScanInProgress && (
           <InProgressSelector
             intro={'Scan in progress...'}
             onExit={onScanInterrupted}

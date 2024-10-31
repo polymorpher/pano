@@ -3,9 +3,9 @@ import * as process from 'process'
 
 import { render } from 'ink'
 import yargs from 'yargs/yargs'
-import type { Argv } from 'yargs'
+import type { Argv, BuilderCallback } from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import options from './options.ts'
+import options, { commandOptions } from './options.ts'
 import { CommandKeys, Commands } from './commands.tsx'
 import Mainframe from './mainframe.tsx'
 import { buildPublicClient, parseInitialNetwork } from './client.tsx'
@@ -62,18 +62,16 @@ const main = (): Argv => {
       const key = c as CommandKeys
       const cmd = Commands[key]
       const desc = cmd.tbd ? `[Coming soon] ${cmd.desc}` : cmd.desc
+      const opt = commandOptions[c as CommandKeys]
+      const emptyBuilder = () => {}
+      const builder = (opt ?? emptyBuilder) as BuilderCallback<any, any>
 
-      return acc.command(
-        c,
-        `${desc}\n`,
-        () => {},
-        async (arg) => {
-          const { waitUntilExit } = render(
-            <Mainframe options={arg} command={key} cli />
-          )
-          await waitUntilExit()
-        }
-      )
+      return acc.command(c, `${desc}\n`, builder, async (arg) => {
+        const { waitUntilExit } = render(
+          <Mainframe options={arg} command={key} cli />
+        )
+        await waitUntilExit()
+      })
     }, cmd)
 
   cmd = cmd.help('help', 'Show help').options(options).strict()

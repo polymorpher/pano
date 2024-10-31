@@ -1,4 +1,5 @@
 import { type Options } from 'yargs'
+import type { CommandKeys } from './commands.tsx'
 
 export type OptionKey =
   | 'network'
@@ -51,6 +52,25 @@ const options: Record<OptionKey, Options> = {
   db: {
     type: 'string',
     describe: 'Path to local database folder\n'
+  }
+}
+
+export const commandOptions: Partial<
+  Record<CommandKeys, Record<string, Options>>
+> = {
+  portfolio: {
+    sync: {
+      alias: 's',
+      type: 'boolean',
+      describe: 'Sync positions on chain'
+    },
+    duration: {
+      alias: 'd',
+      type: 'string',
+      describe:
+        'Time duration to scan for back (e.g. 10s, 5h, 3d, 1m, ... or in number of blocks, e.g. 1024)',
+      default: '3d'
+    }
   }
 }
 

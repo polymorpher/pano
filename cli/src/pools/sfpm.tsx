@@ -122,7 +122,7 @@ const useSFPMHook = () => {
       }
       return intrinsicValues
     },
-    [addMessage, simulateBurn]
+    [simulateBurn]
   )
 
   useEffect(() => {
