@@ -6,6 +6,7 @@ import React, {
   useState
 } from 'react'
 import { Text, Box } from 'ink'
+import { useCli } from './commands.tsx'
 
 interface NotificationOptions {
   time?: number
@@ -43,14 +44,23 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
   const [stickyMessages, setStickyMessages] = useState<NotificationMessage[]>(
     []
   )
+
   const [messageStore, setMessageStore] = useState<
     Map<string, NotificationMessage>
   >(new Map())
+
   const [expiredMessages, setExpiredMessages] = useState<NotificationMessage[]>(
     []
   )
+
+  const cli = useCli()
+
   const addMessage = useCallback(
     (message: string, options: NotificationOptions = {}) => {
+      if (cli) {
+        return
+      }
+
       const id = options.id ?? Math.random().toString(36).slice(2)
       const duration =
         options.duration && options.duration > 0 ? options.duration : 10_000
@@ -69,7 +79,7 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
         }, duration)
       }
     },
-    []
+    [cli]
   )
   const clear = useCallback(() => {
     setMessageStore(new Map())

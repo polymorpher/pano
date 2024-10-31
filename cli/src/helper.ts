@@ -1,13 +1,14 @@
 import { usePublicClient } from './client.js'
-
+import { defaultPanopticHelperAddress } from './config.ts'
 import { useEffect, useState } from 'react'
 import {
+  type Address,
   getContract,
   type GetContractReturnType,
   type PublicClient
 } from 'viem'
 import { PanopticHelperAbi } from './constants.js'
-import { getPanopticHelperAddress } from './cmd.js'
+import { useOption } from './commands.tsx'
 
 export type PanopticHelper = GetContractReturnType<
   typeof PanopticHelperAbi,
@@ -19,17 +20,20 @@ export type PanopticHelper = GetContractReturnType<
 
 export const useHelper = () => {
   const { client } = usePublicClient()
+  const pha = useOption('panopticHelper') as Address
   const [helper, setHelper] = useState<PanopticHelper>()
+
   useEffect(() => {
     if (!client) {
       return
     }
     const c = getContract({
-      address: getPanopticHelperAddress(),
+      address: pha ?? defaultPanopticHelperAddress,
       abi: PanopticHelperAbi,
       client
     })
     setHelper(c)
-  }, [client])
+  }, [client, pha])
+
   return { helper }
 }

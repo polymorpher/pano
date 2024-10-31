@@ -3,10 +3,11 @@ import { useCallback, useState, useEffect, useContext } from 'react'
 import {
   calculateTokenId,
   type Position,
+  type PositionWithId,
   type PositionWithData,
   type ValidatedPair
 } from '../common.js'
-import { readPositions, storePosition, removePosition } from '../db.js'
+import useDb from '../db.js'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
 import { ScalingFactor } from '../util.js'
@@ -22,6 +23,8 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
   const [positions, setPositions] = useState<PositionWithData[]>([])
   const positionIds = positions.map((p) => BigInt(p.id))
   const { panopticFactory } = useFactories()
+  const { readPositions, removePosition, storePosition } = useDb()
+
   const reloadPositions = useCallback(async () => {
     if (!wallet.address || !panopticFactory || !client) {
       return
@@ -29,7 +32,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
     const ps = await readPositions(wallet.address, uniswapPoolAddress)
     // addMessage(`Found ${ps.length} local positions. Sorting...`)
     const positionsByPool = groupBy(ps, (p) => p.uniswapPoolAddress)
-    const positionsPA = Object.entries(positionsByPool).map(
+    const positionsPA = Object.entries<PositionWithId[]>(positionsByPool).map(
       async ([upa, positions]) => {
         const ppAddress = await panopticFactory.read.getPanopticPool([
           upa as Address
@@ -85,7 +88,15 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       })
     setPositions(sortedPositions)
     return sortedPositions
-  }, [client, panopticFactory, addMessage, wallet.address, uniswapPoolAddress])
+  }, [
+    wallet.address,
+    panopticFactory,
+    client,
+    readPositions,
+    uniswapPoolAddress,
+    addMessage,
+    removePosition
+  ])
 
   const addPosition = useCallback(
     async (
@@ -107,7 +118,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       }
       return updated
     },
-    [wallet.address, uniswapPoolAddress]
+    [wallet.address, uniswapPoolAddress, storePosition]
   )
 
   useEffect(() => {

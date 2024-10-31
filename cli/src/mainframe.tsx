@@ -1,5 +1,4 @@
 import React, { useContext } from 'react'
-import { render } from 'ink'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
 import {
@@ -18,6 +17,7 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
+import type { OptionKey } from './options.ts'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
@@ -41,26 +41,28 @@ const Router = () => {
   )
 }
 
-const Mainframe = () => {
+export interface MainframeProps {
+  command?: CommandKeys
+  options: Record<OptionKey, string>
+  cli?: boolean
+}
+
+const Mainframe: React.FC<MainframeProps> = ({ options, command, cli }) => {
   return (
-    <NotificationProvider>
-      <PublicClientProvider>
-        <WalletProvider>
-          <WalletClientProvider>
-            <CommandProvider>
+    <CommandProvider options={options} command={command} cli={cli}>
+      <NotificationProvider>
+        <PublicClientProvider>
+          <WalletProvider>
+            <WalletClientProvider>
               <Router />
-              <CommandControl />
+              {!cli && <CommandControl />}
               <NotificationBar />
-            </CommandProvider>
-          </WalletClientProvider>
-        </WalletProvider>
-      </PublicClientProvider>
-    </NotificationProvider>
+            </WalletClientProvider>
+          </WalletProvider>
+        </PublicClientProvider>
+      </NotificationProvider>
+    </CommandProvider>
   )
 }
 
 export default Mainframe
-
-export const renderMainframe = () => {
-  return render(<Mainframe />)
-}

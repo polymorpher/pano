@@ -1,15 +1,11 @@
-import React, {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useState
-} from 'react'
+import React, { createContext, useCallback, useContext, useState } from 'react'
 import process from 'process'
 import { Box, Text } from 'ink'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
 import { useWallet } from './wallet.js'
+import type { OptionKey } from './options.ts'
+import type { MainframeProps } from './mainframe.tsx'
 
 export interface Command {
   short: string
@@ -115,13 +111,15 @@ interface UserInputContextProps {
   setInput: (input: string) => void
   disabled: boolean
   setDisabled: (disabled: boolean) => void
+  cli: boolean
 }
 
 export const UserInputContext = createContext<UserInputContextProps>({
   input: '',
   setInput: (input: string) => {},
   disabled: false,
-  setDisabled: () => {}
+  setDisabled: () => {},
+  cli: false
 })
 
 export function matchCommand(input: string): Command | null {
@@ -202,14 +200,41 @@ const UserInput = () => {
   )
 }
 
-export const CommandProvider = ({ children }: PropsWithChildren) => {
-  const [input, setInput] = useState<string>(CommandKeys.Help)
+export interface CommandProviderProps extends MainframeProps {
+  children: React.ReactNode
+}
+
+export const OptionContext = createContext<Record<OptionKey, string>>({
+  network: '',
+  rpc: '',
+  chainId: '',
+  uniswapFactory: '',
+  panopticFactory: '',
+  panopticHelper: '',
+  pk: '',
+  db: ''
+})
+
+export const useOption = (optionKey: OptionKey) =>
+  useContext(OptionContext)[optionKey]
+
+export const useCli = () => useContext(UserInputContext).cli
+
+export const CommandProvider = ({
+  command,
+  options,
+  cli,
+  children
+}: CommandProviderProps) => {
+  const [input, setInput] = useState<string>(command ?? CommandKeys.Help)
   const [disabled, setDisabled] = useState<boolean>(false)
   return (
     <UserInputContext.Provider
-      value={{ input, setInput, disabled, setDisabled }}
+      value={{ input, setInput, disabled, setDisabled, cli }}
     >
-      {children}
+      <OptionContext.Provider value={options}>
+        {children}
+      </OptionContext.Provider>
     </UserInputContext.Provider>
   )
 }

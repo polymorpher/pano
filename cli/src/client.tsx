@@ -3,9 +3,9 @@ import React, {
   type PropsWithChildren,
   useContext,
   useEffect,
-  useState
+  useMemo
 } from 'react'
-import { type Network } from 'src/config.js'
+import { networks, type Network } from 'src/config.js'
 import {
   type PublicClient,
   type WalletClient,
@@ -16,9 +16,10 @@ import {
   http,
   type Transport
 } from 'viem'
-import { parseInitialNetwork } from './cmd.js'
 import { NotificationContext } from './notification.js'
 import { useWallet, type Wallet } from './wallet.js'
+import { OptionContext } from './commands.tsx'
+import type { OptionKey } from './options.js'
 
 type ConnectedWalletClient = WalletClient<Transport, Chain, Account>
 
@@ -35,51 +36,68 @@ export const buildPublicClient = (network: Network): PublicClient => {
   })
 }
 
+export const parseInitialNetwork = (
+  args: Record<OptionKey, string>
+): Network => {
+  const network = args.network
+  let rpc = args.rpc ?? process.env.RPC
+  const networkSettings = networks[network]
+  if (!networkSettings) {
+    console.error(`Unknown network: ${network}`)
+    process.exit(1)
+  }
+  rpc = rpc ?? networkSettings.rpc
+  const chainId = Number(
+    args.chainId ?? process.env.CHAIN_ID ?? networkSettings.chainId
+  )
+  return {
+    ...networkSettings,
+    rpc,
+    chainId
+  }
+}
+
 interface PublicClientContextProps {
   archiveClient?: PublicClient
   client?: PublicClient
   network: Network
-  setNetwork: (network: Network) => void
 }
 
-export const initialNetwork = parseInitialNetwork()
-
 const PublicClientContext = createContext<PublicClientContextProps>({
-  network: initialNetwork,
-  setNetwork: (network: Network) => {}
+  network: null as unknown as Network
 })
 
-// a react hook, use inside react components
-const usePublicClientHook = () => {
-  const [network, setNetwork] = useState<Network>(initialNetwork)
-  const [publicClient, setPublicClient] = useState<PublicClient>()
-  const [archiveClient, setArchiveClient] = useState<PublicClient>()
+export const PublicClientProvider = ({ children }: PropsWithChildren) => {
+  const options = useContext(OptionContext)
+  const network = useMemo(() => parseInitialNetwork(options), [options])
   const { addMessage } = useContext(NotificationContext)
+  const publicClient: PublicClient = useMemo(
+    () => buildPublicClient(network),
+    [network]
+  )
+  const archiveClient: PublicClient = useMemo(
+    () =>
+      buildPublicClient({
+        ...network,
+        rpc: network.archive ?? network.rpc
+      }),
+    [network]
+  )
+
   useEffect(() => {
     if (!network) {
       addMessage('No network selected', { color: 'red' })
       return
     }
-    const client = buildPublicClient(network)
     addMessage(
       `Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
-    setPublicClient(client)
-    const aClient = buildPublicClient({
-      ...network,
-      rpc: network.archive ?? network.rpc
-    })
-    setArchiveClient(aClient)
   }, [addMessage, network])
-  return { network, setNetwork, client: publicClient, archiveClient }
-}
 
-export const PublicClientProvider = ({ children }: PropsWithChildren) => {
-  const { client, network, setNetwork, archiveClient } = usePublicClientHook()
   return (
     <PublicClientContext.Provider
-      value={{ client, network, setNetwork, archiveClient }}
+      value={{ client: publicClient, network, archiveClient }}
     >
       {children}
     </PublicClientContext.Provider>
@@ -91,12 +109,10 @@ export const usePublicClient = () => useContext(PublicClientContext)
 interface WalletClientContextProps {
   network: Network
   client?: ConnectedWalletClient
-  setNetwork: (network: Network) => void
 }
 
 const WalletClientContext = createContext<WalletClientContextProps>({
-  network: initialNetwork,
-  setNetwork: (network: Network) => {}
+  network: null as unknown as Network
 })
 
 export const buildWalletClient = (
@@ -115,31 +131,29 @@ export const buildWalletClient = (
   })
 }
 
-export const useWalletClientHook = () => {
-  const { wallet } = useWallet()
-  const [network, setNetwork] = useState<Network>(initialNetwork)
-  const [client, setClient] = useState<ConnectedWalletClient>()
+export const WalletClientProvider = ({ children }: PropsWithChildren) => {
+  const options = useContext(OptionContext)
+  const network = useMemo(() => parseInitialNetwork(options), [options])
   const { addMessage } = useContext(NotificationContext)
+  const { wallet } = useWallet()
+  const client: ConnectedWalletClient = useMemo(
+    () => buildWalletClient(network, wallet),
+    [network, wallet]
+  )
+
   useEffect(() => {
     if (!wallet.privateKeyAccount) {
       addMessage('Wallet is not initialized')
       return
     }
-    const c = buildWalletClient(network, wallet)
     addMessage(
       `Wallet connected to RPC - Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
-    setClient(c)
   }, [addMessage, wallet, network])
 
-  return { network, setNetwork, client }
-}
-
-export const WalletClientProvider = ({ children }: PropsWithChildren) => {
-  const { client, network, setNetwork } = useWalletClientHook()
   return (
-    <WalletClientContext.Provider value={{ client, network, setNetwork }}>
+    <WalletClientContext.Provider value={{ client, network }}>
       {children}
     </WalletClientContext.Provider>
   )

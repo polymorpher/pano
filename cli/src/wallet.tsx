@@ -11,11 +11,10 @@ import TextInput from 'ink-text-input'
 import { Box, Text } from 'ink'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
+import { CommandKeys, Commands, useCli, useOption, UserInputContext } from './commands.js'
 import { SectionTitle } from './common.js'
 import { defaultWalletPrivateKey } from './config.js'
 import { tryPrivateKeyToAccount } from './util.js'
-import { getPk } from './cmd.js'
 
 export enum WalletType {
   Unloaded = 'unloaded',
@@ -37,11 +36,8 @@ interface WalletContextProps {
   setWallet: (wallet: Wallet) => void
 }
 
-const loadDefaultWallet = () => {
-  if (!defaultWalletPrivateKey) {
-    return EmptyWallet
-  }
-  const a = tryPrivateKeyToAccount(getPk())
+const loadDefaultWallet = (pk: Hex) => {
+  const a = tryPrivateKeyToAccount(pk)
   if (!a) {
     return EmptyWallet
   }
@@ -49,7 +45,7 @@ const loadDefaultWallet = () => {
 }
 
 export const WalletContext = createContext<WalletContextProps>({
-  wallet: loadDefaultWallet(),
+  wallet: EmptyWallet,
   setWallet: () => {}
 })
 
@@ -188,7 +184,15 @@ export const ShowWallet = () => {
 }
 
 export const WalletProvider = ({ children }: PropsWithChildren) => {
-  const [wallet, setWallet] = useState<Wallet>(loadDefaultWallet())
+  const pk = useOption('pk') as Hex
+  const cli = useCli()
+  const { input } = useContext(UserInputContext)
+  const [wallet, setWallet] = useState<Wallet>(() =>
+    cli && !Commands[input as CommandKeys].wallet
+      ? EmptyWallet
+      : loadDefaultWallet(pk ?? defaultWalletPrivateKey)
+  )
+
   return (
     <WalletContext.Provider value={{ wallet, setWallet }}>
       {children}

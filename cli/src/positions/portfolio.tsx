@@ -22,7 +22,7 @@ import { NotificationContext } from '../notification.js'
 import { stringify } from '../util.js'
 import parseDuration from 'parse-duration'
 import humanizeDuration from 'humanize-duration'
-import { storePosition } from '../db.js'
+import useDb from '../db.js'
 import { usePositions } from './hooks.js'
 import { groupBy } from 'remeda'
 import { PoolPositions } from './position.js'
@@ -57,6 +57,8 @@ export const PortfolioControl = () => {
     PortfolioStage.SelectAction
   )
   const [scanInterrupt, setScanInterrupt] = useState<boolean>(false)
+  const { storePosition } = useDb()
+
   useEffect(() => {
     const positionsByPool = groupBy(
       positions,
@@ -201,7 +203,8 @@ export const PortfolioControl = () => {
       filteredPairs,
       addMessage,
       scan,
-      client
+      client,
+      storePosition
     ]
   )
 
