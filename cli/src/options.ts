@@ -10,6 +10,7 @@ export type OptionKey =
   | 'panopticHelper'
   | 'pk'
   | 'db'
+  | PortfolioOptionKey
 
 const options: Record<OptionKey, Options> = {
   network: {
@@ -54,6 +55,8 @@ const options: Record<OptionKey, Options> = {
     describe: 'Path to local database folder\n'
   }
 }
+
+type PortfolioOptionKey = 'sync' | 'duration'
 
 export const commandOptions: Partial<
   Record<CommandKeys, Record<string, Options>>

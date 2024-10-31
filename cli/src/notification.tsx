@@ -58,7 +58,7 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
   const addMessage = useCallback(
     (message: string, options: NotificationOptions = {}) => {
       if (cli) {
-        return
+        options.sticky = true
       }
 
       const id = options.id ?? Math.random().toString(36).slice(2)

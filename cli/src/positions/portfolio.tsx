@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react'
 import {
   AmountSelector,
   getUniswapPoolId,
@@ -13,7 +19,12 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import { type CommandKeys, useCli, UserInputContext } from '../commands.js'
+import {
+  type CommandKeys,
+  useCli,
+  useOption,
+  UserInputContext
+} from '../commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'
@@ -45,16 +56,11 @@ export const PortfolioControl = () => {
   >([])
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
-  const { input, setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
-  const [filteredPairs, setFilteredPairs] = useState<
-    Array<[ValidatedPair, bigint]>
-  >([])
-  const poolIdMapping: Record<string, Address> = Object.fromEntries(
-    filteredPairs.map(([p]) => [
-      getUniswapPoolId(p.uniswapPoolAddress).toString(16),
-      p.uniswapPoolAddress
-    ])
-  )
+  const { input, setDisabled: setUserCommandDisabled } =
+    useContext(UserInputContext)
+  const [filteredPairs, setFilteredPairs] =
+    useState<Array<[ValidatedPair, bigint]>>()
+
   const [stage, setStage] = useState<PortfolioStage>(
     PortfolioStage.SelectAction
   )
@@ -77,7 +83,7 @@ export const PortfolioControl = () => {
 
   useEffect(() => {
     async function init() {
-      if (!client || !wallet.address) {
+      if (!client || !wallet.address || !pairs) {
         return
       }
       const numPositionsArrayP = pairs.map(async (p) => {
@@ -104,7 +110,7 @@ export const PortfolioControl = () => {
 
   const doScan = useCallback(
     async (duration: number) => {
-      if (!client || !archiveClient || !wallet.address) {
+      if (!client || !archiveClient || !wallet.address || !filteredPairs) {
         return
       }
       addMessage(`Found ${filteredPairs.length} pools with open positions`)
@@ -162,6 +168,14 @@ export const PortfolioControl = () => {
             addMessage(
               `- [${percDone}% ${Number(update.totalBlocks)}/${Number(update.totalBlocks)}] Finished chunk ${update.fromBlock} to ${update.toBlock}. Found ${update.entries.length} positions`
             )
+
+            const poolIdMapping = Object.fromEntries(
+              filteredPairs.map(([p]) => [
+                getUniswapPoolId(p.uniswapPoolAddress).toString(16),
+                p.uniswapPoolAddress
+              ])
+            )
+
             for (const entry of update.entries) {
               const position = tokenIdToPosition(
                 entry.tokenId,
@@ -204,7 +218,6 @@ export const PortfolioControl = () => {
       archiveClient,
       scanInterrupt,
       wallet.address,
-      poolIdMapping,
       filteredPairs,
       addMessage,
       scan,
@@ -243,11 +256,21 @@ export const PortfolioControl = () => {
     addMessage('Terminating scan...')
   }, [addMessage])
 
+  const sync = Boolean(useOption('sync'))
+
+  const duration = useOption('duration')
+
+  useEffect(() => {
+    if (sync && filteredPairs) {
+      onDurationSubmit(duration)
+    }
+  }, [sync, duration, onDurationSubmit, filteredPairs])
+
   return (
     <SFPMProvider>
       <Box flexDirection={'column'}>
         <SectionTitle>Portfolio and Positions</SectionTitle>
-        {filteredPairs.map(([p, n]) => {
+        {filteredPairs?.map(([p, n]) => {
           return (
             <Text key={p.panopticPoolAddress}>
               Pool {p.token0}/{p.token1}: {n.toString()} open positions

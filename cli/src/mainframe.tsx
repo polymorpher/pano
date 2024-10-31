@@ -54,9 +54,18 @@ const Mainframe: React.FC<MainframeProps> = ({ options, command, cli }) => {
         <PublicClientProvider>
           <WalletProvider>
             <WalletClientProvider>
-              <Router />
-              {!cli && <CommandControl />}
-              <NotificationBar />
+              {cli ? (
+                <>
+                  <NotificationBar />
+                  <Router />
+                </>
+              ) : (
+                <>
+                  <Router />
+                  <CommandControl />
+                  <NotificationBar />
+                </>
+              )}
             </WalletClientProvider>
           </WalletProvider>
         </PublicClientProvider>

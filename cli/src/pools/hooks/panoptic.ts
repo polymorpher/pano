@@ -33,7 +33,7 @@ import { useWallet } from '../../wallet.js'
 export const usePools = () => {
   const { network, client } = usePublicClient()
   const { panopticFactory, uniswapFactory } = useFactories()
-  const [pairs, setPairs] = useState<ValidatedPair[]>([])
+  const [pairs, setPairs] = useState<ValidatedPair[]>()
   const { addMessage } = useContext(NotificationContext)
 
   useEffect(() => {

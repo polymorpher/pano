@@ -11,7 +11,13 @@ import TextInput from 'ink-text-input'
 import { Box, Text } from 'ink'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
-import { CommandKeys, Commands, useCli, useOption, UserInputContext } from './commands.js'
+import {
+  CommandKeys,
+  Commands,
+  useCli,
+  useOption,
+  UserInputContext
+} from './commands.js'
 import { SectionTitle } from './common.js'
 import { defaultWalletPrivateKey } from './config.js'
 import { tryPrivateKeyToAccount } from './util.js'

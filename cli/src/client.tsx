@@ -3,7 +3,8 @@ import React, {
   type PropsWithChildren,
   useContext,
   useEffect,
-  useMemo
+  useMemo,
+  useState
 } from 'react'
 import { networks, type Network } from 'src/config.js'
 import {
@@ -18,7 +19,13 @@ import {
 } from 'viem'
 import { NotificationContext } from './notification.js'
 import { useWallet, type Wallet } from './wallet.js'
-import { OptionContext } from './commands.tsx'
+import {
+  type CommandKeys,
+  Commands,
+  OptionContext,
+  useCli,
+  UserInputContext
+} from './commands.tsx'
 import type { OptionKey } from './options.js'
 
 type ConnectedWalletClient = WalletClient<Transport, Chain, Account>
@@ -83,23 +90,26 @@ export const PublicClientProvider = ({ children }: PropsWithChildren) => {
       }),
     [network]
   )
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (!network) {
       addMessage('No network selected', { color: 'red' })
+      setLoaded(true)
       return
     }
     addMessage(
       `Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
+    setLoaded(true)
   }, [addMessage, network])
 
   return (
     <PublicClientContext.Provider
       value={{ client: publicClient, network, archiveClient }}
     >
-      {children}
+      {loaded && children}
     </PublicClientContext.Provider>
   )
 }
@@ -140,21 +150,31 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
     () => buildWalletClient(network, wallet),
     [network, wallet]
   )
+  const cli = useCli()
+  const { input } = useContext(UserInputContext)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    if (!wallet.privateKeyAccount) {
-      addMessage('Wallet is not initialized')
+    if (cli && !Commands[input as CommandKeys].wallet) {
       return
     }
+
+    if (!wallet.privateKeyAccount) {
+      addMessage('Wallet is not initialized', { color: cli ? 'red' : 'gray' })
+      setLoaded(true)
+      return
+    }
+
     addMessage(
       `Wallet connected to RPC - Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
-  }, [addMessage, wallet, network])
+    setLoaded(true)
+  }, [addMessage, wallet, network, cli, input])
 
   return (
     <WalletClientContext.Provider value={{ client, network }}>
-      {children}
+      {loaded && children}
     </WalletClientContext.Provider>
   )
 }
