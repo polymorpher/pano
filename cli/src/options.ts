@@ -11,6 +11,7 @@ export type OptionKey =
   | 'pk'
   | 'db'
   | PortfolioOptionKey
+  | DepositOptionKey
 
 const options: Record<OptionKey, Options> = {
   network: {
@@ -21,42 +22,43 @@ const options: Record<OptionKey, Options> = {
       "The network you want to use, which provides a set of default values for RPC, chain id, and contract addresses, so you don't need to specify them one by one\n" +
       '  - local (forked ETH mainnet): RPC=http://localhost:8545 chainId=1\n' +
       '  - anvil: RPC=http://localhost:8545 chainId=31337\n' +
-      '  - harmony: RPC=https://api.harmony.one chainId=1666600000\n'
+      '  - harmony: RPC=https://api.harmony.one chainId=1666600000'
   },
   rpc: {
     alias: 'r',
     type: 'string',
-    describe:
-      'RPC server for the blockchain, to override network default value\n'
+    describe: 'RPC server for the blockchain, to override network default value'
   },
   chainId: {
     alias: 'c',
     type: 'number',
-    describe: 'Chain ID for the blockchain, to override network default value\n'
+    describe: 'Chain ID for the blockchain, to override network default value'
   },
   uniswapFactory: {
     type: 'string',
-    describe: 'Uniswap V3 Factory Contract Address\n'
+    describe: 'Uniswap V3 Factory Contract Address'
   },
   panopticFactory: {
     type: 'string',
-    describe: 'Panoptic Factory Contract Address\n'
+    describe: 'Panoptic Factory Contract Address'
   },
   panopticHelper: {
     type: 'string',
-    describe: 'Panoptic Helper Contract Address\n'
+    describe: 'Panoptic Helper Contract Address'
   },
   pk: {
     type: 'string',
-    describe: 'The private key of the wallet you want to preload\n'
+    describe: 'The private key of the wallet you want to preload'
   },
   db: {
     type: 'string',
-    describe: 'Path to local database folder\n'
+    describe: 'Path to local database folder'
   }
 }
 
 type PortfolioOptionKey = 'sync' | 'duration'
+
+type DepositOptionKey = 'pool' | 'collateral' | 'amount'
 
 export const commandOptions: Partial<
   Record<CommandKeys, Record<string, Options>>
@@ -73,6 +75,23 @@ export const commandOptions: Partial<
       describe:
         'Time duration to scan for back (e.g. 10s, 5h, 3d, 1m, ... or in number of blocks, e.g. 1024)',
       default: '3d'
+    }
+  },
+  deposit: {
+    pool: {
+      alias: 'p',
+      type: 'string',
+      describe: 'Pool (e.g. usdc/weth, weth/usdc)'
+    },
+    collateral: {
+      alias: 'col',
+      type: 'string',
+      describe: 'Collateral (e.g. usdc, weth)'
+    },
+    amount: {
+      alias: 'm',
+      type: 'number',
+      describe: 'Deposit amount'
     }
   }
 }

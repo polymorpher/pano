@@ -14,10 +14,14 @@ const CommandArgs: React.FC<CommandArgsProps> = ({ title, args }) => (
     </Box>
     {Object.entries(args).map(([flag, option]) => (
       <Box key={flag}>
-        <Box width="10">
-          <Text>
-            -{option.alias}, --{flag}
-          </Text>
+        <Box width="20">
+          {option.alias ? (
+            <Text>
+              --{flag}, -{option.alias}
+            </Text>
+          ) : (
+            <Text>--{flag}</Text>
+          )}
         </Box>
         <Text>{option.describe}</Text>
       </Box>

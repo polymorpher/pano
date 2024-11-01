@@ -13,11 +13,13 @@ import { useCollateralBalance } from './pools/hooks/collateral.js'
 import { usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
+import { CommandKeys, useCli, useOption, UserInputContext } from './commands.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
 import { PoolSelector } from './pools/selector.js'
+import CommandArgs from './command-args.tsx'
+import { commandOptions } from './options.ts'
 
 enum Stage {
   PoolSelection = 1,
@@ -238,6 +240,27 @@ export const DepositControl = () => {
       addMessage
     ]
   )
+
+  const cli = useCli()
+
+  const pool = useOption('pool')
+
+  const collateral = useOption('collateral')
+
+  const _amount = Number(useOption('amount'))
+
+  if (cli && pool && collateral && isNaN(_amount)) {
+    return <></>
+  }
+
+  if (cli && (!pool || !collateral || isNaN(_amount))) {
+    return (
+      <CommandArgs
+        title="Use the following options to deposit"
+        args={commandOptions[CommandKeys.Deposit]!}
+      />
+    )
+  }
 
   return (
     <Box flexDirection={'column'}>

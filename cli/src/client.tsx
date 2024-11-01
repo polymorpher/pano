@@ -90,26 +90,23 @@ export const PublicClientProvider = ({ children }: PropsWithChildren) => {
       }),
     [network]
   )
-  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (!network) {
       addMessage('No network selected', { color: 'red' })
-      setLoaded(true)
       return
     }
     addMessage(
       `Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
-    setLoaded(true)
   }, [addMessage, network])
 
   return (
     <PublicClientContext.Provider
       value={{ client: publicClient, network, archiveClient }}
     >
-      {loaded && children}
+      {children}
     </PublicClientContext.Provider>
   )
 }
@@ -152,7 +149,6 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
   )
   const cli = useCli()
   const { input } = useContext(UserInputContext)
-  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (cli && !Commands[input as CommandKeys].wallet) {
@@ -161,7 +157,6 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
 
     if (!wallet.privateKeyAccount) {
       addMessage('Wallet is not initialized', { color: cli ? 'red' : 'gray' })
-      setLoaded(true)
       return
     }
 
@@ -169,12 +164,11 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
       `Wallet connected to RPC - Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
-    setLoaded(true)
   }, [addMessage, wallet, network, cli, input])
 
   return (
     <WalletClientContext.Provider value={{ client, network }}>
-      {loaded && children}
+      {children}
     </WalletClientContext.Provider>
   )
 }

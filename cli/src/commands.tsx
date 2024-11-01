@@ -111,7 +111,7 @@ interface UserInputContextProps {
   setInput: (input: string) => void
   disabled: boolean
   setDisabled: (disabled: boolean) => void
-  cli: boolean
+  cli?: boolean
 }
 
 export const UserInputContext = createContext<UserInputContextProps>({
@@ -204,7 +204,7 @@ export interface CommandProviderProps extends MainframeProps {
   children: React.ReactNode
 }
 
-export const OptionContext = createContext<Record<OptionKey, string>>({
+export const OptionContext = createContext<Partial<Record<OptionKey, string>>>({
   network: '',
   rpc: '',
   chainId: '',
