@@ -12,6 +12,7 @@ export type OptionKey =
   | 'db'
   | PortfolioOptionKey
   | DepositOptionKey
+  | SellOptionKey
 
 const options: Record<OptionKey, Options> = {
   network: {
@@ -60,6 +61,14 @@ type PortfolioOptionKey = 'sync' | 'duration'
 
 type DepositOptionKey = 'pool' | 'collateral' | 'amount'
 
+type SellOptionKey =
+  | 'pool'
+  | 'asset'
+  | 'trade'
+  | 'strike-price'
+  | 'range'
+  | 'amount'
+
 export const commandOptions: Partial<
   Record<CommandKeys, Record<string, Options>>
 > = {
@@ -83,15 +92,46 @@ export const commandOptions: Partial<
       type: 'string',
       describe: 'Pool (e.g. usdc/weth, weth/usdc)'
     },
-    collateral: {
-      alias: 'col',
+    asset: {
+      alias: 'a',
       type: 'string',
-      describe: 'Collateral (e.g. usdc, weth)'
+      describe: 'Collateral asset (e.g. usdc, weth)'
     },
     amount: {
       alias: 'm',
       type: 'number',
       describe: 'Deposit amount'
+    }
+  },
+  sell: {
+    pool: {
+      alias: 'p',
+      type: 'string',
+      describe: 'Pool (e.g. usdc/weth, weth/usdc)'
+    },
+    asset: {
+      alias: 'a',
+      type: 'string',
+      describe: 'Sell asset (e.g. usdc, weth)'
+    },
+    trade: {
+      alias: 't',
+      type: 'string',
+      describe: 'put | call'
+    },
+    'strike-price': {
+      alias: 'sp',
+      type: 'number',
+      describe: 'Strike price for the option'
+    },
+    range: {
+      type: 'number',
+      describe: 'Price range for the option'
+    },
+    amount: {
+      alias: 'm',
+      type: 'number',
+      describe: 'Amount of options to be sold'
     }
   }
 }
