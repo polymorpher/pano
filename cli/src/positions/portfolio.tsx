@@ -266,21 +266,25 @@ export const PortfolioControl = () => {
   return (
     <SFPMProvider>
       <Box flexDirection={'column'}>
-        {!cli && <SectionTitle>Portfolio and Positions</SectionTitle>}
-        {(!cli || !sync) &&
-          filteredPairs?.map(([p, n]) => (
-            <Text key={p.panopticPoolAddress}>
-              Pool {p.token0}/{p.token1}: {n.toString()} open positions
-            </Text>
-          ))}
-        {(!cli || !sync) &&
-          positionsByPoolEntries.map(([uniswapPoolAddress, poolPositions]) => (
-            <PoolPositions
-              key={uniswapPoolAddress}
-              uniswapPoolAddress={uniswapPoolAddress}
-              poolPositions={poolPositions}
-            />
-          ))}
+        {(!cli || !sync) && (
+          <>
+            <SectionTitle>Portfolio and Positions</SectionTitle>
+            {filteredPairs?.map(([p, n]) => (
+              <Text key={p.panopticPoolAddress}>
+                Pool {p.token0}/{p.token1}: {n.toString()} open positions
+              </Text>
+            ))}
+            {positionsByPoolEntries.map(
+              ([uniswapPoolAddress, poolPositions]) => (
+                <PoolPositions
+                  key={uniswapPoolAddress}
+                  uniswapPoolAddress={uniswapPoolAddress}
+                  poolPositions={poolPositions}
+                />
+              )
+            )}
+          </>
+        )}
         {cli && !sync && (
           <CommandArgs
             title="Please use the following options to sync positions on chain"
