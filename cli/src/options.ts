@@ -59,15 +59,9 @@ const options: Record<OptionKey, Options> = {
 
 type PortfolioOptionKey = 'sync' | 'duration'
 
-type DepositOptionKey = 'pool' | 'collateral' | 'amount'
+type DepositOptionKey = 'pool' | 'asset' | 'amount'
 
-type SellOptionKey =
-  | 'pool'
-  | 'asset'
-  | 'trade'
-  | 'strike-price'
-  | 'range'
-  | 'amount'
+type SellOptionKey = 'pool' | 'asset' | 'trade' | 'sp' | 'range' | 'amount'
 
 export const commandOptions: Partial<
   Record<CommandKeys, Record<string, Options>>
@@ -119,8 +113,7 @@ export const commandOptions: Partial<
       type: 'string',
       describe: 'put | call'
     },
-    'strike-price': {
-      alias: 'sp',
+    sp: {
       type: 'number',
       describe: 'Strike price for the option'
     },

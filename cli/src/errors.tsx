@@ -1,21 +1,30 @@
 import { SectionTitle } from './common.js'
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
 import { Box, Text } from 'ink'
 import { useCli } from './commands.tsx'
+import { NotificationContext } from './notification.tsx'
 
 export const WalletRequired = () => {
   const cli = useCli()
+  const { addMessage } = useContext(NotificationContext)
+
+  useEffect(() => {
+    if (cli) {
+      addMessage(
+        'A wallet is required to do this. Please specify wallet using --pk option.',
+        { color: 'red' }
+      )
+    }
+  }, [addMessage, cli])
+
+  if (cli) {
+    return <></>
+  }
+
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Error</SectionTitle>
-      {cli ? (
-        <Text>
-          A wallet is required to do this. Please specify wallet using --pk
-          option.
-        </Text>
-      ) : (
-        <Text>A wallet is required to do this. Please load a wallet first</Text>
-      )}
+      <Text>A wallet is required to do this. Please load a wallet first</Text>
     </Box>
   )
 }

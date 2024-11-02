@@ -245,18 +245,14 @@ export const DepositControl = () => {
 
   const pool = useOption('pool')
 
-  const collateral = useOption('collateral')
+  const asset = useOption('asset')
 
   const amountArg = useOption('amount')
 
   const { pairs } = usePools()
 
   useEffect(() => {
-    if (!cli || !pool || !pairs) {
-      return
-    }
-
-    if (stage !== Stage.PoolSelection) {
+    if (!cli || !pool || !pairs || stage !== Stage.PoolSelection) {
       return
     }
 
@@ -268,7 +264,8 @@ export const DepositControl = () => {
     )
 
     if (pair === undefined) {
-      addMessage('Pool not found', { color: 'red' })
+      addMessage(`Pool not found: ${pool.toUpperCase()}`, { color: 'red' })
+      setStage(Stage.Empty)
       return
     }
 
@@ -277,48 +274,53 @@ export const DepositControl = () => {
   }, [cli, addMessage, pairs, pool, stage])
 
   useEffect(() => {
-    if (!cli || !collateral || !chosenPair || !chosenPairInfo.ready) {
+    if (
+      !cli ||
+      !asset ||
+      !chosenPair ||
+      !chosenPairInfo.ready ||
+      stage !== Stage.CollateralSelection
+    ) {
       return
     }
 
-    if (stage !== Stage.CollateralSelection) {
-      return
+    let choice = 0
+
+    if (chosenPair.token0.toLowerCase() === asset.toLowerCase()) {
+      choice = 1
+    } else if (chosenPair.token1.toLowerCase() === asset.toLowerCase()) {
+      choice = 2
     }
 
-    let collateralIndex = 0
-
-    if (chosenPair.token0.toLowerCase() === collateral.toLowerCase()) {
-      collateralIndex = 1
-    } else if (chosenPair.token1.toLowerCase() === collateral.toLowerCase()) {
-      collateralIndex = 2
-    }
-
-    if (collateralIndex === 0) {
-      addMessage('Invalid collateral', { color: 'red' })
+    if (choice === 0) {
+      addMessage(`Invalid collateral: ${asset.toUpperCase()}`, { color: 'red' })
       setStage(Stage.Empty) // to prevent rerender
       return
     }
 
-    onCollateralSelected(collateralIndex)
+    onCollateralSelected(choice)
   }, [
     cli,
     stage,
     chosenPair,
-    collateral,
+    asset,
     onCollateralSelected,
     addMessage,
     chosenPairInfo.ready
   ])
 
   useEffect(() => {
-    if (!cli || amountArg === undefined) {
+    if (!cli || amountArg === undefined || stage !== Stage.AmountInput) {
       return
     }
 
-    if (stage === Stage.AmountInput) {
-      onAmountSubmitted(String(amountArg))
+    if (isNaN(Number(amountArg))) {
+      addMessage(`Invalid amount: ${amountArg}`, { color: 'red' })
+      return
     }
-  }, [onAmountSubmitted, amountArg, cli, stage])
+
+    onAmountSubmitted(String(amountArg))
+  }, [onAmountSubmitted, amountArg, cli, stage, addMessage])
 
   useEffect(() => {
     if (stage === Stage.Confirm) {
@@ -326,11 +328,11 @@ export const DepositControl = () => {
     }
   }, [stage, onConfirm])
 
-  if (cli && pool && collateral && !isNaN(Number(amountArg))) {
-    return <></>
-  }
+  if (cli) {
+    if (pool && asset && amountArg !== undefined) {
+      return <></>
+    }
 
-  if (cli && (!pool || !collateral || isNaN(Number(amountArg)))) {
     return (
       <CommandArgs
         title="Use the following options to deposit"
