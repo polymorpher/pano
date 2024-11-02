@@ -27,6 +27,15 @@ import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { useCli } from 'src/commands.tsx'
 
+export interface LegMakerRef {
+  onQuoteAssetSubmit: (choice: number) => void
+  onPutCallSelected: (choice: number) => void
+  onStrikeAmountSubmit: (price: number) => void
+  onWidthSubmit: (input: string) => void
+  onQuantitySubmit: (amount: number) => void
+  onConfirm: (yes?: boolean) => void
+}
+
 export enum TradeStage {
   Empty = 0,
   PoolSelection = 1,
@@ -45,15 +54,6 @@ interface LegMakerProps {
   stage: TradeStage
   setStage: (stage: TradeStage) => any
   position: 'short' | 'long'
-}
-
-export interface LegMakerRef {
-  onQuoteAssetSubmit: (choice: number) => void
-  onPutCallSelected: (choice: number) => void
-  onStrikeAmountSubmit: (price: number) => void
-  onWidthSubmit: (input: string) => void
-  onQuantitySubmit: (amount: number) => void
-  onConfirm: (yes?: boolean) => void
 }
 
 export const LegMaker = React.forwardRef<LegMakerRef, LegMakerProps>(
