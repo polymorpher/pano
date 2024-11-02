@@ -39,6 +39,14 @@ export interface MarginUsage {
   marginDetails1?: AccountCollateralMarginDetails
   marginIncrease0?: bigint
   marginIncrease1?: bigint
+
+  marginIncrease0Ratio: number
+  marginIncrease1Ratio: number
+  marginFree0After: bigint
+  marginFree1After: bigint
+
+  marginFree0AfterRatio: number
+  marginFree1AfterRatio: number
 }
 export function getTickRange(
   priceTick: number,
@@ -114,15 +122,36 @@ export const useMarginEstimator = (chosenPairInfo: PanopticPoolInfo) => {
         return undefined
       }
       const marginIncrease0 =
-        newMarginDetails0.requiredBalance - newMarginDetails0.requiredBalance
+        newMarginDetails0.requiredBalance - marginDetails0.requiredBalance
       const marginIncrease1 =
-        newMarginDetails1.requiredBalance - newMarginDetails1.requiredBalance
+        newMarginDetails1.requiredBalance - marginDetails1.requiredBalance
+
+      const marginIncrease0Ratio =
+        Number(marginIncrease0) / Number(marginDetails0.accountBalance)
+      const marginIncrease1Ratio =
+        Number(marginIncrease1) / Number(marginDetails1.accountBalance)
+
+      const marginFree0After =
+        newMarginDetails0.accountBalance - newMarginDetails0.requiredBalance
+      const marginFree1After =
+        newMarginDetails1.accountBalance - newMarginDetails1.requiredBalance
+
+      const marginFree0AfterRatio =
+        Number(marginFree0After) / Number(newMarginDetails0.requiredBalance)
+      const marginFree1AfterRatio =
+        Number(marginFree1After) / Number(newMarginDetails1.requiredBalance)
 
       return {
         marginDetails0,
         marginDetails1,
         marginIncrease0,
-        marginIncrease1
+        marginIncrease1,
+        marginIncrease0Ratio,
+        marginIncrease1Ratio,
+        marginFree0After,
+        marginFree1After,
+        marginFree0AfterRatio,
+        marginFree1AfterRatio
       }
     },
     [

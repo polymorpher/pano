@@ -371,8 +371,7 @@ export const LegMaker = ({
                 {baseAssetInfo.symbol}{' '}
               </Text>
               <Text>
-                - Margin Requirement Increase for {chosenPairInfo.c0Info.symbol}
-                :{' '}
+                - Margin Requirement Increase:{' '}
                 {toFixed(
                   Number(
                     formatUnits(
@@ -380,11 +379,11 @@ export const LegMaker = ({
                       chosenPairInfo.c0Info.decimals
                     )
                   )
-                )}
-              </Text>
-              <Text>
-                - Margin Requirement Increase for {chosenPairInfo.c1Info.symbol}
-                :{' '}
+                )}{' '}
+                {chosenPairInfo.c0Info.symbol} (+
+                {toFixed(
+                  (marginUsage?.marginIncrease0Ratio ?? 0) * 100
+                )}%),{' '}
                 {toFixed(
                   Number(
                     formatUnits(
@@ -392,7 +391,32 @@ export const LegMaker = ({
                       chosenPairInfo.c1Info.decimals
                     )
                   )
-                )}
+                )}{' '}
+                {chosenPairInfo.c1Info.symbol} (+
+                {toFixed((marginUsage?.marginIncrease1Ratio ?? 0) * 100)}%)
+              </Text>
+              <Text>
+                - Free Margin Remaining:{' '}
+                {toFixed(
+                  Number(
+                    formatUnits(
+                      marginUsage?.marginFree0After ?? 0n,
+                      chosenPairInfo.c0Info.decimals
+                    )
+                  )
+                )}{' '}
+                {chosenPairInfo.c0Info.symbol} (
+                {toFixed((marginUsage?.marginFree0AfterRatio ?? 0) * 100)}%),{' '}
+                {toFixed(
+                  Number(
+                    formatUnits(
+                      marginUsage?.marginFree1After ?? 0n,
+                      chosenPairInfo.c1Info.decimals
+                    )
+                  )
+                )}{' '}
+                {chosenPairInfo.c1Info.symbol} (+
+                {toFixed((marginUsage?.marginFree1AfterRatio ?? 0) * 100)}%)
               </Text>
               {/* <Text>- Position Size: {formatUnits(positionSizeInBaseAsset, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text> */}
             </>
