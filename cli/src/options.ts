@@ -58,11 +58,18 @@ const options: Record<OptionKey, Options> = {
   }
 }
 
-type PortfolioOptionKey = 'sync' | 'duration'
+type PortfolioOptionKey = 'sync' | 'duration' | 'force'
 
-type DepositOptionKey = 'pool' | 'asset' | 'amount'
+type DepositOptionKey = 'pool' | 'asset' | 'amount' | 'force'
 
-type SellOptionKey = 'pool' | 'asset' | 'trade' | 'sp' | 'range' | 'amount'
+type SellOptionKey =
+  | 'pool'
+  | 'asset'
+  | 'trade'
+  | 'sp'
+  | 'range'
+  | 'amount'
+  | 'force'
 
 type BuyOptionKey = SellOptionKey
 
@@ -81,6 +88,12 @@ export const commandOptions: Partial<
       describe:
         'Time duration to scan for back (e.g. 10s, 5h, 3d, 1m, ... or in number of blocks, e.g. 1024)',
       default: '3d'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
     }
   },
   deposit: {
@@ -98,6 +111,12 @@ export const commandOptions: Partial<
       alias: 'm',
       type: 'number',
       describe: 'Deposit amount'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
     }
   },
   sell: {
@@ -128,6 +147,12 @@ export const commandOptions: Partial<
       alias: 'm',
       type: 'number',
       describe: 'Amount of options to be sold'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
     }
   },
   buy: {
@@ -158,6 +183,12 @@ export const commandOptions: Partial<
       alias: 'm',
       type: 'number',
       describe: 'Amount of options to be bought'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
     }
   }
 }

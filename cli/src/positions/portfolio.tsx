@@ -266,9 +266,11 @@ export const PortfolioControl = () => {
   return (
     <SFPMProvider>
       <Box flexDirection={'column'}>
+        {!cli && <SectionTitle>Portfolio and Positions</SectionTitle>}
         {(!cli || !sync) && (
           <>
-            <SectionTitle>Portfolio and Positions</SectionTitle>
+            {(filteredPairs?.length ?? 0) + positionsByPoolEntries.length ===
+              0 && <Text>No data</Text>}
             {filteredPairs?.map(([p, n]) => (
               <Text key={p.panopticPoolAddress}>
                 Pool {p.token0}/{p.token1}: {n.toString()} open positions

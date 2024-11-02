@@ -1,4 +1,6 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
+import { Box, Text } from 'ink'
+import TextInput from 'ink-text-input'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
 import {
@@ -6,6 +8,7 @@ import {
   CommandKeys,
   CommandProvider,
   matchCommand,
+  useOption,
   UserInputContext
 } from './commands.js'
 import { HelpMessage } from './help.js'
@@ -17,16 +20,49 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
-import type { OptionKey } from './options.ts'
+import { commandOptions, type OptionKey } from './options.ts'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
   const { wallet } = useWallet()
+  const force = useOption('force')
+  const sync = useOption('sync')
+  const [confirmInput, setConfirmInput] = useState<string>('')
+  const [confirmed, setConfirmed] = useState<boolean>()
+
   const matched = matchCommand(input)
+
   if (matched?.wallet && !wallet.address) {
     return <WalletRequired />
   }
+
+  if (input === CommandKeys.Portfolio && !sync) {
+    // pass
+  } else if (commandOptions[input as CommandKeys]?.force && !force) {
+    if (confirmed === undefined) {
+      return (
+        <Box marginTop={1}>
+          <Text>Are you ready to proceed? (y/n): </Text>
+          <TextInput
+            focus
+            showCursor
+            value={confirmInput}
+            onChange={setConfirmInput}
+            onSubmit={(value) => {
+              setConfirmed(value.toLowerCase() === 'y')
+            }}
+          />
+        </Box>
+      )
+    }
+
+    if (!confirmed) {
+      return <></>
+    }
+  }
+
   const m = matched?.full
+
   return (
     <>
       {m === CommandKeys.Help && <HelpMessage />}

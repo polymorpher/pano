@@ -12,7 +12,7 @@ import { Box, Text } from 'ink'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
 import {
-  CommandKeys,
+  type CommandKeys,
   Commands,
   useCli,
   useOption,
