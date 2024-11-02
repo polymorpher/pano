@@ -250,10 +250,12 @@ export function toITMLegs(tokenId: bigint, tick: number): bigint {
     const itm = isLegITM(tokenId, i, tick)
     if (!itm) {
       const shiftBits = 48n * BigInt(i + 1) + 64n
-      const leadingMask =
-        shiftBits === 256n
-          ? ((mask256 + 1n) >> shiftBits) << shiftBits
-          : (mask256 >> shiftBits) << shiftBits
+      let leadingMask = 0n
+      if (shiftBits === 256n) {
+        leadingMask = ((mask256 + 1n) >> shiftBits) << shiftBits
+      } else {
+        leadingMask = (mask256 >> shiftBits) << shiftBits
+      }
       const trailingMask = mask256 >> (48n * BigInt(4 - i))
       const mask = leadingMask | trailingMask
       newTokenId = newTokenId & mask

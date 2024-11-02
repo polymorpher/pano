@@ -72,6 +72,7 @@ export const LegMaker = ({
     chosenPairInfo.tickSpacing
   )
 
+
   // in number of atomic units of the token selected by putCall
   // for safety and to keep things consistent, we do not store a separate "position size in terms of base asset" for display purposes.
   // Instead we use a function to convert the value back and ask the user to confirm

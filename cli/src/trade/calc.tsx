@@ -1,7 +1,14 @@
 // arg positionSize is in putCall asset
 import { type TickSpacing, type Token01 } from '../common.js'
 import { formatUnits, parseUnits } from 'viem'
-import { priceToTick } from '../util.js'
+import { packBalanceWithUtilization, priceToTick } from '../util.js'
+import { usePositions } from '../positions/hooks.js'
+import { useAccountCollateralFunctions } from '../pools/hooks/collateral.js'
+import { useAccountPoolFunctions } from '../pools/hooks/panoptic.js'
+import { useCallback } from 'react'
+import type { PanopticPoolInfo } from '../pools/hooks/common.js'
+import { useWallet } from '../wallet.js'
+
 export function getPositionSizeInBaseAsset(
   positionSize: bigint,
   putCall: Token01,
@@ -38,4 +45,86 @@ export function getTickRange(
   const rl = Math.ceil(tickLowerLimit / tickSpacing) * tickSpacing
   const ru = Math.floor(tickUpperLimit / tickSpacing) * tickSpacing
   return [rl, ru]
+}
+
+export const useMarginEstimator = (chosenPairInfo: PanopticPoolInfo) => {
+  const { positions } = usePositions()
+  const { getAccountMarginDetails: getAccountMarginDetails0 } =
+    useAccountCollateralFunctions(chosenPairInfo.c0Info.tracker)
+  const { getAccountMarginDetails: getAccountMarginDetails1 } =
+    useAccountCollateralFunctions(chosenPairInfo.c1Info.tracker)
+
+  const { calculateAccumulatedFeesBatch } = useAccountPoolFunctions({
+    panopticPool: chosenPairInfo.panopticPool
+  })
+
+  const computeMarginUsage = useCallback(
+    async (newTokenId: bigint, positionSize: bigint) => {
+      const results = await calculateAccumulatedFeesBatch(
+        positions.map((p) => BigInt(p.id))
+      )
+      if (!results) {
+        return
+      }
+      const { premium0, premium1, balancesAndUtilizations } = results
+      const marginDetails0 = await getAccountMarginDetails0(
+        chosenPairInfo.priceTick,
+        balancesAndUtilizations,
+        premium0
+      )
+      const marginDetails1 = await getAccountMarginDetails1(
+        chosenPairInfo.priceTick,
+        balancesAndUtilizations,
+        premium1
+      )
+      const balanceWithUtilization = packBalanceWithUtilization({
+        utilization0: 0,
+        utilization1: 0,
+        balance: positionSize
+      })
+      const newMarginDetails0 = await getAccountMarginDetails0(
+        chosenPairInfo.priceTick,
+        [...balancesAndUtilizations, [newTokenId, balanceWithUtilization]],
+        premium0
+      )
+      const newMarginDetails1 = await getAccountMarginDetails1(
+        chosenPairInfo.priceTick,
+        [...balancesAndUtilizations, [newTokenId, balanceWithUtilization]],
+        premium1
+      )
+      let marginIncrease0: bigint | undefined
+      let marginIncrease1: bigint | undefined
+      if (
+        marginDetails0 &&
+        marginDetails1 &&
+        newMarginDetails0 &&
+        newMarginDetails1
+      ) {
+        marginIncrease0 =
+          newMarginDetails0.requiredBalance - newMarginDetails0.requiredBalance
+        marginIncrease1 =
+          newMarginDetails1.requiredBalance - newMarginDetails1.requiredBalance
+      }
+
+      return {
+        marginDetails0,
+        marginDetails1,
+        marginIncrease0,
+        marginIncrease1
+      }
+    },
+    [
+      chosenPairInfo.priceTick,
+      positions,
+      calculateAccumulatedFeesBatch,
+      getAccountMarginDetails0,
+      getAccountMarginDetails1
+    ]
+  )
+  return {
+    computeMarginUsage,
+    getAccountMarginDetails0,
+    getAccountMarginDetails1,
+    calculateAccumulatedFeesBatch
+  }
 }
