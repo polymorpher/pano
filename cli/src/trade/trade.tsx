@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState, useEffect } from 'react'
+import React, { useCallback, useContext, useState, useEffect, useRef } from 'react'
 import {
   AmountSelector,
   calculateTokenId,
@@ -42,7 +42,11 @@ export enum TradeStage {
 interface LegMakerProps {
   chosenPair?: ValidatedPair
   chosenPairInfo: PanopticPoolInfo
-  onLegConfirm: (leg: Leg, positionSize: bigint, atTick: number) => any
+  onLegConfirm: (
+    leg: Leg,
+    positionSize: bigint,
+    atTick: number
+  ) => Promise<void>
   stage: TradeStage
   setStage: (stage: TradeStage) => any
   position: 'short' | 'long'
@@ -149,7 +153,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       const percent = Number(input)
       if (!percent) {
         addMessage(`Invalid percentage: ${input}`, { color: 'red' })
-        return
+        return false
       }
       const multiplier = percent / 100 + 1
       const ticks = priceToTick(multiplier, 0)
@@ -165,6 +169,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       )
       setRange(radius)
       setStage(TradeStage.Quantity)
+      return true
     },
     [setStage, strikePrice, addMessage, chosenPairInfo]
   )
@@ -212,7 +217,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       const atomicAmount = tryParseUnits(amount.toString(), decimals)
       if (!atomicAmount) {
         addMessage(`Invalid amount: ${amount}`, { color: 'red' })
-        return
+        return false
       }
       setPositionSize(atomicAmount)
       addMessage(`Position size set to ${amount} ${baseAssetInfo.symbol}`, {
@@ -229,6 +234,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       const marginUsage = await computeMarginUsage(id, atomicAmount)
       setMarginUsage(marginUsage)
       setStage(TradeStage.Confirm)
+      return true
     },
     [
       setStage,
@@ -295,7 +301,6 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     if (
       !cli ||
       !asset ||
-      !chosenPair ||
       !chosenPairInfo.ready ||
       stage !== TradeStage.QuoteAsset
     ) {
@@ -304,9 +309,11 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
     let choice = 0
 
-    if (chosenPair.token0.toLowerCase() === asset.toLowerCase()) {
+    if (chosenPairInfo.c0Info.symbol.toLowerCase() === asset.toLowerCase()) {
       choice = 1
-    } else if (chosenPair.token1.toLowerCase() === asset.toLowerCase()) {
+    } else if (
+      chosenPairInfo.c1Info.symbol.toLowerCase() === asset.toLowerCase()
+    ) {
       choice = 2
     }
 
@@ -320,8 +327,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   }, [
     addMessage,
     asset,
-    chosenPair,
-    chosenPairInfo.ready,
+    chosenPairInfo,
     cli,
     onQuoteAssetSubmit,
     setStage,
@@ -360,35 +366,55 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
     if (isNaN(Number(sp))) {
       addMessage(`Invalid striker price: ${sp}`, { color: 'red' })
+      setStage(TradeStage.Empty)
       return
     }
 
     onStrikeAmountSubmit(Number(sp))
-  }, [addMessage, cli, stage, sp, onStrikeAmountSubmit])
+  }, [addMessage, cli, stage, sp, setStage, onStrikeAmountSubmit])
 
   useEffect(() => {
     if (!cli || stage !== TradeStage.Width) {
       return
     }
 
-    onWidthSubmit(String(priceRange))
-  }, [addMessage, cli, stage, priceRange, onWidthSubmit])
+    if (!onWidthSubmit(String(priceRange))) {
+      setStage(TradeStage.Empty)
+    }
+  }, [addMessage, cli, stage, priceRange, setStage, onWidthSubmit])
+
+  const stageRef = useRef<TradeStage>(TradeStage.Quantity)
 
   useEffect(() => {
-    if (!cli || stage !== TradeStage.Quantity) {
+    if (
+      !cli ||
+      stage !== TradeStage.Quantity ||
+      stageRef.current !== TradeStage.Quantity
+    ) {
       return
     }
 
-    onQuantitySubmit(Number(amount))
-  }, [addMessage, cli, stage, amount, onQuantitySubmit])
+    stageRef.current = TradeStage.Confirm
+    onQuantitySubmit(Number(amount)).then((result) => {
+      if (!result) {
+        setStage(TradeStage.Empty)
+      }
+    })
+  }, [addMessage, cli, stage, amount, setStage, onQuantitySubmit])
 
   useEffect(() => {
-    if (!cli || stage !== TradeStage.Confirm) {
+    if (
+      !cli ||
+      stage !== TradeStage.Confirm ||
+      stageRef.current !== TradeStage.Confirm
+    ) {
       return
     }
 
+    stageRef.current = TradeStage.Empty
+    setStage(TradeStage.Empty)
     onConfirm(true)
-  }, [addMessage, cli, onConfirm, stage])
+  }, [addMessage, cli, onConfirm, stage, setStage])
 
   if (
     cli &&

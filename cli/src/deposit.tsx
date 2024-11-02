@@ -294,7 +294,7 @@ export const DepositControl = () => {
 
     if (choice === 0) {
       addMessage(`Invalid collateral: ${asset.toUpperCase()}`, { color: 'red' })
-      setStage(Stage.Empty) // to prevent rerender
+      setStage(Stage.Empty)
       return
     }
 
@@ -316,7 +316,7 @@ export const DepositControl = () => {
 
     if (isNaN(Number(amountArg))) {
       addMessage(`Invalid amount: ${amountArg}`, { color: 'red' })
-      return
+      setStage(Stage.Empty)
     }
 
     onAmountSubmitted(String(amountArg))
