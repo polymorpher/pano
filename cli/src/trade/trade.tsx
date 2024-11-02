@@ -1,9 +1,11 @@
 import React, { useCallback, useContext, useState } from 'react'
 import {
   AmountSelector,
+  calculateTokenId,
   ConfirmationSelector,
   type Leg,
   MultiChoiceSelector,
+  type Position,
   type PutCallType,
   type Token01,
   type ValidatedPair
@@ -20,6 +22,7 @@ import { Box, Text } from 'ink'
 import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
+import { type MarginUsage, useMarginEstimator } from './calc.js'
 
 export enum TradeStage {
   PoolSelection = 1,
@@ -72,6 +75,9 @@ export const LegMaker = ({
     chosenPairInfo.tickSpacing
   )
 
+  const [marginUsage, setMarginUsage] = useState<MarginUsage | undefined>()
+
+  const { computeMarginUsage } = useMarginEstimator(chosenPairInfo)
 
   // in number of atomic units of the token selected by putCall
   // for safety and to keep things consistent, we do not store a separate "position size in terms of base asset" for display purposes.
@@ -156,8 +162,27 @@ export const LegMaker = ({
     [setStage, strikePrice, addMessage, chosenPairInfo]
   )
 
+  const buildLeg = useCallback((): Leg => {
+    const tickLower = strikeTick - range * chosenPairInfo.tickSpacing
+    const tickUpper = strikeTick + range * chosenPairInfo.tickSpacing
+    // price is displayed as inverse, so when the user perceives the price goes up, it is in fact that 1/price going up, which means actual price goes down, and the tick goes down
+    // therefore, put should be transformed to calls, and calls should be transformed to puts
+    const parsedPutCall =
+      quoteAsset === 'token0' ? flipPutCall(putCall) : putCall
+
+    const leg: Leg = {
+      asset: quoteAsset === 'token0' ? 'token1' : 'token0',
+      optionRatio: 1,
+      position,
+      tokenType: parsedPutCall,
+      riskPartnerIndex: 0,
+      tickLower,
+      tickUpper
+    }
+    return leg
+  }, [strikeTick, range, chosenPairInfo, putCall, quoteAsset, position])
   const onQuantitySubmit = useCallback(
-    (amount: number) => {
+    async (amount: number) => {
       // Update: temporarily commenting out, as no conversion seems to be needed,
       // as the smart contract appears to be correctly converting the notional values to be moved, given "asset" field of the leg is set
       // const decimals = putCall === 'token0' ? chosenPairInfo.c0Info.decimals : chosenPairInfo.c1Info.decimals
@@ -186,9 +211,27 @@ export const LegMaker = ({
       addMessage(`Position size set to ${amount} ${baseAssetInfo.symbol}`, {
         color: 'green'
       })
+      const leg = buildLeg()
+      const position: Position = {
+        uniswapPoolAddress: chosenPairInfo.uniswapPool!.address,
+        tickSpacing: chosenPairInfo.tickSpacing,
+        legs: [leg, undefined, undefined, undefined]
+      }
+      const id = calculateTokenId(position)
+
+      const marginUsage = await computeMarginUsage(id, atomicAmount)
+      setMarginUsage(marginUsage)
       setStage(TradeStage.Confirm)
     },
-    [setStage, baseAssetInfo, quoteAsset, addMessage, chosenPairInfo]
+    [
+      setStage,
+      baseAssetInfo,
+      quoteAsset,
+      addMessage,
+      chosenPairInfo,
+      computeMarginUsage,
+      buildLeg
+    ]
   )
 
   const onConfirm = useCallback(
@@ -199,38 +242,12 @@ export const LegMaker = ({
         setStage(TradeStage.PoolSelection)
         addMessage('Option minting aborted', { color: 'red' })
       } else if (yes) {
-        const tickLower = strikeTick - range * chosenPairInfo.tickSpacing
-        const tickUpper = strikeTick + range * chosenPairInfo.tickSpacing
-        // price is displayed as inverse, so when the user perceives the price goes up, it is in fact that 1/price going up, which means actual price goes down, and the tick goes down
-        // therefore, put should be transformed to calls, and calls should be transformed to puts
-        const parsedPutCall =
-          quoteAsset === 'token0' ? flipPutCall(putCall) : putCall
-
-        const leg: Leg = {
-          asset: quoteAsset === 'token0' ? 'token1' : 'token0',
-          optionRatio: 1,
-          position,
-          tokenType: parsedPutCall,
-          riskPartnerIndex: 0,
-          tickLower,
-          tickUpper
-        }
+        const leg = buildLeg()
         onLegConfirm(leg, positionSize, chosenPairInfo.priceTick)
         // addMessage(`leg=${JSON.stringify(leg)} tickSpacing=${chosenPairInfo.tickSpacing} radius=${range}`)
       }
     },
-    [
-      position,
-      setStage,
-      onLegConfirm,
-      addMessage,
-      chosenPairInfo,
-      positionSize,
-      putCall,
-      quoteAsset,
-      strikeTick,
-      range
-    ]
+    [buildLeg, setStage, onLegConfirm, addMessage, chosenPairInfo, positionSize]
   )
 
   return (
@@ -352,6 +369,30 @@ export const LegMaker = ({
                 - Position Size:{' '}
                 {formatUnits(positionSize, baseAssetInfo.decimals)}{' '}
                 {baseAssetInfo.symbol}{' '}
+              </Text>
+              <Text>
+                - Margin Requirement Increase for {chosenPairInfo.c0Info.symbol}
+                :{' '}
+                {toFixed(
+                  Number(
+                    formatUnits(
+                      marginUsage?.marginIncrease0 ?? 0n,
+                      chosenPairInfo.c0Info.decimals
+                    )
+                  )
+                )}
+              </Text>
+              <Text>
+                - Margin Requirement Increase for {chosenPairInfo.c1Info.symbol}
+                :{' '}
+                {toFixed(
+                  Number(
+                    formatUnits(
+                      marginUsage?.marginIncrease1 ?? 0n,
+                      chosenPairInfo.c1Info.decimals
+                    )
+                  )
+                )}
               </Text>
               {/* <Text>- Position Size: {formatUnits(positionSizeInBaseAsset, baseAssetInfo.decimals)} {baseAssetInfo.symbol} </Text> */}
             </>
