@@ -1,9 +1,4 @@
-import React, {
-  useImperativeHandle,
-  useCallback,
-  useContext,
-  useState
-} from 'react'
+import React, { useCallback, useContext, useState, useEffect } from 'react'
 import {
   AmountSelector,
   calculateTokenId,
@@ -28,18 +23,13 @@ import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { type MarginUsage, useMarginEstimator } from './calc.js'
-import { useCli } from 'src/commands.tsx'
-
-export interface LegMakerRef {
-  onQuoteAssetSubmit: (choice: number) => void
-  onPutCallSelected: (choice: number) => void
-  onStrikeAmountSubmit: (price: number) => void
-  onWidthSubmit: (input: string) => void
-  onQuantitySubmit: (amount: number) => void
-  onConfirm: (yes?: boolean) => void
-}
+import { CommandKeys, useCli, useOption } from 'src/commands.tsx'
+import CommandArgs from 'src/command-args.tsx'
+import { commandOptions } from 'src/options.ts'
+import { usePools } from 'src/pools/hooks/panoptic.ts'
 
 export enum TradeStage {
+  Empty = 0,
   PoolSelection = 1,
   QuoteAsset = 2,
   PutCall = 3,
@@ -56,13 +46,18 @@ interface LegMakerProps {
   stage: TradeStage
   setStage: (stage: TradeStage) => any
   position: 'short' | 'long'
+  onPoolSelected: (pair: ValidatedPair) => void
 }
 
-export const LegMaker = React.forwardRef<LegMakerRef, LegMakerProps>(
-  (
-    { chosenPair, chosenPairInfo, onLegConfirm, position, stage, setStage },
-    ref
-  ) => {
+export const LegMaker: React.FC<LegMakerProps> = ({
+  chosenPair,
+  chosenPairInfo,
+  onLegConfirm,
+  position,
+  onPoolSelected,
+  stage,
+  setStage
+}) => {
   const { addMessage } = useContext(NotificationContext)
   const [putCall, setPutCall] = useState<PutCallType>('token0')
   const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
@@ -262,16 +257,155 @@ export const LegMaker = React.forwardRef<LegMakerRef, LegMakerProps>(
     [buildLeg, setStage, onLegConfirm, addMessage, chosenPairInfo, positionSize]
   )
 
-  useImperativeHandle(ref, () => ({
-    onQuoteAssetSubmit,
-    onPutCallSelected,
-    onStrikeAmountSubmit,
-    onWidthSubmit,
-    onQuantitySubmit,
-    onConfirm
-  }))
-
   const cli = useCli()
+  const pool = useOption('pool')
+  const asset = useOption('asset')
+  const trade = useOption('trade')
+  const sp = useOption('sp')
+  const priceRange = useOption('range')
+  const amount = useOption('amount')
+  const { pairs } = usePools()
+
+  useEffect(() => {
+    if (!cli || !pool || !pairs) {
+      return
+    }
+
+    if (stage !== TradeStage.PoolSelection) {
+      return
+    }
+
+    const pair = pairs.find((p) =>
+      [
+        `${p.token0}/${p.token1}`.toLowerCase(),
+        `${p.token1}/${p.token0}`.toLowerCase()
+      ].includes(pool.toLowerCase())
+    )
+
+    if (pair === undefined) {
+      addMessage(`Pool not found: ${pool.toUpperCase()}`, { color: 'red' })
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onPoolSelected(pair)
+  }, [cli, addMessage, pairs, pool, stage, setStage, onPoolSelected])
+
+  useEffect(() => {
+    if (
+      !cli ||
+      !asset ||
+      !chosenPair ||
+      !chosenPairInfo.ready ||
+      stage !== TradeStage.QuoteAsset
+    ) {
+      return
+    }
+
+    let choice = 0
+
+    if (chosenPair.token0.toLowerCase() === asset.toLowerCase()) {
+      choice = 1
+    } else if (chosenPair.token1.toLowerCase() === asset.toLowerCase()) {
+      choice = 2
+    }
+
+    if (choice === 0) {
+      addMessage(`Invalid asset: ${asset.toUpperCase()}`, { color: 'red' })
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onQuoteAssetSubmit(choice)
+  }, [
+    addMessage,
+    asset,
+    chosenPair,
+    chosenPairInfo.ready,
+    cli,
+    onQuoteAssetSubmit,
+    setStage,
+    stage
+  ])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.PutCall) {
+      return
+    }
+
+    let choice = 0
+
+    if (trade?.toLowerCase() === 'put') {
+      choice = 1
+    } else if (trade?.toLowerCase() === 'call') {
+      choice = 2
+    }
+
+    if (choice === 0) {
+      addMessage(
+        `Invalid trade (should be PUT or CALL): ${trade?.toUpperCase()}`,
+        { color: 'red' }
+      )
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onPutCallSelected(choice)
+  }, [addMessage, cli, onPutCallSelected, stage, setStage, trade])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.StrikeAmount) {
+      return
+    }
+
+    if (isNaN(Number(sp))) {
+      addMessage(`Invalid striker price: ${sp}`, { color: 'red' })
+      return
+    }
+
+    onStrikeAmountSubmit(Number(sp))
+  }, [addMessage, cli, stage, sp, onStrikeAmountSubmit])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.Width) {
+      return
+    }
+
+    onWidthSubmit(String(priceRange))
+  }, [addMessage, cli, stage, priceRange, onWidthSubmit])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.Quantity) {
+      return
+    }
+
+    onQuantitySubmit(Number(amount))
+  }, [addMessage, cli, stage, amount, onQuantitySubmit])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.Confirm) {
+      return
+    }
+
+    onConfirm(true)
+  }, [addMessage, cli, onConfirm, stage])
+
+  if (
+    cli &&
+    (!pool ||
+      !asset ||
+      !trade ||
+      sp === undefined ||
+      priceRange === undefined ||
+      amount === undefined)
+  ) {
+    return (
+      <CommandArgs
+        title={`Use the following options to ${chosenPair ? 'sell' : 'buy'}`}
+        args={commandOptions[CommandKeys.Sell]!}
+      />
+    )
+  }
 
   if (cli) {
     return <></>
@@ -364,7 +498,7 @@ export const LegMaker = React.forwardRef<LegMakerRef, LegMakerProps>(
       )}
       {stage === TradeStage.Quantity && (
         <AmountSelector
-          intro={'Number of options to be sold?'}
+          intro={`Number of options to be ${chosenPair ? 'sold' : 'bought'}`}
           prompt={`Enter in the number of ${baseAssetInfo.symbol}`}
           onSubmit={onQuantitySubmit}
         />
@@ -453,6 +587,4 @@ export const LegMaker = React.forwardRef<LegMakerRef, LegMakerProps>(
       )}
     </Box>
   )
-})
-
-LegMaker.displayName = 'LegMaker'
+}

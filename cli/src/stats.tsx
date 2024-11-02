@@ -5,6 +5,7 @@ import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { formatUnits } from 'viem'
 import { toFixed } from './util.js'
+import { useCli } from './commands.tsx'
 
 const DisplayCollateralStats = ({
   address,
@@ -71,9 +72,11 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
 
 const Stats = () => {
   const { pairs } = usePools()
+  const cli = useCli()
+
   return (
     <Box flexDirection="column">
-      <SectionTitle>Available Option Trading Pools</SectionTitle>
+      {!cli && <SectionTitle>Available Option Trading Pools</SectionTitle>}
       {pairs?.length === 0 && <Text>No pools</Text>}
       {pairs?.map((pair) => {
         return <PoolStats key={pair.panopticPoolAddress} pair={pair} />

@@ -13,6 +13,7 @@ export type OptionKey =
   | PortfolioOptionKey
   | DepositOptionKey
   | SellOptionKey
+  | BuyOptionKey
 
 const options: Record<OptionKey, Options> = {
   network: {
@@ -62,6 +63,8 @@ type PortfolioOptionKey = 'sync' | 'duration'
 type DepositOptionKey = 'pool' | 'asset' | 'amount'
 
 type SellOptionKey = 'pool' | 'asset' | 'trade' | 'sp' | 'range' | 'amount'
+
+type BuyOptionKey = SellOptionKey
 
 export const commandOptions: Partial<
   Record<CommandKeys, Record<string, Options>>
@@ -125,6 +128,36 @@ export const commandOptions: Partial<
       alias: 'm',
       type: 'number',
       describe: 'Amount of options to be sold'
+    }
+  },
+  buy: {
+    pool: {
+      alias: 'p',
+      type: 'string',
+      describe: 'Pool (e.g. usdc/weth, weth/usdc)'
+    },
+    asset: {
+      alias: 'a',
+      type: 'string',
+      describe: 'Buy asset (e.g. usdc, weth)'
+    },
+    trade: {
+      alias: 't',
+      type: 'string',
+      describe: 'put | call'
+    },
+    sp: {
+      type: 'number',
+      describe: 'Strike price for the option'
+    },
+    range: {
+      type: 'number',
+      describe: 'Price range for the option'
+    },
+    amount: {
+      alias: 'm',
+      type: 'number',
+      describe: 'Amount of options to be bought'
     }
   }
 }

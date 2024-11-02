@@ -16,6 +16,7 @@ import {
 } from '../config.js'
 import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
+import { useCli } from 'src/commands.tsx'
 
 export const BuyControl = () => {
   const {
@@ -75,13 +76,22 @@ export const BuyControl = () => {
     [exit, addPosition, positionIds, addMessage, chosenPairInfo, client]
   )
 
+  const cli = useCli()
+
   return (
     <Box flexDirection={'column'}>
-      <SectionTitle>Buying simple options</SectionTitle>
-      {stage === TradeStage.PoolSelection && (
-        <PoolSelector onSelected={onPoolSelected} />
+      {!cli && (
+        <>
+          <SectionTitle>Buying simple options</SectionTitle>
+          {stage === TradeStage.PoolSelection && (
+            <PoolSelector onSelected={onPoolSelected} />
+          )}
+        </>
       )}
       <LegMaker
+        onPoolSelected={(pair) => {
+          onPoolSelected({ pair, text: '' })
+        }}
         chosenPairInfo={chosenPairInfo}
         onLegConfirm={onLegConfirm}
         position={'long'}
