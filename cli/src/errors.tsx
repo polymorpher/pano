@@ -1,8 +1,8 @@
 import { SectionTitle } from './common.js'
 import React, { useContext, useEffect } from 'react'
 import { Box, Text } from 'ink'
-import { useCli } from './commands.tsx'
-import { NotificationContext } from './notification.tsx'
+import { useCli } from './commands.js'
+import { NotificationContext } from './notification.js'
 
 export const WalletRequired = () => {
   const cli = useCli()

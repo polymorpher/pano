@@ -9,7 +9,7 @@ import {
   type Position,
   type PositionWithId
 } from './common.js'
-import { useOption } from './commands.tsx'
+import { useOption } from './commands.js'
 
 // making use of Panoptic SDK to convert to and from tokenId. The implementation can be moved or replicated in this project instead
 // since we are not really using the SDK for its intended purpose (interacting with Panoptic contracts)

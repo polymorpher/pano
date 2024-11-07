@@ -1,5 +1,5 @@
 import { usePublicClient } from './client.js'
-import { defaultPanopticHelperAddress } from './config.ts'
+import { defaultPanopticHelperAddress } from './config.js'
 import { useEffect, useState } from 'react'
 import {
   type Address,
@@ -8,7 +8,7 @@ import {
   type PublicClient
 } from 'viem'
 import { PanopticHelperAbi } from './constants.js'
-import { useOption } from './commands.tsx'
+import { useOption } from './commands.js'
 
 export type PanopticHelper = GetContractReturnType<
   typeof PanopticHelperAbi,

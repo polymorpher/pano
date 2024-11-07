@@ -5,10 +5,10 @@ import { render } from 'ink'
 import yargs from 'yargs/yargs'
 import type { Argv, BuilderCallback } from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import options, { commandOptions } from './options.ts'
-import { CommandKeys, Commands } from './commands.tsx'
-import Mainframe from './mainframe.tsx'
-import { buildPublicClient, parseInitialNetwork } from './client.tsx'
+import options, { commandOptions } from './options.js'
+import { CommandKeys, Commands } from './commands.js'
+import Mainframe from './mainframe.js'
+import { buildPublicClient, parseInitialNetwork } from './client.js'
 
 const main = (): Argv => {
   let cmd = yargs(hideBin(process.argv))

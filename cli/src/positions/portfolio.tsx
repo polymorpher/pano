@@ -32,8 +32,8 @@ import { usePositions } from './hooks.js'
 import { groupBy } from 'remeda'
 import { PoolPositions } from './position.js'
 import { SFPMProvider } from '../pools/sfpm.js'
-import CommandArgs from 'src/command-args.tsx'
-import { commandOptions } from 'src/options.ts'
+import CommandArgs from 'src/command-args.js'
+import { commandOptions } from 'src/options.js'
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,

@@ -4,8 +4,8 @@ import { Box, Text } from 'ink'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
 import { useWallet } from './wallet.js'
-import type { OptionKey } from './options.ts'
-import type { MainframeProps } from './mainframe.tsx'
+import type { OptionKey } from './options.js'
+import type { MainframeProps } from './mainframe.js'
 
 export interface Command {
   short: string

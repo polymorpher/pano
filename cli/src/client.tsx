@@ -25,7 +25,7 @@ import {
   OptionContext,
   useCli,
   UserInputContext
-} from './commands.tsx'
+} from './commands.js'
 import type { OptionKey } from './options.js'
 
 type ConnectedWalletClient = WalletClient<Transport, Chain, Account>

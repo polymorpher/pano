@@ -29,10 +29,10 @@ import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { type MarginUsage, useMarginEstimator } from './calc.js'
-import { CommandKeys, useCli, useOption } from 'src/commands.tsx'
-import CommandArgs from 'src/command-args.tsx'
-import { commandOptions } from 'src/options.ts'
-import { usePools } from 'src/pools/hooks/panoptic.ts'
+import { CommandKeys, useCli, useOption } from 'src/commands.js'
+import CommandArgs from 'src/command-args.js'
+import { commandOptions } from 'src/options.js'
+import { usePools } from 'src/pools/hooks/panoptic.js'
 
 export enum TradeStage {
   Empty = 0,

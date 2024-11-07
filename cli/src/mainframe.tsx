@@ -20,7 +20,7 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
-import { commandOptions, type OptionKey } from './options.ts'
+import { commandOptions, type OptionKey } from './options.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)

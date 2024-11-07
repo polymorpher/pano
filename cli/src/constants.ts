@@ -1,12 +1,12 @@
-import UniswapFactoryAbi from '../types-contract/IUniswapV3Factory.sol/IUniswapV3Factory.json.ts'
-import UniswapPoolAbi from '../types-contract/IUniswapV3Pool.sol/IUniswapV3Pool.json.ts'
-import PanopticFactoryAbi from '../types-contract/PanopticFactory.sol/PanopticFactory.json.ts'
-import PanopticPoolAbi from '../types-contract/PanopticPool.sol/PanopticPool.json.ts'
-import SFPMAbi from '../types-contract/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json.ts'
-import CollateralTrackerAbi from '../types-contract/CollateralTracker.sol/CollateralTracker.json.ts'
-import IERC20Abi from '../types-contract/IERC20.sol/IERC20.json.ts'
-import IERC20MetadataAbi from '../types-contract/IERC20Metadata.sol/IERC20Metadata.json.ts'
-import PanopticHelperAbi from '../types-contract/PanopticHelper.sol/PanopticHelper.json.ts'
+import UniswapFactoryAbi from '../types-contract/IUniswapV3Factory.sol/IUniswapV3Factory.json.js'
+import UniswapPoolAbi from '../types-contract/IUniswapV3Pool.sol/IUniswapV3Pool.json.js'
+import PanopticFactoryAbi from '../types-contract/PanopticFactory.sol/PanopticFactory.json.js'
+import PanopticPoolAbi from '../types-contract/PanopticPool.sol/PanopticPool.json.js'
+import SFPMAbi from '../types-contract/SemiFungiblePositionManager.sol/SemiFungiblePositionManager.json.js'
+import CollateralTrackerAbi from '../types-contract/CollateralTracker.sol/CollateralTracker.json.js'
+import IERC20Abi from '../types-contract/IERC20.sol/IERC20.json.js'
+import IERC20MetadataAbi from '../types-contract/IERC20Metadata.sol/IERC20Metadata.json.js'
+import PanopticHelperAbi from '../types-contract/PanopticHelper.sol/PanopticHelper.json.js'
 
 export {
   UniswapFactoryAbi,

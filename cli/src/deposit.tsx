@@ -18,8 +18,8 @@ import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
 import { PoolSelector } from './pools/selector.js'
-import CommandArgs from './command-args.tsx'
-import { commandOptions } from './options.ts'
+import CommandArgs from './command-args.js'
+import { commandOptions } from './options.js'
 
 enum Stage {
   PoolSelection = 1,

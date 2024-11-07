@@ -7,11 +7,11 @@ import {
 } from 'viem'
 import { usePublicClient } from 'src/client.js'
 import { PanopticFactoryAbi, UniswapFactoryAbi } from 'src/constants.js'
-import { useOption } from 'src/commands.tsx'
+import { useOption } from 'src/commands.js'
 import {
   defaultPanopticfactoryAddress,
   defaultUniswapFactoryAddress
-} from 'src/config.ts'
+} from 'src/config.js'
 
 type UniswapFactory = GetContractReturnType<
   typeof UniswapFactoryAbi,

@@ -1,5 +1,5 @@
 import { type Options } from 'yargs'
-import type { CommandKeys } from './commands.tsx'
+import type { CommandKeys } from './commands.js'
 
 export type OptionKey =
   | 'network'
