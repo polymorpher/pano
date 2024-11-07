@@ -1,14 +1,11 @@
-import React from 'react'
 import * as process from 'process'
-
-import { render } from 'ink'
 import yargs from 'yargs/yargs'
 import type { Argv, BuilderCallback } from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import options, { commandOptions } from './options.js'
-import { CommandKeys, Commands } from './commands.js'
-import Mainframe from './mainframe.js'
-import { buildPublicClient, parseInitialNetwork } from './client.js'
+import options, { commandOptions } from './options.ts'
+import { CommandKeys, Commands } from './commands.tsx'
+import renderMainframe from './mainframe.tsx'
+import { buildPublicClient, parseInitialNetwork } from './client.tsx'
 
 const main = (): Argv => {
   let cmd = yargs(hideBin(process.argv))
@@ -49,7 +46,7 @@ const main = (): Argv => {
       'Enter interactive mode\n',
       () => {},
       async (arg) => {
-        const { waitUntilExit } = render(<Mainframe options={arg} />)
+        const { waitUntilExit } = renderMainframe({ options: arg })
         await waitUntilExit()
       }
     )
@@ -67,10 +64,11 @@ const main = (): Argv => {
       const builder = (opt ?? emptyBuilder) as BuilderCallback<any, any>
 
       return acc.command(c, `${desc}\n`, builder, async (arg) => {
-        const { waitUntilExit } = render(
-          <Mainframe options={arg} command={key} cli />
-        )
-        await waitUntilExit()
+        renderMainframe({
+          options: arg,
+          command: key,
+          cli: true
+        })
       })
     }, cmd)
 

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react'
-import { Box, Text } from 'ink'
+import { Box, render, Text } from 'ink'
 import TextInput from 'ink-text-input'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
@@ -110,4 +110,7 @@ const Mainframe: React.FC<MainframeProps> = ({ options, command, cli }) => {
   )
 }
 
-export default Mainframe
+const renderMainframe = (data: MainframeProps) =>
+  render(<Mainframe {...data} />)
+
+export default renderMainframe
