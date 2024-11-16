@@ -72,11 +72,10 @@ const PoolStats = ({ pair }: { pair: ValidatedPair }): React.JSX.Element => {
 
 const Stats = () => {
   const { pairs } = usePools()
-  const cli = useCli()
 
   return (
     <Box flexDirection="column">
-      {!cli && <SectionTitle>Available Option Trading Pools</SectionTitle>}
+      <SectionTitle>Available Option Trading Pools</SectionTitle>
       {pairs?.length === 0 && <Text>No pools</Text>}
       {pairs?.map((pair) => {
         return <PoolStats key={pair.panopticPoolAddress} pair={pair} />

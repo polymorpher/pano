@@ -110,28 +110,24 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
 
 export const NotificationBar = () => {
   const { stickyMessages, messageStore } = useContext(NotificationContext)
+  const cli = useCli()
+
   return (
     <Box flexDirection={'column'} marginTop={1} marginBottom={1}>
-      {stickyMessages.map((message) => {
-        return (
-          <Text
-            key={message.options.id}
-            color={message.options.color ?? 'greenBright'}
-          >
-            [!] {message.message}
-          </Text>
-        )
-      })}
-      {[...messageStore.values()].map((message) => {
-        return (
-          <Text
-            key={message.options.id}
-            color={message.options.color ?? 'grey'}
-          >
-            [*] {message.message}
-          </Text>
-        )
-      })}
+      {cli && <Text>Logs:</Text>}
+      {stickyMessages.map((message) => (
+        <Text
+          key={message.options.id}
+          color={message.options.color ?? 'greenBright'}
+        >
+          [!] {message.message}
+        </Text>
+      ))}
+      {[...messageStore.values()].map((message) => (
+        <Text key={message.options.id} color={message.options.color ?? 'grey'}>
+          [*] {message.message}
+        </Text>
+      ))}
     </Box>
   )
 }

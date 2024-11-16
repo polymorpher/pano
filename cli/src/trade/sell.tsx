@@ -79,13 +79,9 @@ export const SellControl = () => {
 
   return (
     <Box flexDirection={'column'}>
-      {!cli && (
-        <>
-          <SectionTitle>Selling simple options</SectionTitle>
-          {stage === TradeStage.PoolSelection && (
-            <PoolSelector onSelected={onPoolSelected} />
-          )}
-        </>
+      <SectionTitle>Selling simple options</SectionTitle>
+      {!cli && stage === TradeStage.PoolSelection && (
+        <PoolSelector onSelected={onPoolSelected} />
       )}
       <LegMaker
         onPoolSelected={(pair) => {

@@ -266,7 +266,7 @@ export const PortfolioControl = () => {
   return (
     <SFPMProvider>
       <Box flexDirection={'column'}>
-        {!cli && <SectionTitle>Portfolio and Positions</SectionTitle>}
+        <SectionTitle>Portfolio and Positions</SectionTitle>
         {(!cli || !sync) && (
           <>
             {(filteredPairs?.length ?? 0) + positionsByPoolEntries.length ===

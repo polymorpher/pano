@@ -80,13 +80,9 @@ export const BuyControl = () => {
 
   return (
     <Box flexDirection={'column'}>
-      {!cli && (
-        <>
-          <SectionTitle>Buying simple options</SectionTitle>
-          {stage === TradeStage.PoolSelection && (
-            <PoolSelector onSelected={onPoolSelected} />
-          )}
-        </>
+      <SectionTitle>Buying simple options</SectionTitle>
+      {!cli && stage === TradeStage.PoolSelection && (
+        <PoolSelector onSelected={onPoolSelected} />
       )}
       <LegMaker
         onPoolSelected={(pair) => {

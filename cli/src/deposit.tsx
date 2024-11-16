@@ -323,10 +323,10 @@ export const DepositControl = () => {
   }, [onAmountSubmitted, amountArg, cli, stage, addMessage])
 
   useEffect(() => {
-    if (stage === Stage.Confirm) {
+    if (cli && stage === Stage.Confirm) {
       onConfirm(true)
     }
-  }, [stage, onConfirm])
+  }, [stage, cli, onConfirm])
 
   if (cli) {
     if (pool && asset && amountArg !== undefined) {

@@ -272,8 +272,10 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   const cli = useCli()
   const pool = useOption('pool')
   const asset = useOption('asset')
-  const trade = useOption('trade')
-  const sp = useOption('sp')
+  const put = useOption('put')
+  const call = useOption('call')
+  const trade = put === call ? undefined : put ? 'put' : 'call'
+  const strike = useOption('strike')
   const priceRange = useOption('range')
   const amount = useOption('amount')
   const { pairs } = usePools()
@@ -370,14 +372,14 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       return
     }
 
-    if (isNaN(Number(sp))) {
-      addMessage(`Invalid striker price: ${sp}`, { color: 'red' })
+    if (isNaN(Number(strike))) {
+      addMessage(`Invalid striker price: ${strike}`, { color: 'red' })
       setStage(TradeStage.Empty)
       return
     }
 
-    onStrikeAmountSubmit(Number(sp))
-  }, [addMessage, cli, stage, sp, setStage, onStrikeAmountSubmit])
+    onStrikeAmountSubmit(Number(strike))
+  }, [addMessage, cli, stage, strike, setStage, onStrikeAmountSubmit])
 
   useEffect(() => {
     if (!cli || stage !== TradeStage.Width) {
@@ -427,7 +429,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     (!pool ||
       !asset ||
       !trade ||
-      sp === undefined ||
+      strike === undefined ||
       priceRange === undefined ||
       amount === undefined)
   ) {

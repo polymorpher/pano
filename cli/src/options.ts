@@ -65,8 +65,9 @@ type DepositOptionKey = 'pool' | 'asset' | 'amount' | 'force'
 type SellOptionKey =
   | 'pool'
   | 'asset'
-  | 'trade'
-  | 'sp'
+  | 'put'
+  | 'call'
+  | 'strike'
   | 'range'
   | 'amount'
   | 'force'
@@ -130,18 +131,20 @@ export const commandOptions: Partial<
       type: 'string',
       describe: 'Sell asset (e.g. usdc, weth)'
     },
-    trade: {
-      alias: 't',
-      type: 'string',
-      describe: 'put | call'
+    put: {
+      type: 'boolean'
     },
-    sp: {
+    call: {
+      type: 'boolean'
+    },
+    strike: {
       type: 'number',
       describe: 'Strike price for the option'
     },
     range: {
       type: 'number',
-      describe: 'Price range for the option'
+      describe:
+        'Price range percentage for the option (10 means +-10% around strike price)'
     },
     amount: {
       alias: 'm',
@@ -166,12 +169,13 @@ export const commandOptions: Partial<
       type: 'string',
       describe: 'Buy asset (e.g. usdc, weth)'
     },
-    trade: {
-      alias: 't',
-      type: 'string',
-      describe: 'put | call'
+    put: {
+      type: 'boolean'
     },
-    sp: {
+    call: {
+      type: 'boolean'
+    },
+    strike: {
       type: 'number',
       describe: 'Strike price for the option'
     },
