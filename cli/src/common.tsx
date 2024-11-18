@@ -12,10 +12,30 @@ import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
 
-export const SectionTitle = ({ children }: PropsWithChildren) => {
+export const SectionTitle = ({
+  children,
+  secondary,
+  color,
+  textColor
+}: PropsWithChildren & {
+  color?: string
+  textColor?: string
+  secondary?: boolean
+}) => {
+  if (secondary && !color) {
+    color = 'orange'
+  }
+  if (secondary && !textColor) {
+    textColor = 'orange'
+  }
   return (
-    <Box borderStyle={'single'} borderColor={'yellow'} paddingX={1} marginY={1}>
-      <Text color={'yellow'}>{children}</Text>
+    <Box
+      borderStyle={'single'}
+      borderColor={color ?? 'yellow'}
+      paddingX={1}
+      marginY={1}
+    >
+      <Text color={textColor ?? 'yellow'}>{children}</Text>
     </Box>
   )
 }
