@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Box, Text } from 'ink'
 import { usePositions } from '../positions/hooks.js'
 import { useTrade } from './hooks.js'
@@ -11,10 +11,11 @@ import {
   Zero01
 } from '../common.js'
 import { PoolSelector } from '../pools/selector.js'
-import { isAddressEqual } from 'viem'
+import { getContract, isAddressEqual } from 'viem'
 import { Position } from '../positions/position.js'
 import { toUniswapPoolBasicInfo } from '../util.js'
-import { TradeStage } from './trade.js'
+import { getTickRange } from './calc.js'
+import { defaultSlippageTolerance } from '../config.js'
 
 enum BurnStage {
   PoolSelection = 1,
@@ -23,7 +24,7 @@ enum BurnStage {
 }
 
 export const BurnControl = () => {
-  const { positions } = usePositions()
+  const { positions, deletePosition } = usePositions()
   const [positionsInPool, setPositionsInPool] = useState<PositionWithData[]>()
   const [selectedPosition, setSelectedPosition] = useState<PositionWithData>()
   const [stage, setStage] = useState<BurnStage>(BurnStage.PoolSelection)
@@ -69,10 +70,40 @@ export const BurnControl = () => {
         setStage(BurnStage.PoolSelection)
         addMessage('Burning aborted', { color: 'red' })
       } else if (yes) {
-        // TODO
+        if (!selectedPosition) {
+          setStage(BurnStage.PositionSelection)
+          return
+        }
+        const [tickLowerLimit, tickUpperLimit] = getTickRange(
+          chosenPairInfo.priceTick,
+          defaultSlippageTolerance,
+          chosenPairInfo.tickSpacing
+        )
+        const c = getContract({
+          abi: chosenPairInfo.panopticPool!.abi,
+          address: chosenPairInfo.panopticPool!.address,
+          client: client!
+        })
+        try {
+          const hash = await c.write.burnOptions([
+            BigInt(selectedPosition.id),
+            tickLowerLimit,
+            tickUpperLimit
+          ])
+          await deletePosition(selectedPosition)
+          exit()
+          addMessage(`Executed transaction ${hash}. Option burned!`, {
+            color: 'green'
+          })
+        } catch (ex: any) {
+          addMessage((ex as Error).toString(), { color: 'red' })
+          addMessage((ex as Error).stack ?? 'Unknown stacktrace', {
+            color: 'red'
+          })
+        }
       }
     },
-    [addMessage]
+    [addMessage, chosenPairInfo, exit, deletePosition, selectedPosition, client]
   )
 
   const title = <SectionTitle>Burn (closing) an existing position</SectionTitle>

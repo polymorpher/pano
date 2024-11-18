@@ -110,6 +110,22 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
     [wallet.address, uniswapPoolAddress]
   )
 
+  const deletePosition = useCallback(
+    async (position: Position) => {
+      if (!wallet.address || !uniswapPoolAddress) {
+        return undefined
+      }
+      const tokenId = calculateTokenId(position)
+      const updated = await removePosition(wallet.address, position)
+      const id: Hex = `0x${tokenId.toString(16)}`
+      if (updated) {
+        setPositions((ps) => ps.filter((p) => p.id !== id))
+      }
+      return updated
+    },
+    [wallet.address, uniswapPoolAddress]
+  )
+
   useEffect(() => {
     reloadPositions()
       .then((ps) => {
@@ -123,7 +139,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       })
   }, [addMessage, reloadPositions])
 
-  return { positions, reloadPositions, addPosition, positionIds }
+  return { positions, reloadPositions, addPosition, positionIds, deletePosition }
 }
 
 export const usePortfolioValue = (pair?: ValidatedPair) => {}
