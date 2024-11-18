@@ -3,12 +3,18 @@ import { Box, Text } from 'ink'
 import { usePositions } from '../positions/hooks.js'
 import { useTrade } from './hooks.js'
 import {
+  ConfirmationSelector,
+  MultiChoiceSelector,
   type PositionWithData,
-  PositionWithId,
   SectionTitle,
-  type ValidatedPair
+  type ValidatedPair,
+  Zero01
 } from '../common.js'
 import { PoolSelector } from '../pools/selector.js'
+import { isAddressEqual } from 'viem'
+import { Position } from '../positions/position.js'
+import { toUniswapPoolBasicInfo } from '../util.js'
+import { TradeStage } from './trade.js'
 
 enum BurnStage {
   PoolSelection = 1,
@@ -17,8 +23,9 @@ enum BurnStage {
 }
 
 export const BurnControl = () => {
-  const { positions, reloadPositions } = usePositions()
+  const { positions } = usePositions()
   const [positionsInPool, setPositionsInPool] = useState<PositionWithData[]>()
+  const [selectedPosition, setSelectedPosition] = useState<PositionWithData>()
   const [stage, setStage] = useState<BurnStage>(BurnStage.PoolSelection)
   const {
     chosenPair,
@@ -28,18 +35,45 @@ export const BurnControl = () => {
     onPoolSelected,
     exit
   } = useTrade()
+  const uniswapPoolInfo = toUniswapPoolBasicInfo(chosenPairInfo)
   const onPoolSelectedOverride = useCallback(
     ({ text, pair }: { text: string; pair?: ValidatedPair }) => {
       onPoolSelected({ text, pair })
       if (!pair) {
+        setStage(BurnStage.PoolSelection)
         return
       }
       setStage(BurnStage.PositionSelection)
+      const selectedPositions = positions.filter((p) =>
+        isAddressEqual(pair.uniswapPoolAddress, p.uniswapPoolAddress)
+      )
+      setPositionsInPool(selectedPositions)
     },
-    [onPoolSelected]
+    [positions, onPoolSelected]
   )
 
-  useEffect(() => {}, [stage])
+  const onPositionSelected = useCallback(
+    (choice: number) => {
+      const position = positionsInPool![choice - 1]
+      setSelectedPosition(position)
+      setStage(BurnStage.Confirm)
+    },
+    [positionsInPool]
+  )
+  const onConfirm = useCallback(
+    async (yes?: boolean) => {
+      if (yes === false) {
+        setStage(BurnStage.PositionSelection)
+        setSelectedPosition(undefined)
+      } else if (yes === undefined) {
+        setStage(BurnStage.PoolSelection)
+        addMessage('Burning aborted', { color: 'red' })
+      } else if (yes) {
+        // TODO
+      }
+    },
+    [addMessage]
+  )
 
   const title = <SectionTitle>Burn (closing) an existing position</SectionTitle>
   const subtitle = chosenPair ? (
@@ -74,10 +108,39 @@ export const BurnControl = () => {
       )}
       {stage === BurnStage.PositionSelection &&
         positionsInPool?.length === 0 && (
-          <Text>You do not have any position in this pool</Text>
+          <MultiChoiceSelector
+            options={[]}
+            onExit={() => {
+              onPoolSelectedOverride({ text: '' })
+            }}
+            onSelected={() => {}}
+            prompt={''}
+            intro={'You do not have any position in this pool'}
+          />
         )}
       {stage === BurnStage.PositionSelection && positionsInPool?.length && (
-        <PoolSelector onSelected={onPoolSelectedOverride} />
+        <MultiChoiceSelector
+          options={positionsInPool.map((p) => {
+            return (
+              <Position
+                key={p.id}
+                position={p}
+                poolInfo={uniswapPoolInfo}
+                isItm={false}
+                intrinsicValue={Zero01}
+              />
+            )
+          })}
+          onExit={() => {
+            onPoolSelectedOverride({ text: '' })
+          }}
+          onSelected={onPositionSelected}
+          prompt={'Choose position to burn'}
+          intro={'Your open positions'}
+        />
+      )}
+      {stage === BurnStage.Confirm && (
+        <ConfirmationSelector intro={'TODO'} onConfirm={onConfirm} />
       )}
     </Box>
   )
