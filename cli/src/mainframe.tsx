@@ -3,12 +3,11 @@ import { Box, render, Text } from 'ink'
 import TextInput from 'ink-text-input'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
-import { CommandKeys } from 'src/cmd.js'
+import { CommandKeys, getOption } from 'src/cmd.js'
 import {
   CommandControl,
   CommandProvider,
   matchCommand,
-  useOption,
   UserInputContext
 } from './commands.js'
 import { HelpMessage } from './help.js'
@@ -22,11 +21,14 @@ import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
 import { commandOptions, type OptionKey } from './options.js'
 
+const force = getOption('force')
+
+const sync = getOption('sync')
+
 const Router = () => {
   const { input } = useContext(UserInputContext)
   const { wallet } = useWallet()
-  const force = useOption('force')
-  const sync = useOption('sync')
+
   const [confirmInput, setConfirmInput] = useState<string>('')
   const [confirmed, setConfirmed] = useState<boolean>()
 

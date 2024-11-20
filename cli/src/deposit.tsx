@@ -13,8 +13,8 @@ import { useCollateralBalance } from './pools/hooks/collateral.js'
 import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { NotificationContext } from './notification.js'
-import { useOption, UserInputContext } from './commands.js'
-import { CommandKeys, isCli } from 'src/cmd.js'
+import { UserInputContext } from './commands.js'
+import { CommandKeys, getOption, isCli } from 'src/cmd.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
@@ -29,6 +29,12 @@ enum Stage {
   Confirm = 4,
   Empty = 5
 }
+
+const pool = getOption('pool')
+
+const asset = getOption('asset')
+
+const amountArg = getOption('amount')
 
 export const DepositControl = () => {
   const { wallet } = useWallet()
@@ -242,13 +248,6 @@ export const DepositControl = () => {
     ]
   )
 
-
-  const pool = useOption('pool')
-
-  const asset = useOption('asset')
-
-  const amountArg = useOption('amount')
-
   const { pairs } = usePools()
 
   useEffect(() => {
@@ -271,7 +270,7 @@ export const DepositControl = () => {
 
     setChosenPair(pair)
     setStage(Stage.CollateralSelection)
-  }, [addMessage, pairs, pool, stage])
+  }, [addMessage, pairs, stage])
 
   useEffect(() => {
     if (
@@ -302,7 +301,6 @@ export const DepositControl = () => {
   }, [
     stage,
     chosenPair,
-    asset,
     onCollateralSelected,
     addMessage,
     chosenPairInfo.ready
@@ -319,7 +317,7 @@ export const DepositControl = () => {
     }
 
     onAmountSubmitted(String(amountArg))
-  }, [onAmountSubmitted, amountArg, stage, addMessage])
+  }, [onAmountSubmitted, stage, addMessage])
 
   useEffect(() => {
     if (isCli() && stage === Stage.Confirm) {

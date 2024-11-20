@@ -13,8 +13,8 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import { CommandKeys, isCli } from 'src/cmd.js'
-import { useOption, UserInputContext } from '../commands.js'
+import { CommandKeys, getOption, isCli } from 'src/cmd.js'
+import { UserInputContext } from '../commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'
@@ -30,11 +30,16 @@ import { PoolPositions } from './position.js'
 import { SFPMProvider } from '../pools/sfpm.js'
 import CommandArgs from 'src/command-args.js'
 import { commandOptions } from 'src/options.js'
+
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
   ScanInProgress = 3
 }
+
+const sync = Boolean(getOption('sync'))
+
+const duration = getOption('duration')
 
 export const PortfolioControl = () => {
   const { addMessage } = useContext(NotificationContext)
@@ -241,15 +246,11 @@ export const PortfolioControl = () => {
     addMessage('Terminating scan...')
   }, [addMessage])
 
-  const sync = Boolean(useOption('sync'))
-
-  const duration = useOption('duration')
-
   useEffect(() => {
     if (sync && filteredPairs) {
       onDurationSubmit(duration!)
     }
-  }, [sync, duration, onDurationSubmit, filteredPairs])
+  }, [onDurationSubmit, filteredPairs])
 
   if (isCli() && sync) {
     return <></>

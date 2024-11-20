@@ -29,8 +29,7 @@ import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { type MarginUsage, useMarginEstimator } from './calc.js'
-import { useOption } from 'src/commands.js'
-import { CommandKeys, isCli } from 'src/cmd.js'
+import { CommandKeys, getOption, isCli } from 'src/cmd.js'
 import CommandArgs from 'src/command-args.js'
 import { commandOptions } from 'src/options.js'
 import { usePools } from 'src/pools/hooks/panoptic.js'
@@ -45,6 +44,15 @@ export enum TradeStage {
   Quantity = 6,
   Confirm = 7
 }
+
+const pool = getOption('pool')
+const asset = getOption('asset')
+const put = getOption('put')
+const call = getOption('call')
+const trade = put === call ? undefined : put ? 'put' : 'call'
+const strike = getOption('strike')
+const priceRange = getOption('range')
+const amount = getOption('amount')
 
 interface LegMakerProps {
   chosenPair?: ValidatedPair
@@ -270,14 +278,6 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     [buildLeg, setStage, onLegConfirm, addMessage, chosenPairInfo, positionSize]
   )
 
-  const pool = useOption('pool')
-  const asset = useOption('asset')
-  const put = useOption('put')
-  const call = useOption('call')
-  const trade = put === call ? undefined : put ? 'put' : 'call'
-  const strike = useOption('strike')
-  const priceRange = useOption('range')
-  const amount = useOption('amount')
   const { pairs } = usePools()
 
   useEffect(() => {
@@ -303,7 +303,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onPoolSelected(pair)
-  }, [addMessage, pairs, pool, stage, setStage, onPoolSelected])
+  }, [addMessage, pairs, stage, setStage, onPoolSelected])
 
   useEffect(() => {
     if (
@@ -332,7 +332,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onQuoteAssetSubmit(choice)
-  }, [addMessage, asset, chosenPairInfo, onQuoteAssetSubmit, setStage, stage])
+  }, [addMessage, chosenPairInfo, onQuoteAssetSubmit, setStage, stage])
 
   useEffect(() => {
     if (!isCli() || stage !== TradeStage.PutCall) {
@@ -357,7 +357,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onPutCallSelected(choice)
-  }, [addMessage, onPutCallSelected, stage, setStage, trade])
+  }, [addMessage, onPutCallSelected, stage, setStage])
 
   useEffect(() => {
     if (!isCli() || stage !== TradeStage.StrikeAmount) {
@@ -371,7 +371,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onStrikeAmountSubmit(Number(strike))
-  }, [addMessage, stage, strike, setStage, onStrikeAmountSubmit])
+  }, [addMessage, stage, setStage, onStrikeAmountSubmit])
 
   useEffect(() => {
     if (!isCli() || stage !== TradeStage.Width) {
@@ -381,7 +381,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     if (!onWidthSubmit(String(priceRange))) {
       setStage(TradeStage.Empty)
     }
-  }, [addMessage, stage, priceRange, setStage, onWidthSubmit])
+  }, [addMessage, stage, setStage, onWidthSubmit])
 
   const stageRef = useRef<TradeStage>(TradeStage.Quantity)
 
@@ -400,7 +400,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         setStage(TradeStage.Empty)
       }
     })
-  }, [addMessage, stage, amount, setStage, onQuantitySubmit])
+  }, [addMessage, stage, setStage, onQuantitySubmit])
 
   useEffect(() => {
     if (

@@ -128,9 +128,6 @@ const OptionContext = createContext<Partial<Record<OptionKey, string>>>({
   db: ''
 })
 
-export const useOption = (optionKey: OptionKey) =>
-  useContext(OptionContext)[optionKey]
-
 export const CommandProvider = ({
   command,
   options,

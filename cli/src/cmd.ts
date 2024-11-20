@@ -10,7 +10,7 @@ import yargs from 'yargs/yargs'
 import { type Argv } from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import process from 'process'
-import options, { commandOptions } from './options.js'
+import options, { commandOptions, type OptionKey } from './options.js'
 import { type Address, type Hex } from 'viem'
 
 export interface Command {
@@ -172,7 +172,7 @@ export const getPk = (): Hex => {
   return pk ?? defaultWalletPrivateKey
 }
 
-export const getOption = (key: string) => cmd[key]
+export const getOption = (optionKey: OptionKey) => cmd[key]
 
 export const isCli = () =>
   cmd._[0]?.toLowerCase() === 'start' ? false : Boolean(cmd._[0])
