@@ -204,7 +204,7 @@ export interface CommandProviderProps extends MainframeProps {
   children: React.ReactNode
 }
 
-export const OptionContext = createContext<Partial<Record<OptionKey, string>>>({
+const OptionContext = createContext<Partial<Record<OptionKey, string>>>({
   network: '',
   rpc: '',
   chainId: '',
@@ -223,14 +223,14 @@ export const useCli = () => useContext(UserInputContext).cli
 export const CommandProvider = ({
   command,
   options,
-  cli,
   children
 }: CommandProviderProps) => {
   const [input, setInput] = useState<string>(command ?? CommandKeys.Help)
   const [disabled, setDisabled] = useState<boolean>(false)
+
   return (
     <UserInputContext.Provider
-      value={{ input, setInput, disabled, setDisabled, cli }}
+      value={{ input, setInput, disabled, setDisabled, cli: Boolean(command) }}
     >
       <OptionContext.Provider value={options}>
         {children}
@@ -240,6 +240,7 @@ export const CommandProvider = ({
 }
 
 const numCommands = Object.values(CommandKeys).length
+
 export const CommandControl = () => {
   const { disabled } = useContext(UserInputContext)
   if (disabled) {

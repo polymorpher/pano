@@ -80,18 +80,17 @@ const Router = () => {
 export interface MainframeProps {
   command?: CommandKeys
   options: Record<OptionKey, string>
-  cli?: boolean
 }
 
-const Mainframe: React.FC<MainframeProps> = ({ options, command, cli }) => {
+const Mainframe: React.FC<MainframeProps> = ({ options, command }) => {
   return (
-    <CommandProvider options={options} command={command} cli={cli}>
+    <CommandProvider options={options} command={command}>
       <NotificationProvider>
         <PublicClientProvider>
           <WalletProvider>
             <WalletClientProvider>
               <Router />
-              {!cli && <CommandControl />}
+              {command && <CommandControl />}
               <NotificationBar />
             </WalletClientProvider>
           </WalletProvider>

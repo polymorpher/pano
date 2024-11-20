@@ -1,80 +1,31 @@
 import * as process from 'process'
-import yargs from 'yargs/yargs'
-import type { Argv, BuilderCallback } from 'yargs'
-import { hideBin } from 'yargs/helpers'
-import options, { commandOptions } from './options.ts'
-import { CommandKeys, Commands } from './commands.tsx'
-import renderMainframe from './mainframe.tsx'
-import { buildPublicClient, parseInitialNetwork } from './client.tsx'
+import { buildPublicClient } from './client.js'
+import { cmd, parseInitialNetwork } from './cmd.js'
+import renderMainframe from './mainframe.js'
 
-const main = (): Argv => {
-  let cmd = yargs(hideBin(process.argv))
-    .middleware(async (arg) => {
-      try {
-        const network = parseInitialNetwork(arg)
-        const client = buildPublicClient(network)
-
-        console.log('Testing RPC connection...')
-
-        if (!client) {
-          console.error('Failed to create RPC client!')
-          process.exit(1)
-        }
-
-        const resChainId = await client.getChainId()
-
-        if (network.chainId !== resChainId) {
-          console.error(
-            `Chain ID mismatch! RPC Response: ${resChainId}, Expected: ${network.chainId}`
-          )
-          process.exit(1)
-        }
-        console.log(
-          'RPC Connection test completed. Retrieving option pool stats...'
-        )
-      } catch (e) {
-        console.error(e.message)
-        process.exit(1)
-      }
-    })
-    .command(
-      '$0',
-      'Interactively communicate with a Panoptic option pool deployment. Configuration parameters (network, contract address, wallet...) can be set using command line arguments, or inside the interactive interface\n'
+async function main() {
+  const network = parseInitialNetwork()
+  const client = buildPublicClient(network)
+  console.log('Testing RPC connection...')
+  if (!client) {
+    console.error('Failed to create RPC client!')
+    process.exit(1)
+  }
+  const resChainId = await client.getChainId()
+  if (network.chainId !== resChainId) {
+    console.error(
+      `Chain ID mismatch! RPC Response: ${resChainId}, Expected: ${network.chainId}`
     )
-    .command(
-      'start',
-      'Enter interactive mode\n',
-      () => {},
-      async (arg) => {
-        const { waitUntilExit } = renderMainframe({ options: arg })
-        await waitUntilExit()
-      }
-    )
+    process.exit(1)
+  }
+  console.log('RPC Connection test completed. Retrieving option pool stats...')
 
-  cmd = Object.keys(Commands)
-    .filter(
-      (c) => ![CommandKeys.Quit, CommandKeys.Wallet].includes(c as CommandKeys)
-    )
-    .reduce<Argv>((acc, c) => {
-      const key = c as CommandKeys
-      const cmd = Commands[key]
-      const desc = cmd.tbd ? `[Coming soon] ${cmd.desc}` : cmd.desc
-      const opt = commandOptions[c as CommandKeys]
-      const emptyBuilder = () => {}
-      const builder = (opt ?? emptyBuilder) as BuilderCallback<any, any>
+  const { waitUntilExit } = renderMainframe({
+    command: cmd._[0],
+    options: cmd
+  })
 
-      return acc.command(c, `${desc}\n`, builder, async (arg) => {
-        renderMainframe({
-          options: arg,
-          command: key,
-          cli: true
-        })
-      })
-    }, cmd)
-
-  cmd = cmd.help('help', 'Show help').options(options).strict()
-
-  return cmd
+  await waitUntilExit()
 }
 
-main().argv
+main().catch(console.error)

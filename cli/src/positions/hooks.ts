@@ -7,7 +7,7 @@ import {
   type PositionWithData,
   type ValidatedPair
 } from '../common.js'
-import useDb from '../db.js'
+import { readPositions, storePosition, removePosition } from '../db.js'
 import { useWallet } from '../wallet.js'
 import { NotificationContext } from '../notification.js'
 import { ScalingFactor } from '../util.js'
@@ -23,7 +23,6 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
   const [positions, setPositions] = useState<PositionWithData[]>([])
   const positionIds = positions.map((p) => BigInt(p.id))
   const { panopticFactory } = useFactories()
-  const { readPositions, removePosition, storePosition } = useDb()
 
   const reloadPositions = useCallback(async () => {
     if (!wallet.address || !panopticFactory || !client) {
@@ -88,15 +87,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       })
     setPositions(sortedPositions)
     return sortedPositions
-  }, [
-    wallet.address,
-    panopticFactory,
-    client,
-    readPositions,
-    uniswapPoolAddress,
-    addMessage,
-    removePosition
-  ])
+  }, [wallet.address, panopticFactory, client, uniswapPoolAddress, addMessage])
 
   const addPosition = useCallback(
     async (
@@ -118,7 +109,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       }
       return updated
     },
-    [wallet.address, uniswapPoolAddress, storePosition]
+    [wallet.address, uniswapPoolAddress]
   )
 
   useEffect(() => {
