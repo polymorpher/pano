@@ -33,6 +33,7 @@ import { CommandKeys, getOption, isCli } from 'src/cmd.js'
 import CommandArgs from 'src/command-args.js'
 import { commandOptions } from 'src/options.js'
 import { usePools } from 'src/pools/hooks/panoptic.js'
+import { UserInputContext } from 'src/commands.tsx'
 
 export enum TradeStage {
   Empty = 0,
@@ -79,6 +80,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   stage,
   setStage
 }) => {
+  const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const { addMessage } = useContext(NotificationContext)
   const [putCall, setPutCall] = useState<PutCallType>('token0')
   const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
@@ -283,6 +285,10 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   )
 
   const { pairs } = usePools()
+
+  useEffect(() => {
+    setUserCommandDisabled(true)
+  }, [setUserCommandDisabled])
 
   useEffect(() => {
     if (!cli || !pool || !pairs) {
