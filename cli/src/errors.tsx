@@ -1,23 +1,22 @@
 import { SectionTitle } from './common.js'
 import React, { useContext, useEffect } from 'react'
 import { Box, Text } from 'ink'
-import { useCli } from './commands.js'
 import { NotificationContext } from './notification.js'
+import { isCli } from './cmd.ts'
 
 export const WalletRequired = () => {
-  const cli = useCli()
   const { addMessage } = useContext(NotificationContext)
 
   useEffect(() => {
-    if (cli) {
+    if (isCli()) {
       addMessage(
         'A wallet is required to do this. Please specify wallet using --pk option.',
         { color: 'red' }
       )
     }
-  }, [addMessage, cli])
+  }, [addMessage])
 
-  if (cli) {
+  if (isCli()) {
     return <></>
   }
 

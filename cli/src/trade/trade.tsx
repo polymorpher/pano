@@ -29,8 +29,8 @@ import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { type MarginUsage, useMarginEstimator } from './calc.js'
-import { useCli, useOption } from 'src/commands.js'
-import { CommandKeys } from 'src/cmd.js'
+import { useOption } from 'src/commands.js'
+import { CommandKeys, isCli } from 'src/cmd.js'
 import CommandArgs from 'src/command-args.js'
 import { commandOptions } from 'src/options.js'
 import { usePools } from 'src/pools/hooks/panoptic.js'
@@ -270,7 +270,6 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     [buildLeg, setStage, onLegConfirm, addMessage, chosenPairInfo, positionSize]
   )
 
-  const cli = useCli()
   const pool = useOption('pool')
   const asset = useOption('asset')
   const put = useOption('put')
@@ -282,7 +281,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   const { pairs } = usePools()
 
   useEffect(() => {
-    if (!cli || !pool || !pairs) {
+    if (!isCli() || !pool || !pairs) {
       return
     }
 
@@ -304,11 +303,11 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onPoolSelected(pair)
-  }, [cli, addMessage, pairs, pool, stage, setStage, onPoolSelected])
+  }, [addMessage, pairs, pool, stage, setStage, onPoolSelected])
 
   useEffect(() => {
     if (
-      !cli ||
+      !isCli() ||
       !asset ||
       !chosenPairInfo.ready ||
       stage !== TradeStage.QuoteAsset
@@ -333,18 +332,10 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onQuoteAssetSubmit(choice)
-  }, [
-    addMessage,
-    asset,
-    chosenPairInfo,
-    cli,
-    onQuoteAssetSubmit,
-    setStage,
-    stage
-  ])
+  }, [addMessage, asset, chosenPairInfo, onQuoteAssetSubmit, setStage, stage])
 
   useEffect(() => {
-    if (!cli || stage !== TradeStage.PutCall) {
+    if (!isCli() || stage !== TradeStage.PutCall) {
       return
     }
 
@@ -366,10 +357,10 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onPutCallSelected(choice)
-  }, [addMessage, cli, onPutCallSelected, stage, setStage, trade])
+  }, [addMessage, onPutCallSelected, stage, setStage, trade])
 
   useEffect(() => {
-    if (!cli || stage !== TradeStage.StrikeAmount) {
+    if (!isCli() || stage !== TradeStage.StrikeAmount) {
       return
     }
 
@@ -380,23 +371,23 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     onStrikeAmountSubmit(Number(strike))
-  }, [addMessage, cli, stage, strike, setStage, onStrikeAmountSubmit])
+  }, [addMessage, stage, strike, setStage, onStrikeAmountSubmit])
 
   useEffect(() => {
-    if (!cli || stage !== TradeStage.Width) {
+    if (!isCli() || stage !== TradeStage.Width) {
       return
     }
 
     if (!onWidthSubmit(String(priceRange))) {
       setStage(TradeStage.Empty)
     }
-  }, [addMessage, cli, stage, priceRange, setStage, onWidthSubmit])
+  }, [addMessage, stage, priceRange, setStage, onWidthSubmit])
 
   const stageRef = useRef<TradeStage>(TradeStage.Quantity)
 
   useEffect(() => {
     if (
-      !cli ||
+      !isCli() ||
       stage !== TradeStage.Quantity ||
       stageRef.current !== TradeStage.Quantity
     ) {
@@ -409,11 +400,11 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         setStage(TradeStage.Empty)
       }
     })
-  }, [addMessage, cli, stage, amount, setStage, onQuantitySubmit])
+  }, [addMessage, stage, amount, setStage, onQuantitySubmit])
 
   useEffect(() => {
     if (
-      !cli ||
+      !isCli() ||
       stage !== TradeStage.Confirm ||
       stageRef.current !== TradeStage.Confirm
     ) {
@@ -423,10 +414,10 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     stageRef.current = TradeStage.Empty
     setStage(TradeStage.Empty)
     onConfirm(true)
-  }, [addMessage, cli, onConfirm, stage, setStage])
+  }, [addMessage, onConfirm, stage, setStage])
 
   if (
-    cli &&
+    isCli() &&
     (!pool ||
       !asset ||
       !trade ||
@@ -442,7 +433,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     )
   }
 
-  if (cli) {
+  if (isCli()) {
     return <></>
   }
 

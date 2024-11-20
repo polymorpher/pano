@@ -26,15 +26,13 @@ interface UserInputContextProps {
   setInput: (input: string) => void
   disabled: boolean
   setDisabled: (disabled: boolean) => void
-  cli?: boolean
 }
 
 export const UserInputContext = createContext<UserInputContextProps>({
   input: '',
   setInput: (input: string) => {},
   disabled: false,
-  setDisabled: () => {},
-  cli: false
+  setDisabled: () => {}
 })
 
 export function matchCommand(input: string): Command | null {
@@ -133,8 +131,6 @@ const OptionContext = createContext<Partial<Record<OptionKey, string>>>({
 export const useOption = (optionKey: OptionKey) =>
   useContext(OptionContext)[optionKey]
 
-export const useCli = () => useContext(UserInputContext).cli
-
 export const CommandProvider = ({
   command,
   options,
@@ -145,7 +141,7 @@ export const CommandProvider = ({
 
   return (
     <UserInputContext.Provider
-      value={{ input, setInput, disabled, setDisabled, cli: Boolean(command) }}
+      value={{ input, setInput, disabled, setDisabled }}
     >
       <OptionContext.Provider value={options}>
         {children}

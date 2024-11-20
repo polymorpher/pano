@@ -13,8 +13,8 @@ import { useCollateralBalance } from './pools/hooks/collateral.js'
 import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { NotificationContext } from './notification.js'
-import { useCli, useOption, UserInputContext } from './commands.js'
-import { CommandKeys } from 'src/cmd.js'
+import { useOption, UserInputContext } from './commands.js'
+import { CommandKeys, isCli } from 'src/cmd.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
@@ -242,7 +242,6 @@ export const DepositControl = () => {
     ]
   )
 
-  const cli = useCli()
 
   const pool = useOption('pool')
 
@@ -253,7 +252,7 @@ export const DepositControl = () => {
   const { pairs } = usePools()
 
   useEffect(() => {
-    if (!cli || !pool || !pairs || stage !== Stage.PoolSelection) {
+    if (!isCli() || !pool || !pairs || stage !== Stage.PoolSelection) {
       return
     }
 
@@ -272,11 +271,11 @@ export const DepositControl = () => {
 
     setChosenPair(pair)
     setStage(Stage.CollateralSelection)
-  }, [cli, addMessage, pairs, pool, stage])
+  }, [addMessage, pairs, pool, stage])
 
   useEffect(() => {
     if (
-      !cli ||
+      !isCli() ||
       !asset ||
       !chosenPair ||
       !chosenPairInfo.ready ||
@@ -301,7 +300,6 @@ export const DepositControl = () => {
 
     onCollateralSelected(choice)
   }, [
-    cli,
     stage,
     chosenPair,
     asset,
@@ -311,7 +309,7 @@ export const DepositControl = () => {
   ])
 
   useEffect(() => {
-    if (!cli || amountArg === undefined || stage !== Stage.AmountInput) {
+    if (!isCli() || amountArg === undefined || stage !== Stage.AmountInput) {
       return
     }
 
@@ -321,15 +319,15 @@ export const DepositControl = () => {
     }
 
     onAmountSubmitted(String(amountArg))
-  }, [onAmountSubmitted, amountArg, cli, stage, addMessage])
+  }, [onAmountSubmitted, amountArg, stage, addMessage])
 
   useEffect(() => {
-    if (cli && stage === Stage.Confirm) {
+    if (isCli() && stage === Stage.Confirm) {
       onConfirm(true)
     }
-  }, [stage, cli, onConfirm])
+  }, [stage, onConfirm])
 
-  if (cli) {
+  if (isCli()) {
     if (pool && asset && amountArg !== undefined) {
       return <></>
     }

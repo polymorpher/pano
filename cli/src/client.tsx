@@ -18,8 +18,8 @@ import {
 } from 'viem'
 import { NotificationContext } from './notification.js'
 import { useWallet, type Wallet } from './wallet.js'
-import { useCli, UserInputContext } from './commands.js'
-import { type CommandKeys, Commands } from 'src/cmd.js'
+import { UserInputContext } from './commands.js'
+import { type CommandKeys, Commands, isCli } from 'src/cmd.js'
 import { parseInitialNetwork } from './cmd.ts'
 
 type ConnectedWalletClient = WalletClient<Transport, Chain, Account>
@@ -111,11 +111,10 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
     () => buildWalletClient(network, wallet),
     [wallet]
   )
-  const cli = useCli()
   const { input } = useContext(UserInputContext)
 
   useEffect(() => {
-    if (cli && !Commands[input as CommandKeys]?.wallet) {
+    if (isCli() && !Commands[input as CommandKeys]?.wallet) {
       return
     }
 
@@ -128,7 +127,7 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
       `Wallet connected to RPC - Network: ${network.name} | Chain ID: ${network.chainId} | RPC: ${network.rpc}`,
       { color: 'green' }
     )
-  }, [addMessage, wallet, cli, input])
+  }, [addMessage, wallet, input])
 
   return (
     <WalletClientContext.Provider value={{ client, network }}>

@@ -6,7 +6,7 @@ import React, {
   useState
 } from 'react'
 import { Text, Box } from 'ink'
-import { useCli } from './commands.js'
+import { isCli } from './cmd.ts'
 
 interface NotificationOptions {
   time?: number
@@ -53,11 +53,9 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
     []
   )
 
-  const cli = useCli()
-
   const addMessage = useCallback(
     (message: string, options: NotificationOptions = {}) => {
-      if (cli) {
+      if (isCli()) {
         options.sticky = true
       }
 
@@ -79,7 +77,7 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
         }, duration)
       }
     },
-    [cli]
+    []
   )
   const clear = useCallback(() => {
     setMessageStore(new Map())
@@ -110,11 +108,10 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
 
 export const NotificationBar = () => {
   const { stickyMessages, messageStore } = useContext(NotificationContext)
-  const cli = useCli()
 
   return (
     <Box flexDirection={'column'} marginTop={1} marginBottom={1}>
-      {cli && <Text>Logs:</Text>}
+      {isCli() && <Text>Logs:</Text>}
       {stickyMessages.map((message) => (
         <Text
           key={message.options.id}

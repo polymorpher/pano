@@ -13,8 +13,8 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import { CommandKeys } from 'src/cmd.js'
-import { useCli, useOption, UserInputContext } from '../commands.js'
+import { CommandKeys, isCli } from 'src/cmd.js'
+import { useOption, UserInputContext } from '../commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'
@@ -66,8 +66,6 @@ export const PortfolioControl = () => {
     // addMessage('pool positions set')
     setPositionsByPoolEntries(positionsByPoolEntries)
   }, [positions])
-
-  const cli = useCli()
 
   useEffect(() => {
     async function init() {
@@ -253,7 +251,7 @@ export const PortfolioControl = () => {
     }
   }, [sync, duration, onDurationSubmit, filteredPairs])
 
-  if (cli && sync) {
+  if (isCli() && sync) {
     return <></>
   }
 
@@ -261,7 +259,7 @@ export const PortfolioControl = () => {
     <SFPMProvider>
       <Box flexDirection={'column'}>
         <SectionTitle>Portfolio and Positions</SectionTitle>
-        {(!cli || !sync) && (
+        {(!isCli() || !sync) && (
           <>
             {(filteredPairs?.length ?? 0) + positionsByPoolEntries.length ===
               0 && <Text>No data</Text>}
@@ -281,13 +279,13 @@ export const PortfolioControl = () => {
             )}
           </>
         )}
-        {cli && !sync && (
+        {isCli() && !sync && (
           <CommandArgs
             title="Please use the following options to sync positions on chain"
             args={commandOptions[CommandKeys.Portfolio]!}
           />
         )}
-        {!cli && stage === PortfolioStage.SelectAction && (
+        {!isCli() && stage === PortfolioStage.SelectAction && (
           <MultiChoiceSelector
             options={['Sync positions on chain']}
             onSelected={onAction}
@@ -305,7 +303,7 @@ export const PortfolioControl = () => {
             }
           />
         )}
-        {!cli && stage === PortfolioStage.SetScanDuration && (
+        {!isCli() && stage === PortfolioStage.SetScanDuration && (
           <AmountSelector
             intro={'Scan for how far back?'}
             prompt={
@@ -317,7 +315,7 @@ export const PortfolioControl = () => {
             }}
           />
         )}
-        {!cli && stage === PortfolioStage.ScanInProgress && (
+        {!isCli() && stage === PortfolioStage.ScanInProgress && (
           <InProgressSelector
             intro={'Scan in progress...'}
             onExit={onScanInterrupted}

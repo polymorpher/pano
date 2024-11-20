@@ -129,7 +129,7 @@ export const cmd = Object.keys(Commands)
     const desc = cmd.tbd ? `[Coming soon] ${cmd.desc}` : cmd.desc
 
     return acc.command(c, `${desc}\n`, (argv) => {
-      argv.options(commandOptions[key]!)
+      argv.options(commandOptions[key] ?? {})
     })
   }, ya)
   .strict().argv
@@ -171,3 +171,8 @@ export const getPk = (): Hex => {
   const pk = cmd.pk as Hex
   return pk ?? defaultWalletPrivateKey
 }
+
+export const getOption = (key: string) => cmd[key]
+
+export const isCli = () =>
+  cmd._[0]?.toLowerCase() === 'start' ? false : Boolean(cmd._[0])
