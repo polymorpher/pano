@@ -7,7 +7,7 @@
     "format": "prettier --write .",
     "lint": "eslint . --fix",
     "start": "tsx src/index.ts",
-    "help": "tsx src/index.tsx --help",
+    "help": "tsx src/index.ts --help",
     "genTypes": "tsx scripts/genTypes.ts; eslint types-contract --fix"
   },
   "dependencies": {
