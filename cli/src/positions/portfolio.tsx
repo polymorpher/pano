@@ -13,12 +13,8 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import {
-  CommandKeys,
-  useCli,
-  useOption,
-  UserInputContext
-} from '../commands.js'
+import { CommandKeys } from 'src/cmd.js'
+import { useCli, useOption, UserInputContext } from '../commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'

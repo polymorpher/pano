@@ -3,9 +3,9 @@ import { Box, render, Text } from 'ink'
 import TextInput from 'ink-text-input'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
+import { CommandKeys } from 'src/cmd.js'
 import {
   CommandControl,
-  CommandKeys,
   CommandProvider,
   matchCommand,
   useOption,
@@ -90,7 +90,7 @@ const Mainframe: React.FC<MainframeProps> = ({ options, command }) => {
           <WalletProvider>
             <WalletClientProvider>
               <Router />
-              {command && <CommandControl />}
+              {!command && <CommandControl />}
               <NotificationBar />
             </WalletClientProvider>
           </WalletProvider>

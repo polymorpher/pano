@@ -5,7 +5,6 @@ import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { formatUnits } from 'viem'
 import { toFixed } from './util.js'
-import { useCli } from './commands.js'
 
 const DisplayCollateralStats = ({
   address,
