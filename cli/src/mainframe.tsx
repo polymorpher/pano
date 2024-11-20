@@ -2,9 +2,9 @@ import React, { useContext } from 'react'
 import { render } from 'ink'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
+import { CommandKeys } from 'src/cmd.js'
 import {
   CommandControl,
-  CommandKeys,
   CommandProvider,
   matchCommand,
   UserInputContext
@@ -18,15 +18,20 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
+import { type OptionKey } from './options.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
   const { wallet } = useWallet()
+
   const matched = matchCommand(input)
+
   if (matched?.wallet && !wallet.address) {
     return <WalletRequired />
   }
+
   const m = matched?.full
+
   return (
     <>
       {m === CommandKeys.Help && <HelpMessage />}
@@ -41,26 +46,28 @@ const Router = () => {
   )
 }
 
-const Mainframe = () => {
-  return (
+export interface MainframeProps {
+  command?: CommandKeys
+  options: Record<OptionKey, string>
+}
+
+const Mainframe: React.FC<MainframeProps> = ({ options, command }) => (
+  <CommandProvider options={options} command={command}>
     <NotificationProvider>
       <PublicClientProvider>
         <WalletProvider>
           <WalletClientProvider>
-            <CommandProvider>
-              <Router />
-              <CommandControl />
-              <NotificationBar />
-            </CommandProvider>
+            <Router />
+            {!command && <CommandControl />}
+            <NotificationBar />
           </WalletClientProvider>
         </WalletProvider>
       </PublicClientProvider>
     </NotificationProvider>
-  )
-}
+  </CommandProvider>
+)
 
-export default Mainframe
+const renderMainframe = (data: MainframeProps) =>
+  render(<Mainframe {...data} />)
 
-export const renderMainframe = () => {
-  return render(<Mainframe />)
-}
+export default renderMainframe

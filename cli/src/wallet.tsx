@@ -13,7 +13,6 @@ import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
 import { SectionTitle } from './common.js'
-import { defaultWalletPrivateKey } from './config.js'
 import { tryPrivateKeyToAccount } from './util.js'
 import { getPk } from './cmd.js'
 
@@ -38,9 +37,10 @@ interface WalletContextProps {
 }
 
 const loadDefaultWallet = () => {
-  if (!defaultWalletPrivateKey) {
+  if (!getPk()) {
     return EmptyWallet
   }
+
   const a = tryPrivateKeyToAccount(getPk())
   if (!a) {
     return EmptyWallet

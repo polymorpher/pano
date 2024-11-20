@@ -1,5 +1,21 @@
 import { type Options } from 'yargs'
-const options: Record<string, Options> = {
+import { type CommandKeys } from 'src/cmd.js'
+
+export type OptionKey =
+  | 'network'
+  | 'rpc'
+  | 'chainId'
+  | 'uniswapFactory'
+  | 'panopticFactory'
+  | 'panopticHelper'
+  | 'pk'
+  | 'db'
+  | PortfolioOptionKey
+  | DepositOptionKey
+  | SellOptionKey
+  | BuyOptionKey
+
+const options: Record<OptionKey, Options> = {
   network: {
     alias: 'n',
     type: 'string',
@@ -41,4 +57,144 @@ const options: Record<string, Options> = {
     describe: 'Path to local database folder'
   }
 }
+
+type PortfolioOptionKey = 'sync' | 'duration' | 'force'
+
+type DepositOptionKey = 'pool' | 'asset' | 'amount' | 'force'
+
+type SellOptionKey =
+  | 'pool'
+  | 'asset'
+  | 'put'
+  | 'call'
+  | 'strike'
+  | 'range'
+  | 'amount'
+  | 'force'
+
+type BuyOptionKey = SellOptionKey
+
+export const commandOptions: Partial<
+  Record<CommandKeys, Record<string, Options>>
+> = {
+  portfolio: {
+    sync: {
+      alias: 's',
+      type: 'boolean',
+      describe: 'Sync positions on chain'
+    },
+    duration: {
+      alias: 'd',
+      type: 'string',
+      describe:
+        'Time duration to scan for back (e.g. 10s, 5h, 3d, 1m, ... or in number of blocks, e.g. 1024)',
+      default: '3d'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
+    }
+  },
+  deposit: {
+    pool: {
+      alias: 'p',
+      type: 'string',
+      describe: 'Pool (e.g. usdc/weth, weth/usdc)'
+    },
+    asset: {
+      alias: 'a',
+      type: 'string',
+      describe: 'Collateral asset (e.g. usdc, weth)'
+    },
+    amount: {
+      alias: 'm',
+      type: 'number',
+      describe: 'Deposit amount'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
+    }
+  },
+  sell: {
+    pool: {
+      alias: 'p',
+      type: 'string',
+      describe: 'Pool (e.g. usdc/weth, weth/usdc)'
+    },
+    asset: {
+      alias: 'a',
+      type: 'string',
+      describe: 'Sell asset (e.g. usdc, weth)'
+    },
+    put: {
+      type: 'boolean'
+    },
+    call: {
+      type: 'boolean'
+    },
+    strike: {
+      type: 'number',
+      describe: 'Strike price for the option'
+    },
+    range: {
+      type: 'number',
+      describe:
+        'Price range percentage for the option (10 means +-10% around strike price)'
+    },
+    amount: {
+      alias: 'm',
+      type: 'number',
+      describe: 'Amount of options to be sold'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
+    }
+  },
+  buy: {
+    pool: {
+      alias: 'p',
+      type: 'string',
+      describe: 'Pool (e.g. usdc/weth, weth/usdc)'
+    },
+    asset: {
+      alias: 'a',
+      type: 'string',
+      describe: 'Buy asset (e.g. usdc, weth)'
+    },
+    put: {
+      type: 'boolean'
+    },
+    call: {
+      type: 'boolean'
+    },
+    strike: {
+      type: 'number',
+      describe: 'Strike price for the option'
+    },
+    range: {
+      type: 'number',
+      describe: 'Price range for the option'
+    },
+    amount: {
+      alias: 'm',
+      type: 'number',
+      describe: 'Amount of options to be bought'
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      describe: 'Execute the operation without asking user confirmation',
+      default: false
+    }
+  }
+}
+
 export default options

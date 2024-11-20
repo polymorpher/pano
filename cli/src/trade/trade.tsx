@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useState } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useState,
+  useEffect,
+  useRef
+} from 'react'
 import {
   AmountSelector,
   calculateTokenId,
@@ -23,8 +29,14 @@ import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { type MarginUsage, useMarginEstimator } from './calc.js'
+import { CommandKeys, getOption, isCli } from 'src/cmd.js'
+import CommandArgs from 'src/command-args.js'
+import { commandOptions } from 'src/options.js'
+import { usePools } from 'src/pools/hooks/panoptic.js'
+import { UserInputContext } from 'src/commands.tsx'
 
 export enum TradeStage {
+  Empty = 0,
   PoolSelection = 1,
   QuoteAsset = 2,
   PutCall = 3,
@@ -34,23 +46,41 @@ export enum TradeStage {
   Confirm = 7
 }
 
+const pool = getOption('pool')
+const asset = getOption('asset')
+const put = getOption('put')
+const call = getOption('call')
+const trade = put === call ? undefined : put ? 'put' : 'call'
+const strike = getOption('strike')
+const priceRange = getOption('range')
+const amount = getOption('amount')
+const force = getOption('force')
+const cli = isCli()
+
 interface LegMakerProps {
   chosenPair?: ValidatedPair
   chosenPairInfo: PanopticPoolInfo
-  onLegConfirm: (leg: Leg, positionSize: bigint, atTick: number) => any
+  onLegConfirm: (
+    leg: Leg,
+    positionSize: bigint,
+    atTick: number
+  ) => Promise<void>
   stage: TradeStage
   setStage: (stage: TradeStage) => any
   position: 'short' | 'long'
+  onPoolSelected: (pair: ValidatedPair) => void
 }
 
-export const LegMaker = ({
+export const LegMaker: React.FC<LegMakerProps> = ({
   chosenPair,
   chosenPairInfo,
   onLegConfirm,
   position,
+  onPoolSelected,
   stage,
   setStage
-}: LegMakerProps) => {
+}) => {
+  const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
   const { addMessage } = useContext(NotificationContext)
   const [putCall, setPutCall] = useState<PutCallType>('token0')
   const [quoteAsset, setQuoteAsset] = useState<Token01>('token0')
@@ -142,7 +172,7 @@ export const LegMaker = ({
       const percent = Number(input)
       if (!percent) {
         addMessage(`Invalid percentage: ${input}`, { color: 'red' })
-        return
+        return false
       }
       const multiplier = percent / 100 + 1
       const ticks = priceToTick(multiplier, 0)
@@ -158,6 +188,7 @@ export const LegMaker = ({
       )
       setRange(radius)
       setStage(TradeStage.Quantity)
+      return true
     },
     [setStage, strikePrice, addMessage, chosenPairInfo]
   )
@@ -205,7 +236,7 @@ export const LegMaker = ({
       const atomicAmount = tryParseUnits(amount.toString(), decimals)
       if (!atomicAmount) {
         addMessage(`Invalid amount: ${amount}`, { color: 'red' })
-        return
+        return false
       }
       setPositionSize(atomicAmount)
       addMessage(`Position size set to ${amount} ${baseAssetInfo.symbol}`, {
@@ -222,6 +253,7 @@ export const LegMaker = ({
       const marginUsage = await computeMarginUsage(id, atomicAmount)
       setMarginUsage(marginUsage)
       setStage(TradeStage.Confirm)
+      return true
     },
     [
       setStage,
@@ -236,7 +268,9 @@ export const LegMaker = ({
 
   const onConfirm = useCallback(
     async (yes?: boolean) => {
-      if (yes === false) {
+      if (cli && !yes) {
+        setStage(TradeStage.Empty)
+      } else if (yes === false) {
         setStage(TradeStage.Quantity)
       } else if (yes === undefined) {
         setStage(TradeStage.PoolSelection)
@@ -250,9 +284,169 @@ export const LegMaker = ({
     [buildLeg, setStage, onLegConfirm, addMessage, chosenPairInfo, positionSize]
   )
 
+  const { pairs } = usePools()
+
+  useEffect(() => {
+    setUserCommandDisabled(true)
+  }, [setUserCommandDisabled])
+
+  useEffect(() => {
+    if (!cli || !pool || !pairs) {
+      return
+    }
+
+    if (stage !== TradeStage.PoolSelection) {
+      return
+    }
+
+    const pair = pairs.find((p) =>
+      [
+        `${p.token0}/${p.token1}`.toLowerCase(),
+        `${p.token1}/${p.token0}`.toLowerCase()
+      ].includes(pool.toLowerCase())
+    )
+
+    if (pair === undefined) {
+      addMessage(`Pool not found: ${pool.toUpperCase()}`, { color: 'red' })
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onPoolSelected(pair)
+  }, [addMessage, pairs, stage, setStage, onPoolSelected])
+
+  useEffect(() => {
+    if (
+      !cli ||
+      !asset ||
+      !chosenPairInfo.ready ||
+      stage !== TradeStage.QuoteAsset
+    ) {
+      return
+    }
+
+    let choice = 0
+
+    if (chosenPairInfo.c0Info.symbol.toLowerCase() === asset.toLowerCase()) {
+      choice = 1
+    } else if (
+      chosenPairInfo.c1Info.symbol.toLowerCase() === asset.toLowerCase()
+    ) {
+      choice = 2
+    }
+
+    if (choice === 0) {
+      addMessage(`Invalid asset: ${asset.toUpperCase()}`, { color: 'red' })
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onQuoteAssetSubmit(choice)
+  }, [addMessage, chosenPairInfo, onQuoteAssetSubmit, setStage, stage])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.PutCall) {
+      return
+    }
+
+    let choice = 0
+
+    if (trade?.toLowerCase() === 'put') {
+      choice = 1
+    } else if (trade?.toLowerCase() === 'call') {
+      choice = 2
+    }
+
+    if (choice === 0) {
+      addMessage(
+        `Invalid trade (should be PUT or CALL): ${trade?.toUpperCase()}`,
+        { color: 'red' }
+      )
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onPutCallSelected(choice)
+  }, [addMessage, onPutCallSelected, stage, setStage])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.StrikeAmount) {
+      return
+    }
+
+    if (isNaN(Number(strike))) {
+      addMessage(`Invalid striker price: ${strike}`, { color: 'red' })
+      setStage(TradeStage.Empty)
+      return
+    }
+
+    onStrikeAmountSubmit(Number(strike))
+  }, [addMessage, stage, setStage, onStrikeAmountSubmit])
+
+  useEffect(() => {
+    if (!cli || stage !== TradeStage.Width) {
+      return
+    }
+
+    if (!onWidthSubmit(String(priceRange))) {
+      setStage(TradeStage.Empty)
+    }
+  }, [stage, setStage, onWidthSubmit])
+
+  const stageRef = useRef<TradeStage>(TradeStage.Quantity)
+
+  useEffect(() => {
+    if (
+      !cli ||
+      stage !== TradeStage.Quantity ||
+      stageRef.current !== TradeStage.Quantity
+    ) {
+      return
+    }
+
+    stageRef.current = TradeStage.Confirm
+    onQuantitySubmit(Number(amount)).then((result) => {
+      if (!result) {
+        setStage(TradeStage.Empty)
+      }
+    })
+  }, [stage, setStage, onQuantitySubmit])
+
+  useEffect(() => {
+    if (
+      !cli ||
+      stage !== TradeStage.Confirm ||
+      stageRef.current !== TradeStage.Confirm ||
+      !force
+    ) {
+      return
+    }
+
+    stageRef.current = TradeStage.Empty
+    setStage(TradeStage.Empty)
+    onConfirm(true)
+  }, [onConfirm, stage, setStage])
+
+  if (
+    cli &&
+    (!pool ||
+      !asset ||
+      !trade ||
+      strike === undefined ||
+      priceRange === undefined ||
+      amount === undefined)
+  ) {
+    return (
+      <CommandArgs
+        title={`Use the following options to ${chosenPair ? 'sell' : 'buy'}`}
+        args={commandOptions[CommandKeys.Sell]!}
+      />
+    )
+  }
+
   return (
     <Box flexDirection={'column'}>
-      {stage === TradeStage.QuoteAsset && (
+      {!cli && stage === TradeStage.QuoteAsset && (
         <MultiChoiceSelector
           options={[
             chosenPairInfo.c0Info.symbol +
@@ -282,7 +476,7 @@ export const LegMaker = ({
         />
       )}
 
-      {stage === TradeStage.PutCall && (
+      {!cli && stage === TradeStage.PutCall && (
         <MultiChoiceSelector
           options={[
             `Put: you profit when ${baseAssetInfo.symbol} does not go down much, incurs loss otherwise`,
@@ -298,7 +492,7 @@ export const LegMaker = ({
         />
       )}
 
-      {stage === TradeStage.StrikeAmount && (
+      {!cli && stage === TradeStage.StrikeAmount && (
         <AmountSelector
           intro={`Strike price for the option? Median spot price of last 10 minute is ${toFixed(currentPrice)}`}
           prompt={`Enter price for 1 ${baseAssetInfo.symbol} (in ${quoteAssetInfo.symbol})`}
@@ -310,7 +504,7 @@ export const LegMaker = ({
         />
       )}
 
-      {stage === TradeStage.Width && (
+      {!cli && stage === TradeStage.Width && (
         <AmountSelector
           intro={
             <>
@@ -335,14 +529,14 @@ export const LegMaker = ({
           }}
         />
       )}
-      {stage === TradeStage.Quantity && (
+      {!cli && stage === TradeStage.Quantity && (
         <AmountSelector
-          intro={'Number of options to be sold?'}
+          intro={`Number of options to be ${chosenPair ? 'sold' : 'bought'}`}
           prompt={`Enter in the number of ${baseAssetInfo.symbol}`}
           onSubmit={onQuantitySubmit}
         />
       )}
-      {stage === TradeStage.Confirm && (
+      {(!force || !cli) && stage === TradeStage.Confirm && (
         <ConfirmationSelector
           intro={
             <>

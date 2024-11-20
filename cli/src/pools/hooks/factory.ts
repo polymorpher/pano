@@ -21,6 +21,7 @@ export const useFactories = () => {
   const { client } = usePublicClient()
   const [panopticFactory, setPanopticFactory] = useState<PanopticFactory>()
   const [uniswapFactory, setUniswapFactory] = useState<UniswapFactory>()
+
   useEffect(() => {
     async function init() {
       if (!client) {
@@ -43,5 +44,6 @@ export const useFactories = () => {
     }
     init().catch(console.error)
   }, [client])
+
   return { panopticFactory, uniswapFactory }
 }

@@ -10,14 +10,17 @@ import {
   type ValidatedPair
 } from './common.js'
 import { useCollateralBalance } from './pools/hooks/collateral.js'
-import { usePoolStats } from './pools/hooks/panoptic.js'
+import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './commands.js'
+import { CommandKeys, getOption, isCli } from 'src/cmd.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
 import { PoolSelector } from './pools/selector.js'
+import CommandArgs from './command-args.js'
+import { commandOptions } from './options.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -26,6 +29,16 @@ enum Stage {
   Confirm = 4,
   Empty = 5
 }
+
+const pool = getOption('pool')
+
+const asset = getOption('asset')
+
+const amountArg = getOption('amount')
+
+const force = getOption('force')
+
+const cli = isCli()
 
 export const DepositControl = () => {
   const { wallet } = useWallet()
@@ -147,7 +160,9 @@ export const DepositControl = () => {
 
   const onConfirm = useCallback(
     async (yes?: boolean) => {
-      if (yes === false) {
+      if (cli && !yes) {
+        setStage(Stage.Empty)
+      } else if (yes === false) {
         setStage(Stage.AmountInput)
       } else if (yes === undefined) {
         setStage(Stage.PoolSelection)
@@ -239,13 +254,101 @@ export const DepositControl = () => {
     ]
   )
 
+  const { pairs } = usePools()
+
+  useEffect(() => {
+    if (!cli || !pool || !pairs || stage !== Stage.PoolSelection) {
+      return
+    }
+
+    const pair = pairs.find((p) =>
+      [
+        `${p.token0}/${p.token1}`.toLowerCase(),
+        `${p.token1}/${p.token0}`.toLowerCase()
+      ].includes(pool.toLowerCase())
+    )
+
+    if (pair === undefined) {
+      addMessage(`Pool not found: ${pool.toUpperCase()}`, { color: 'red' })
+      setStage(Stage.Empty)
+      return
+    }
+
+    setChosenPair(pair)
+    setStage(Stage.CollateralSelection)
+  }, [addMessage, pairs, stage])
+
+  useEffect(() => {
+    if (
+      !cli ||
+      !asset ||
+      !chosenPair ||
+      !chosenPairInfo.ready ||
+      stage !== Stage.CollateralSelection
+    ) {
+      return
+    }
+
+    let choice = 0
+
+    if (chosenPair.token0.toLowerCase() === asset.toLowerCase()) {
+      choice = 1
+    } else if (chosenPair.token1.toLowerCase() === asset.toLowerCase()) {
+      choice = 2
+    }
+
+    if (choice === 0) {
+      addMessage(`Invalid collateral: ${asset.toUpperCase()}`, { color: 'red' })
+      setStage(Stage.Empty)
+      return
+    }
+
+    onCollateralSelected(choice)
+  }, [
+    stage,
+    chosenPair,
+    onCollateralSelected,
+    addMessage,
+    chosenPairInfo.ready
+  ])
+
+  useEffect(() => {
+    if (!cli || amountArg === undefined || stage !== Stage.AmountInput) {
+      return
+    }
+
+    if (isNaN(Number(amountArg))) {
+      addMessage(`Invalid amount: ${amountArg}`, { color: 'red' })
+      setStage(Stage.Empty)
+    }
+
+    onAmountSubmitted(String(amountArg))
+  }, [onAmountSubmitted, stage, addMessage])
+
+  useEffect(() => {
+    if (cli && stage === Stage.Confirm && force) {
+      onConfirm(true)
+    }
+  }, [stage, onConfirm])
+
+  if (cli) {
+    if (!pool || !asset || amountArg === undefined) {
+      return (
+        <CommandArgs
+          title="Use the following options to deposit"
+          args={commandOptions[CommandKeys.Deposit]!}
+        />
+      )
+    }
+  }
+
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Deposit Collateral</SectionTitle>
-      {stage === Stage.PoolSelection && (
+      {!cli && stage === Stage.PoolSelection && (
         <PoolSelector onSelected={onPoolSelected} />
       )}
-      {stage === Stage.CollateralSelection && (
+      {!cli && stage === Stage.CollateralSelection && (
         <MultiChoiceSelector
           intro={
             'Which collateral are you depositing into or withdrawing from?'
@@ -263,7 +366,7 @@ export const DepositControl = () => {
           onSelected={onCollateralSelected}
         />
       )}
-      {stage === Stage.AmountInput && (
+      {!cli && stage === Stage.AmountInput && (
         <AmountSelector
           intro={
             <>
@@ -326,7 +429,7 @@ export const DepositControl = () => {
           onRawSubmit={onAmountSubmitted}
         />
       )}
-      {stage === Stage.Confirm && (
+      {(!force || !cli) && stage === Stage.Confirm && (
         <ConfirmationSelector
           intro={
             <>
