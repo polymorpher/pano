@@ -1,9 +1,8 @@
-import React, { useContext, useState } from 'react'
-import { Box, render, Text } from 'ink'
-import TextInput from 'ink-text-input'
+import React, { useContext } from 'react'
+import { render } from 'ink'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
-import { CommandKeys, getOption } from 'src/cmd.js'
+import { CommandKeys } from 'src/cmd.js'
 import {
   CommandControl,
   CommandProvider,
