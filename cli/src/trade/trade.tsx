@@ -385,7 +385,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     if (!onWidthSubmit(String(priceRange))) {
       setStage(TradeStage.Empty)
     }
-  }, [addMessage, stage, setStage, onWidthSubmit])
+  }, [stage, setStage, onWidthSubmit])
 
   const stageRef = useRef<TradeStage>(TradeStage.Quantity)
 
@@ -404,7 +404,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         setStage(TradeStage.Empty)
       }
     })
-  }, [addMessage, stage, setStage, onQuantitySubmit])
+  }, [stage, setStage, onQuantitySubmit])
 
   useEffect(() => {
     if (
@@ -419,7 +419,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     stageRef.current = TradeStage.Empty
     setStage(TradeStage.Empty)
     onConfirm(true)
-  }, [addMessage, onConfirm, stage, setStage])
+  }, [onConfirm, stage, setStage])
 
   if (
     cli &&
@@ -436,10 +436,6 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         args={commandOptions[CommandKeys.Sell]!}
       />
     )
-  }
-
-  if (cli) {
-    return <></>
   }
 
   return (
