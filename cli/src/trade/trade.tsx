@@ -53,6 +53,8 @@ const trade = put === call ? undefined : put ? 'put' : 'call'
 const strike = getOption('strike')
 const priceRange = getOption('range')
 const amount = getOption('amount')
+const force = getOption('force')
+const cli = isCli()
 
 interface LegMakerProps {
   chosenPair?: ValidatedPair
@@ -264,7 +266,9 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
   const onConfirm = useCallback(
     async (yes?: boolean) => {
-      if (yes === false) {
+      if (cli && !yes) {
+        setStage(TradeStage.Empty)
+      } else if (yes === false) {
         setStage(TradeStage.Quantity)
       } else if (yes === undefined) {
         setStage(TradeStage.PoolSelection)
@@ -281,7 +285,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   const { pairs } = usePools()
 
   useEffect(() => {
-    if (!isCli() || !pool || !pairs) {
+    if (!cli || !pool || !pairs) {
       return
     }
 
@@ -307,7 +311,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
   useEffect(() => {
     if (
-      !isCli() ||
+      !cli ||
       !asset ||
       !chosenPairInfo.ready ||
       stage !== TradeStage.QuoteAsset
@@ -335,7 +339,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   }, [addMessage, chosenPairInfo, onQuoteAssetSubmit, setStage, stage])
 
   useEffect(() => {
-    if (!isCli() || stage !== TradeStage.PutCall) {
+    if (!cli || stage !== TradeStage.PutCall) {
       return
     }
 
@@ -360,7 +364,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   }, [addMessage, onPutCallSelected, stage, setStage])
 
   useEffect(() => {
-    if (!isCli() || stage !== TradeStage.StrikeAmount) {
+    if (!cli || stage !== TradeStage.StrikeAmount) {
       return
     }
 
@@ -374,7 +378,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   }, [addMessage, stage, setStage, onStrikeAmountSubmit])
 
   useEffect(() => {
-    if (!isCli() || stage !== TradeStage.Width) {
+    if (!cli || stage !== TradeStage.Width) {
       return
     }
 
@@ -387,7 +391,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
   useEffect(() => {
     if (
-      !isCli() ||
+      !cli ||
       stage !== TradeStage.Quantity ||
       stageRef.current !== TradeStage.Quantity
     ) {
@@ -404,9 +408,10 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
   useEffect(() => {
     if (
-      !isCli() ||
+      !cli ||
       stage !== TradeStage.Confirm ||
-      stageRef.current !== TradeStage.Confirm
+      stageRef.current !== TradeStage.Confirm ||
+      !force
     ) {
       return
     }
@@ -417,7 +422,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   }, [addMessage, onConfirm, stage, setStage])
 
   if (
-    isCli() &&
+    cli &&
     (!pool ||
       !asset ||
       !trade ||
@@ -433,13 +438,13 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     )
   }
 
-  if (isCli()) {
+  if (cli) {
     return <></>
   }
 
   return (
     <Box flexDirection={'column'}>
-      {stage === TradeStage.QuoteAsset && (
+      {!cli && stage === TradeStage.QuoteAsset && (
         <MultiChoiceSelector
           options={[
             chosenPairInfo.c0Info.symbol +
@@ -469,7 +474,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         />
       )}
 
-      {stage === TradeStage.PutCall && (
+      {!cli && stage === TradeStage.PutCall && (
         <MultiChoiceSelector
           options={[
             `Put: you profit when ${baseAssetInfo.symbol} does not go down much, incurs loss otherwise`,
@@ -485,7 +490,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         />
       )}
 
-      {stage === TradeStage.StrikeAmount && (
+      {!cli && stage === TradeStage.StrikeAmount && (
         <AmountSelector
           intro={`Strike price for the option? Median spot price of last 10 minute is ${toFixed(currentPrice)}`}
           prompt={`Enter price for 1 ${baseAssetInfo.symbol} (in ${quoteAssetInfo.symbol})`}
@@ -497,7 +502,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         />
       )}
 
-      {stage === TradeStage.Width && (
+      {!cli && stage === TradeStage.Width && (
         <AmountSelector
           intro={
             <>
@@ -522,14 +527,14 @@ export const LegMaker: React.FC<LegMakerProps> = ({
           }}
         />
       )}
-      {stage === TradeStage.Quantity && (
+      {!cli && stage === TradeStage.Quantity && (
         <AmountSelector
           intro={`Number of options to be ${chosenPair ? 'sold' : 'bought'}`}
           prompt={`Enter in the number of ${baseAssetInfo.symbol}`}
           onSubmit={onQuantitySubmit}
         />
       )}
-      {stage === TradeStage.Confirm && (
+      {(!force || !cli) && stage === TradeStage.Confirm && (
         <ConfirmationSelector
           intro={
             <>

@@ -38,6 +38,10 @@ interface WalletContextProps {
 }
 
 const loadDefaultWallet = () => {
+  if (!getPk()) {
+    return EmptyWallet
+  }
+
   const a = tryPrivateKeyToAccount(getPk())
   if (!a) {
     return EmptyWallet

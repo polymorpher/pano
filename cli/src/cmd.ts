@@ -172,7 +172,7 @@ export const getPk = (): Hex => {
   return pk ?? defaultWalletPrivateKey
 }
 
-export const getOption = (optionKey: OptionKey) => cmd[key]
+export const getOption = (optionKey: OptionKey) => cmd[optionKey]
 
 export const isCli = () =>
   cmd._[0]?.toLowerCase() === 'start' ? false : Boolean(cmd._[0])

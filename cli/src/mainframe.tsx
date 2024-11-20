@@ -19,48 +19,16 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
-import { commandOptions, type OptionKey } from './options.js'
-
-const force = getOption('force')
-
-const sync = getOption('sync')
+import { type OptionKey } from './options.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
   const { wallet } = useWallet()
 
-  const [confirmInput, setConfirmInput] = useState<string>('')
-  const [confirmed, setConfirmed] = useState<boolean>()
-
   const matched = matchCommand(input)
 
   if (matched?.wallet && !wallet.address) {
     return <WalletRequired />
-  }
-
-  if (input === CommandKeys.Portfolio && !sync) {
-    // pass
-  } else if (commandOptions[input as CommandKeys]?.force && !force) {
-    if (confirmed === undefined) {
-      return (
-        <Box marginTop={1}>
-          <Text>Are you ready to proceed? (y/n): </Text>
-          <TextInput
-            focus
-            showCursor
-            value={confirmInput}
-            onChange={setConfirmInput}
-            onSubmit={(value) => {
-              setConfirmed(value.toLowerCase() === 'y')
-            }}
-          />
-        </Box>
-      )
-    }
-
-    if (!confirmed) {
-      return <></>
-    }
   }
 
   const m = matched?.full
@@ -84,23 +52,21 @@ export interface MainframeProps {
   options: Record<OptionKey, string>
 }
 
-const Mainframe: React.FC<MainframeProps> = ({ options, command }) => {
-  return (
-    <CommandProvider options={options} command={command}>
-      <NotificationProvider>
-        <PublicClientProvider>
-          <WalletProvider>
-            <WalletClientProvider>
-              <Router />
-              {!command && <CommandControl />}
-              <NotificationBar />
-            </WalletClientProvider>
-          </WalletProvider>
-        </PublicClientProvider>
-      </NotificationProvider>
-    </CommandProvider>
-  )
-}
+const Mainframe: React.FC<MainframeProps> = ({ options, command }) => (
+  <CommandProvider options={options} command={command}>
+    <NotificationProvider>
+      <PublicClientProvider>
+        <WalletProvider>
+          <WalletClientProvider>
+            <Router />
+            {!command && <CommandControl />}
+            <NotificationBar />
+          </WalletClientProvider>
+        </WalletProvider>
+      </PublicClientProvider>
+    </NotificationProvider>
+  </CommandProvider>
+)
 
 const renderMainframe = (data: MainframeProps) =>
   render(<Mainframe {...data} />)

@@ -104,6 +104,8 @@ export const buildWalletClient = (
   })
 }
 
+const cli = isCli()
+
 export const WalletClientProvider = ({ children }: PropsWithChildren) => {
   const { addMessage } = useContext(NotificationContext)
   const { wallet } = useWallet()
@@ -114,7 +116,7 @@ export const WalletClientProvider = ({ children }: PropsWithChildren) => {
   const { input } = useContext(UserInputContext)
 
   useEffect(() => {
-    if (isCli() && !Commands[input as CommandKeys]?.wallet) {
+    if (cli && !Commands[input as CommandKeys]?.wallet) {
       return
     }
 

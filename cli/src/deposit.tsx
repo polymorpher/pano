@@ -36,6 +36,10 @@ const asset = getOption('asset')
 
 const amountArg = getOption('amount')
 
+const force = getOption('force')
+
+const cli = isCli()
+
 export const DepositControl = () => {
   const { wallet } = useWallet()
   const { client } = useWalletClient()
@@ -156,7 +160,9 @@ export const DepositControl = () => {
 
   const onConfirm = useCallback(
     async (yes?: boolean) => {
-      if (yes === false) {
+      if (cli && !yes) {
+        setStage(Stage.Empty)
+      } else if (yes === false) {
         setStage(Stage.AmountInput)
       } else if (yes === undefined) {
         setStage(Stage.PoolSelection)
@@ -251,7 +257,7 @@ export const DepositControl = () => {
   const { pairs } = usePools()
 
   useEffect(() => {
-    if (!isCli() || !pool || !pairs || stage !== Stage.PoolSelection) {
+    if (!cli || !pool || !pairs || stage !== Stage.PoolSelection) {
       return
     }
 
@@ -274,7 +280,7 @@ export const DepositControl = () => {
 
   useEffect(() => {
     if (
-      !isCli() ||
+      !cli ||
       !asset ||
       !chosenPair ||
       !chosenPairInfo.ready ||
@@ -307,7 +313,7 @@ export const DepositControl = () => {
   ])
 
   useEffect(() => {
-    if (!isCli() || amountArg === undefined || stage !== Stage.AmountInput) {
+    if (!cli || amountArg === undefined || stage !== Stage.AmountInput) {
       return
     }
 
@@ -320,31 +326,29 @@ export const DepositControl = () => {
   }, [onAmountSubmitted, stage, addMessage])
 
   useEffect(() => {
-    if (isCli() && stage === Stage.Confirm) {
+    if (cli && stage === Stage.Confirm && force) {
       onConfirm(true)
     }
   }, [stage, onConfirm])
 
-  if (isCli()) {
-    if (pool && asset && amountArg !== undefined) {
-      return <></>
+  if (cli) {
+    if (!pool || !asset || amountArg === undefined) {
+      return (
+        <CommandArgs
+          title="Use the following options to deposit"
+          args={commandOptions[CommandKeys.Deposit]!}
+        />
+      )
     }
-
-    return (
-      <CommandArgs
-        title="Use the following options to deposit"
-        args={commandOptions[CommandKeys.Deposit]!}
-      />
-    )
   }
 
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Deposit Collateral</SectionTitle>
-      {stage === Stage.PoolSelection && (
+      {!cli && stage === Stage.PoolSelection && (
         <PoolSelector onSelected={onPoolSelected} />
       )}
-      {stage === Stage.CollateralSelection && (
+      {!cli && stage === Stage.CollateralSelection && (
         <MultiChoiceSelector
           intro={
             'Which collateral are you depositing into or withdrawing from?'
@@ -362,7 +366,7 @@ export const DepositControl = () => {
           onSelected={onCollateralSelected}
         />
       )}
-      {stage === Stage.AmountInput && (
+      {!cli && stage === Stage.AmountInput && (
         <AmountSelector
           intro={
             <>
@@ -425,7 +429,7 @@ export const DepositControl = () => {
           onRawSubmit={onAmountSubmitted}
         />
       )}
-      {stage === Stage.Confirm && (
+      {(!force || !cli) && stage === Stage.Confirm && (
         <ConfirmationSelector
           intro={
             <>
