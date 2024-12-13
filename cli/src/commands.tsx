@@ -169,7 +169,7 @@ export const CommandControl = () => {
         <Text>Available commands: </Text>
         {Object.values(CommandKeys).map((k, i) => (
           <Text key={k} color={Commands[k].tbd ? 'gray' : undefined}>
-            ({k[0]}) {k}
+            ({Commands[k].short}) {k}
             {i !== numCommands - 1 ? ', ' : ''}{' '}
           </Text>
         ))}
