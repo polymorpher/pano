@@ -1,13 +1,18 @@
-import React, { createContext, useCallback, useContext, useState } from 'react'
+import React, {
+  createContext,
+  type PropsWithChildren,
+  useCallback,
+  useContext,
+  useState
+} from 'react'
 import process from 'process'
 import { Box, Text } from 'ink'
 import TextInput from 'ink-text-input'
-import { NotificationContext } from './notification.js'
-import { useWallet } from './wallet.js'
-import type { OptionKey } from './options.js'
-import type { MainframeProps } from './mainframe.js'
-import { Commands, CommandKeys } from './cmd.js'
-import type { Command } from './cmd.js'
+import { NotificationContext } from '../notification.js'
+import { useWallet } from '../wallet.js'
+import { Commands, CommandKeys } from './common.js'
+import type { Command } from './common.js'
+import { getCommand } from './cmd.js'
 
 export const CommandsInverse = Object.fromEntries(
   Object.values(Commands).map((c) => [c.full, c])
@@ -113,36 +118,15 @@ const UserInput = () => {
   )
 }
 
-export interface CommandProviderProps extends MainframeProps {
-  children: React.ReactNode
-}
-
-const OptionContext = createContext<Partial<Record<OptionKey, string>>>({
-  network: '',
-  rpc: '',
-  chainId: '',
-  uniswapFactory: '',
-  panopticFactory: '',
-  panopticHelper: '',
-  pk: '',
-  db: ''
-})
-
-export const CommandProvider = ({
-  command,
-  options,
-  children
-}: CommandProviderProps) => {
-  const [input, setInput] = useState<string>(command ?? CommandKeys.Help)
+export const CommandProvider = ({ children }: PropsWithChildren) => {
+  const [input, setInput] = useState<string>(getCommand() ?? CommandKeys.Help)
   const [disabled, setDisabled] = useState<boolean>(false)
 
   return (
     <UserInputContext.Provider
       value={{ input, setInput, disabled, setDisabled }}
     >
-      <OptionContext.Provider value={options}>
-        {children}
-      </OptionContext.Provider>
+      {children}
     </UserInputContext.Provider>
   )
 }

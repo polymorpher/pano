@@ -6,7 +6,7 @@ import React, {
   useState
 } from 'react'
 import { Text, Box } from 'ink'
-import { isCli } from './cmd.ts'
+import { isCli } from './command/cmd.ts'
 
 interface NotificationOptions {
   time?: number

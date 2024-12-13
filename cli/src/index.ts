@@ -1,6 +1,6 @@
 import * as process from 'process'
 import { buildPublicClient } from './client.js'
-import { cmd, defaultCommand, parseInitialNetwork } from './cmd.js'
+import { parseInitialNetwork } from './command/cmd.js'
 import renderMainframe from './mainframe.js'
 
 async function main() {
@@ -20,10 +20,7 @@ async function main() {
   }
   console.log('RPC Connection test completed. Retrieving option pool stats...')
 
-  const { waitUntilExit } = renderMainframe({
-    command: defaultCommand(cmd._[0]),
-    options: cmd
-  })
+  const { waitUntilExit } = renderMainframe()
 
   await waitUntilExit()
 }

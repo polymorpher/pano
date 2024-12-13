@@ -2,7 +2,6 @@ import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import {
-  type BigInt01,
   EmptyTickSpacing,
   type PairedPoolAddresses,
   type PositionData,

@@ -13,14 +13,14 @@ import { useCollateralBalance } from './pools/hooks/collateral.js'
 import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
-import { CommandKeys, getOption, isCli } from 'src/cmd.js'
+import { UserInputContext } from './command/commands.js'
+import { getOption, isCli } from 'src/command/cmd.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
 import { PoolSelector } from './pools/selector.js'
-import CommandArgs from './command-args.js'
-import { commandOptions } from './options.js'
+import { depositOptions } from './command/options.js'
+import { SimpleHelpMessage } from './errors.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -30,15 +30,15 @@ enum Stage {
   Empty = 5
 }
 
-const pool = getOption('pool')
+const Pool = getOption('pool') as string
 
-const asset = getOption('asset')
+const QuoteAsset = getOption('asset') as string
 
-const amountArg = getOption('amount')
+const AmountArg = getOption('amount') as number
 
-const force = getOption('force')
+const Force = getOption('force') as boolean
 
-const cli = isCli()
+const IsCliMode = isCli()
 
 export const DepositControl = () => {
   const { wallet } = useWallet()
@@ -160,7 +160,7 @@ export const DepositControl = () => {
 
   const onConfirm = useCallback(
     async (yes?: boolean) => {
-      if (cli && !yes) {
+      if (IsCliMode && !yes) {
         setStage(Stage.Empty)
       } else if (yes === false) {
         setStage(Stage.AmountInput)
@@ -257,7 +257,7 @@ export const DepositControl = () => {
   const { pairs } = usePools()
 
   useEffect(() => {
-    if (!cli || !pool || !pairs || stage !== Stage.PoolSelection) {
+    if (!IsCliMode || !Pool || !pairs || stage !== Stage.PoolSelection) {
       return
     }
 
@@ -265,11 +265,11 @@ export const DepositControl = () => {
       [
         `${p.token0}/${p.token1}`.toLowerCase(),
         `${p.token1}/${p.token0}`.toLowerCase()
-      ].includes(pool.toLowerCase())
+      ].includes(Pool.toLowerCase())
     )
 
     if (pair === undefined) {
-      addMessage(`Pool not found: ${pool.toUpperCase()}`, { color: 'red' })
+      addMessage(`Pool not found: ${Pool.toUpperCase()}`, { color: 'red' })
       setStage(Stage.Empty)
       return
     }
@@ -280,8 +280,8 @@ export const DepositControl = () => {
 
   useEffect(() => {
     if (
-      !cli ||
-      !asset ||
+      !IsCliMode ||
+      !QuoteAsset ||
       !chosenPair ||
       !chosenPairInfo.ready ||
       stage !== Stage.CollateralSelection
@@ -291,19 +291,23 @@ export const DepositControl = () => {
 
     let choice = 0
 
-    if (chosenPair.token0.toLowerCase() === asset.toLowerCase()) {
+    if (chosenPair.token0.toLowerCase() === QuoteAsset.toLowerCase()) {
       choice = 1
-    } else if (chosenPair.token1.toLowerCase() === asset.toLowerCase()) {
+    } else if (chosenPair.token1.toLowerCase() === QuoteAsset.toLowerCase()) {
       choice = 2
     }
 
     if (choice === 0) {
-      addMessage(`Invalid collateral: ${asset.toUpperCase()}`, { color: 'red' })
+      addMessage(`Invalid collateral: ${QuoteAsset.toUpperCase()}`, {
+        color: 'red'
+      })
       setStage(Stage.Empty)
       return
     }
 
-    onCollateralSelected(choice)
+    onCollateralSelected(choice).catch((ex: any) => {
+      addMessage((ex as Error).toString())
+    })
   }, [
     stage,
     chosenPair,
@@ -313,30 +317,32 @@ export const DepositControl = () => {
   ])
 
   useEffect(() => {
-    if (!cli || amountArg === undefined || stage !== Stage.AmountInput) {
+    if (!IsCliMode || AmountArg === undefined || stage !== Stage.AmountInput) {
       return
     }
 
-    if (isNaN(Number(amountArg))) {
-      addMessage(`Invalid amount: ${amountArg}`, { color: 'red' })
+    if (isNaN(Number(AmountArg))) {
+      addMessage(`Invalid amount: ${AmountArg}`, { color: 'red' })
       setStage(Stage.Empty)
     }
 
-    onAmountSubmitted(String(amountArg))
+    onAmountSubmitted(String(AmountArg)).catch((ex: any) => {
+      addMessage((ex as Error).toString())
+    })
   }, [onAmountSubmitted, stage, addMessage])
 
   useEffect(() => {
-    if (cli && stage === Stage.Confirm && force) {
+    if (IsCliMode && stage === Stage.Confirm && Force) {
       onConfirm(true)
     }
   }, [stage, onConfirm])
 
-  if (cli) {
-    if (!pool || !asset || amountArg === undefined) {
+  if (IsCliMode) {
+    if (!Pool || !QuoteAsset || AmountArg === undefined) {
       return (
-        <CommandArgs
-          title="Use the following options to deposit"
-          args={commandOptions[CommandKeys.Deposit]!}
+        <SimpleHelpMessage
+          title="Use the following options for deposit"
+          args={depositOptions}
         />
       )
     }
@@ -345,10 +351,10 @@ export const DepositControl = () => {
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Deposit Collateral</SectionTitle>
-      {!cli && stage === Stage.PoolSelection && (
+      {!IsCliMode && stage === Stage.PoolSelection && (
         <PoolSelector onSelected={onPoolSelected} />
       )}
-      {!cli && stage === Stage.CollateralSelection && (
+      {!IsCliMode && stage === Stage.CollateralSelection && (
         <MultiChoiceSelector
           intro={
             'Which collateral are you depositing into or withdrawing from?'
@@ -366,7 +372,7 @@ export const DepositControl = () => {
           onSelected={onCollateralSelected}
         />
       )}
-      {!cli && stage === Stage.AmountInput && (
+      {!IsCliMode && stage === Stage.AmountInput && (
         <AmountSelector
           intro={
             <>
@@ -429,7 +435,7 @@ export const DepositControl = () => {
           onRawSubmit={onAmountSubmitted}
         />
       )}
-      {(!force || !cli) && stage === Stage.Confirm && (
+      {(!Force || !IsCliMode) && stage === Stage.Confirm && (
         <ConfirmationSelector
           intro={
             <>

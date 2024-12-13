@@ -1,6 +1,6 @@
 import React from 'react'
 import { Text } from 'ink'
-import { Commands } from 'src/cmd.js'
+import { Commands } from 'src/command/common.js'
 import { SectionTitle } from './common.js'
 
 export const HelpMessage = () => (

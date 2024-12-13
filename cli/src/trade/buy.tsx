@@ -16,7 +16,7 @@ import {
 } from '../config.js'
 import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
-import { isCli } from 'src/cmd.ts'
+import { isCli } from 'src/command/cmd.ts'
 
 export const BuyControl = () => {
   const {

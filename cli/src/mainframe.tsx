@@ -2,13 +2,13 @@ import React, { useContext } from 'react'
 import { render } from 'ink'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
-import { CommandKeys } from 'src/cmd.js'
+import { getCommand } from 'src/command/cmd.js'
 import {
   CommandControl,
   CommandProvider,
   matchCommand,
   UserInputContext
-} from './commands.js'
+} from './command/commands.js'
 import { HelpMessage } from './help.js'
 import { NotificationBar, NotificationProvider } from './notification.js'
 import { useWallet, WalletControl, WalletProvider } from './wallet.js'
@@ -18,7 +18,7 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
-import { type OptionKey } from './options.js'
+import { CommandKeys } from './command/common.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
@@ -46,19 +46,14 @@ const Router = () => {
   )
 }
 
-export interface MainframeProps {
-  command?: CommandKeys
-  options: Record<OptionKey, string>
-}
-
-const Mainframe: React.FC<MainframeProps> = ({ options, command }) => (
-  <CommandProvider options={options} command={command}>
+const Mainframe: React.FC = () => (
+  <CommandProvider>
     <NotificationProvider>
       <PublicClientProvider>
         <WalletProvider>
           <WalletClientProvider>
             <Router />
-            {!command && <CommandControl />}
+            {!getCommand() && <CommandControl />}
             <NotificationBar />
           </WalletClientProvider>
         </WalletProvider>
@@ -67,7 +62,6 @@ const Mainframe: React.FC<MainframeProps> = ({ options, command }) => (
   </CommandProvider>
 )
 
-const renderMainframe = (data: MainframeProps) =>
-  render(<Mainframe {...data} />)
+const renderMainframe = () => render(<Mainframe />)
 
 export default renderMainframe

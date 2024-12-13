@@ -18,9 +18,9 @@ import {
 } from 'viem'
 import { NotificationContext } from './notification.js'
 import { useWallet, type Wallet } from './wallet.js'
-import { UserInputContext } from './commands.js'
-import { type CommandKeys, Commands, isCli } from 'src/cmd.js'
-import { parseInitialNetwork } from './cmd.ts'
+import { UserInputContext } from './command/commands.js'
+import { type CommandKeys, Commands, isCli } from 'src/command/cmd.js'
+import { parseInitialNetwork } from './command/cmd.ts'
 
 type ConnectedWalletClient = WalletClient<Transport, Chain, Account>
 

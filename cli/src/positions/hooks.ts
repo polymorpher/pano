@@ -141,7 +141,13 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       })
   }, [addMessage, reloadPositions])
 
-  return { positions, reloadPositions, addPosition, positionIds, deletePosition }
+  return {
+    positions,
+    reloadPositions,
+    addPosition,
+    positionIds,
+    deletePosition
+  }
 }
 
 export const usePortfolioValue = (pair?: ValidatedPair) => {}

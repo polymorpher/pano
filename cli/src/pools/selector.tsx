@@ -3,7 +3,7 @@ import React, { useCallback, useContext, useState } from 'react'
 import { Box, Text } from 'ink'
 import { usePools } from './hooks/panoptic.js'
 import TextInput from 'ink-text-input'
-import { UserInputContext } from '../commands.js'
+import { UserInputContext } from '../command/commands.js'
 import type { ValidatedPair } from '../common.js'
 import { NotificationContext } from '../notification.js'
 

@@ -1,6 +1,6 @@
 import PouchDB from 'pouchdb'
 import { defaultDbPath } from './config.js'
-import { cmd } from './cmd.js'
+import { cmd } from './command/cmd.js'
 import { type Address, type Hex } from 'viem'
 import {
   calculateTokenId,

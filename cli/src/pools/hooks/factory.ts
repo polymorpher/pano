@@ -6,7 +6,10 @@ import {
 } from 'viem'
 import { usePublicClient } from 'src/client.js'
 import { PanopticFactoryAbi, UniswapFactoryAbi } from 'src/constants.js'
-import { getPanopticFactoryAddress, getUniswapFactoryAddress } from 'src/cmd.js'
+import {
+  getPanopticFactoryAddress,
+  getUniswapFactoryAddress
+} from 'src/command/cmd.js'
 
 type UniswapFactory = GetContractReturnType<
   typeof UniswapFactoryAbi,

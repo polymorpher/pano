@@ -10,8 +10,8 @@ import { type Address, type Hex } from 'viem'
 import type { Tuple } from 'reverse-mirage'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
-import { isCli } from './cmd.ts'
+import { UserInputContext } from './command/commands.js'
+import { isCli } from './command/cmd.ts'
 
 export const SectionTitle = ({
   children,

@@ -17,12 +17,7 @@ import {
 } from 'viem'
 import type { BigInt01, PositionWithData } from 'src/common.js'
 import { MAX_V3POOL_TICK, MIN_V3POOL_TICK, SFPMAbi } from 'src/constants.js'
-import {
-  computeExercisedAmounts,
-  stringify,
-  unpack01,
-  unpack01Signed
-} from 'src/util.js'
+import { computeExercisedAmounts, unpack01Signed } from 'src/util.js'
 import { defaultSFPMAddress } from 'src/config.js'
 
 export type SFPM = GetContractReturnType<typeof SFPMAbi, PublicClient>

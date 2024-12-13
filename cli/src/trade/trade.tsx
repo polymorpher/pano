@@ -29,11 +29,11 @@ import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'
 import { type MarginUsage, useMarginEstimator } from './calc.js'
-import { CommandKeys, getOption, isCli } from 'src/cmd.js'
-import CommandArgs from 'src/command-args.js'
-import { commandOptions } from 'src/options.js'
+import { getOption, isCli } from 'src/command/cmd.js'
 import { usePools } from 'src/pools/hooks/panoptic.js'
-import { UserInputContext } from 'src/commands.tsx'
+import { UserInputContext } from 'src/command/commands.tsx'
+import { buyOptions, sellOptions } from '../command/options.js'
+import { SimpleHelpMessage } from '../errors.js'
 
 export enum TradeStage {
   Empty = 0,
@@ -46,15 +46,15 @@ export enum TradeStage {
   Confirm = 7
 }
 
-const pool = getOption('pool')
-const asset = getOption('asset')
-const put = getOption('put')
-const call = getOption('call')
-const trade = put === call ? undefined : put ? 'put' : 'call'
-const strike = getOption('strike')
-const priceRange = getOption('range')
-const amount = getOption('amount')
-const force = getOption('force')
+const Pool = getOption('pool') as string
+const QuoteAsset = getOption('asset') as string
+const IsPut = getOption('put') as boolean
+const IsCall = getOption('call') as boolean
+const OptionType = IsPut === IsCall ? undefined : IsPut ? 'put' : 'call'
+const StrikePrice = getOption('strike') as number
+const PriceRange = getOption('range') as number
+const AmountInput = getOption('amount') as number
+const Force = getOption('force') as boolean
 const cli = isCli()
 
 interface LegMakerProps {
@@ -277,7 +277,11 @@ export const LegMaker: React.FC<LegMakerProps> = ({
         addMessage('Option minting aborted', { color: 'red' })
       } else if (yes) {
         const leg = buildLeg()
-        onLegConfirm(leg, positionSize, chosenPairInfo.priceTick)
+        onLegConfirm(leg, positionSize, chosenPairInfo.priceTick).catch(
+          (ex: any) => {
+            addMessage((ex as Error).toString())
+          }
+        )
         // addMessage(`leg=${JSON.stringify(leg)} tickSpacing=${chosenPairInfo.tickSpacing} radius=${range}`)
       }
     },
@@ -291,7 +295,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   }, [setUserCommandDisabled])
 
   useEffect(() => {
-    if (!cli || !pool || !pairs) {
+    if (!cli || !Pool || !pairs) {
       return
     }
 
@@ -303,11 +307,11 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       [
         `${p.token0}/${p.token1}`.toLowerCase(),
         `${p.token1}/${p.token0}`.toLowerCase()
-      ].includes(pool.toLowerCase())
+      ].includes(Pool.toLowerCase())
     )
 
     if (pair === undefined) {
-      addMessage(`Pool not found: ${pool.toUpperCase()}`, { color: 'red' })
+      addMessage(`Pool not found: ${Pool.toUpperCase()}`, { color: 'red' })
       setStage(TradeStage.Empty)
       return
     }
@@ -318,7 +322,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
   useEffect(() => {
     if (
       !cli ||
-      !asset ||
+      !QuoteAsset ||
       !chosenPairInfo.ready ||
       stage !== TradeStage.QuoteAsset
     ) {
@@ -327,16 +331,18 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
     let choice = 0
 
-    if (chosenPairInfo.c0Info.symbol.toLowerCase() === asset.toLowerCase()) {
+    if (
+      chosenPairInfo.c0Info.symbol.toLowerCase() === QuoteAsset.toLowerCase()
+    ) {
       choice = 1
     } else if (
-      chosenPairInfo.c1Info.symbol.toLowerCase() === asset.toLowerCase()
+      chosenPairInfo.c1Info.symbol.toLowerCase() === QuoteAsset.toLowerCase()
     ) {
       choice = 2
     }
 
     if (choice === 0) {
-      addMessage(`Invalid asset: ${asset.toUpperCase()}`, { color: 'red' })
+      addMessage(`Invalid asset: ${QuoteAsset.toUpperCase()}`, { color: 'red' })
       setStage(TradeStage.Empty)
       return
     }
@@ -351,15 +357,15 @@ export const LegMaker: React.FC<LegMakerProps> = ({
 
     let choice = 0
 
-    if (trade?.toLowerCase() === 'put') {
+    if (OptionType?.toLowerCase() === 'put') {
       choice = 1
-    } else if (trade?.toLowerCase() === 'call') {
+    } else if (OptionType?.toLowerCase() === 'call') {
       choice = 2
     }
 
     if (choice === 0) {
       addMessage(
-        `Invalid trade (should be PUT or CALL): ${trade?.toUpperCase()}`,
+        `Invalid trade (should be PUT or CALL): ${OptionType?.toUpperCase()}`,
         { color: 'red' }
       )
       setStage(TradeStage.Empty)
@@ -374,13 +380,13 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       return
     }
 
-    if (isNaN(Number(strike))) {
-      addMessage(`Invalid striker price: ${strike}`, { color: 'red' })
+    if (isNaN(Number(StrikePrice))) {
+      addMessage(`Invalid striker price: ${StrikePrice}`, { color: 'red' })
       setStage(TradeStage.Empty)
       return
     }
 
-    onStrikeAmountSubmit(Number(strike))
+    onStrikeAmountSubmit(Number(StrikePrice))
   }, [addMessage, stage, setStage, onStrikeAmountSubmit])
 
   useEffect(() => {
@@ -388,7 +394,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       return
     }
 
-    if (!onWidthSubmit(String(priceRange))) {
+    if (!onWidthSubmit(String(PriceRange))) {
       setStage(TradeStage.Empty)
     }
   }, [stage, setStage, onWidthSubmit])
@@ -405,7 +411,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
     }
 
     stageRef.current = TradeStage.Confirm
-    onQuantitySubmit(Number(amount)).then((result) => {
+    onQuantitySubmit(Number(AmountInput)).then((result) => {
       if (!result) {
         setStage(TradeStage.Empty)
       }
@@ -417,29 +423,31 @@ export const LegMaker: React.FC<LegMakerProps> = ({
       !cli ||
       stage !== TradeStage.Confirm ||
       stageRef.current !== TradeStage.Confirm ||
-      !force
+      !Force
     ) {
       return
     }
 
     stageRef.current = TradeStage.Empty
     setStage(TradeStage.Empty)
-    onConfirm(true)
-  }, [onConfirm, stage, setStage])
+    onConfirm(true).catch((ex: any) => {
+      addMessage((ex as Error).toString())
+    })
+  }, [onConfirm, stage, setStage, addMessage])
 
   if (
     cli &&
-    (!pool ||
-      !asset ||
-      !trade ||
-      strike === undefined ||
-      priceRange === undefined ||
-      amount === undefined)
+    (!Pool ||
+      !QuoteAsset ||
+      !OptionType ||
+      StrikePrice === undefined ||
+      PriceRange === undefined ||
+      AmountInput === undefined)
   ) {
     return (
-      <CommandArgs
-        title={`Use the following options to ${chosenPair ? 'sell' : 'buy'}`}
-        args={commandOptions[CommandKeys.Sell]!}
+      <SimpleHelpMessage
+        title={`Use the following options for ${position === 'short' ? 'selling' : 'buying'}`}
+        args={position === 'short' ? sellOptions : buyOptions}
       />
     )
   }
@@ -536,7 +544,7 @@ export const LegMaker: React.FC<LegMakerProps> = ({
           onSubmit={onQuantitySubmit}
         />
       )}
-      {(!force || !cli) && stage === TradeStage.Confirm && (
+      {(!Force || !cli) && stage === TradeStage.Confirm && (
         <ConfirmationSelector
           intro={
             <>

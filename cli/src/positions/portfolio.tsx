@@ -13,8 +13,8 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import { CommandKeys, getOption, isCli } from 'src/cmd.js'
-import { UserInputContext } from '../commands.js'
+import { getOption, isCli } from 'src/command/cmd.js'
+import { UserInputContext } from '../command/commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'
@@ -28,8 +28,6 @@ import { usePositions } from './hooks.js'
 import { groupBy } from 'remeda'
 import { PoolPositions } from './position.js'
 import { SFPMProvider } from '../pools/sfpm.js'
-import CommandArgs from 'src/command-args.js'
-import { commandOptions } from 'src/options.js'
 
 export enum PortfolioStage {
   SelectAction = 1,
@@ -37,9 +35,9 @@ export enum PortfolioStage {
   ScanInProgress = 3
 }
 
-const sync = Boolean(getOption('sync'))
+const Sync = Boolean(getOption('sync'))
 
-const duration = getOption('duration')
+const Duration = getOption('duration') as string
 
 export const PortfolioControl = () => {
   const { addMessage } = useContext(NotificationContext)
@@ -247,12 +245,12 @@ export const PortfolioControl = () => {
   }, [addMessage])
 
   useEffect(() => {
-    if (sync && filteredPairs) {
-      onDurationSubmit(duration!)
+    if (Sync && filteredPairs) {
+      onDurationSubmit(Duration)
     }
   }, [onDurationSubmit, filteredPairs])
 
-  if (isCli() && sync) {
+  if (isCli() && Sync) {
     return <></>
   }
 
@@ -260,7 +258,7 @@ export const PortfolioControl = () => {
     <SFPMProvider>
       <Box flexDirection={'column'}>
         <SectionTitle>Portfolio and Positions</SectionTitle>
-        {(!isCli() || !sync) && (
+        {!Sync && (
           <>
             {(filteredPairs?.length ?? 0) + positionsByPoolEntries.length ===
               0 && <Text>No data</Text>}
@@ -279,12 +277,6 @@ export const PortfolioControl = () => {
               )
             )}
           </>
-        )}
-        {isCli() && !sync && (
-          <CommandArgs
-            title="Please use the following options to sync positions on chain"
-            args={commandOptions[CommandKeys.Portfolio]!}
-          />
         )}
         {!isCli() && stage === PortfolioStage.SelectAction && (
           <MultiChoiceSelector

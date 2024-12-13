@@ -6,7 +6,7 @@ import {
   type PublicClient
 } from 'viem'
 import { PanopticHelperAbi } from './constants.js'
-import { getPanopticHelperAddress } from './cmd.js'
+import { getPanopticHelperAddress } from './command/cmd.js'
 
 export type PanopticHelper = GetContractReturnType<
   typeof PanopticHelperAbi,

@@ -17,7 +17,6 @@ import {
   type PositionWithData,
   PutCall,
   type PutCallType,
-  type TickSpacing,
   type Token01,
   Zero01
 } from './common.js'
@@ -25,7 +24,6 @@ import type {
   PanopticPoolInfo,
   UniswapPoolBasicInfo
 } from './pools/hooks/common.js'
-import type { ERC20Info } from './token.js'
 
 export const getTokenAddress = (
   token: string,
