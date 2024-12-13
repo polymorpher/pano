@@ -17,9 +17,15 @@ import {
   type PositionWithData,
   PutCall,
   type PutCallType,
+  type TickSpacing,
   type Token01,
   Zero01
 } from './common.js'
+import type {
+  PanopticPoolInfo,
+  UniswapPoolBasicInfo
+} from './pools/hooks/common.js'
+import type { ERC20Info } from './token.js'
 
 export const getTokenAddress = (
   token: string,
@@ -390,4 +396,37 @@ export function flipPutCall(tokenType: PutCallType): PutCallType {
     return 'token1'
   }
   return 'token0'
+}
+
+export function toUniswapPoolBasicInfo(
+  info: PanopticPoolInfo
+): UniswapPoolBasicInfo {
+  // token0: ERC20Info
+  // token1: ERC20Info
+  // tickSpacing: TickSpacing
+  // sqrtPriceX96: bigint
+  // tick: number
+  // ready: boolean
+  return {
+    ready: true,
+    tick: info.priceTick,
+    sqrtPriceX96: BigInt(Math.floor(Math.sqrt(info.price) * 2 ** 96)),
+    tickSpacing: info.tickSpacing,
+    token0: {
+      ready: true,
+      name: info.c0Info.name,
+      symbol: info.c0Info.symbol,
+      decimals: info.c0Info.decimals,
+      contract: info.c0Info.tokenContract
+      // metadataContract: info.c0Info.tokenContract
+    },
+    token1: {
+      ready: true,
+      name: info.c1Info.name,
+      symbol: info.c1Info.symbol,
+      decimals: info.c1Info.decimals,
+      contract: info.c1Info.tokenContract
+      // metadataContract: info.c1Info.tokenContract
+    }
+  }
 }

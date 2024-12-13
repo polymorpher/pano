@@ -105,6 +105,9 @@ const IntrinsicValueBlock = ({
   intrinsicValue,
   poolInfo
 }: IntrinsicValueBlockProps) => {
+  if (intrinsicValue.token0 === 0n && intrinsicValue.token1 === 0n) {
+    return <></>
+  }
   const token0ValueFormatted = formatUnits(
     intrinsicValue.token0,
     poolInfo.token0.decimals
@@ -217,14 +220,15 @@ export const PoolPositions = ({
   const name = `${poolInfo.token0.symbol}/${poolInfo.token1.symbol}`
 
   const { panopticPool, uniswapPool } = usePoolContract(uniswapPoolAddress)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {
     c0Info,
     c1Info,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     priceInverse,
     price,
     priceTick,
     ready: poolStatsReady,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     tickSpacing
   } = usePoolStatsByContracts({ panopticPool, uniswapPool })
 
@@ -355,7 +359,7 @@ export const PoolPositions = ({
   return (
     <Box flexDirection={'column'} marginY={1}>
       <Text>
-        Pool {name} ({uniswapPoolAddress})
+        Pool {name} {/* ({uniswapPoolAddress}) */}
       </Text>
       {!ready && <Text>- Loading pool data...</Text>}
       {ready &&
