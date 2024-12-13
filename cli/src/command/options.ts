@@ -91,8 +91,8 @@ type CommandDefinition<T> = [
 ]
 
 export const portfolioCommand: CommandDefinition<PortfolioOptionKey> = [
-  'portfolio',
-  'View your positions, their values, and participated pools. Sync local positions data with blockchain to resolve errors.',
+  Commands.portfolio.full,
+  Commands.portfolio.desc,
   (yargs: Argv<PortfolioOptionKey>) => {
     yargs.options(portfolioOptions).help('h').alias('h', 'help')
   }
@@ -125,7 +125,7 @@ export const depositOptions: Record<DepositOptionKey, Options> = {
 }
 
 export const depositCommand: CommandDefinition<DepositOptionKey> = [
-  Commands.deposit.short,
+  Commands.deposit.full,
   Commands.deposit.desc,
   (yargs: Argv<DepositOptionKey>) => {
     yargs
@@ -190,7 +190,7 @@ export const sellOptions: Record<SellOptionKey, Options> = {
 }
 
 export const sellCommand: CommandDefinition<SellOptionKey> = [
-  Commands.sell.short,
+  Commands.sell.full,
   Commands.sell.desc,
   (yargs: Argv<SellOptionKey>) => {
     yargs
@@ -246,7 +246,7 @@ export const buyOptions: Record<BuyOptionKey, Options> = {
 }
 
 export const buyCommand: CommandDefinition<BuyOptionKey> = [
-  Commands.buy.short,
+  Commands.buy.full,
   Commands.buy.desc,
   (yargs: Argv<BuyOptionKey>) => {
     yargs
@@ -258,7 +258,7 @@ export const buyCommand: CommandDefinition<BuyOptionKey> = [
 ]
 
 export const listCommand: CommandDefinition<void> = [
-  Commands.list.short,
+  Commands.list.full,
   Commands.list.desc,
   (yargs: Argv<void>) => {
     yargs.help('h').alias('h', 'help')
