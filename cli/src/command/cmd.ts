@@ -42,7 +42,7 @@ export const getCommand = (): string | undefined => {
   if (cmd._[0] === 'start') {
     return undefined
   }
-  return cmd._[0].toString()
+  return cmd._[0]?.toString()
 }
 
 export const parseInitialNetwork = (): Network => {

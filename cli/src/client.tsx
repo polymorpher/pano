@@ -19,8 +19,9 @@ import {
 import { NotificationContext } from './notification.js'
 import { useWallet, type Wallet } from './wallet.js'
 import { UserInputContext } from './command/commands.js'
-import { type CommandKeys, Commands, isCli } from 'src/command/cmd.js'
+import { isCli } from 'src/command/cmd.js'
 import { parseInitialNetwork } from './command/cmd.ts'
+import { type CommandKeys, Commands } from './command/common.js'
 
 type ConnectedWalletClient = WalletClient<Transport, Chain, Account>
 
