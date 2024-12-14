@@ -19,7 +19,8 @@ import {
   type PortfolioOptionKey,
   type SellOptionKey,
   type DepositOptionKey,
-  type BuyOptionKey
+  type BuyOptionKey,
+  depositCommand
 } from './options.js'
 import { type Address, type Hex } from 'viem'
 
@@ -32,6 +33,7 @@ export const cmd = await yargs(hideBin(process.argv))
   .command(...portfolioCommand)
   .command(...sellCommand)
   .command(...buyCommand)
+  .command(...depositCommand)
   .command(...listCommand)
   .showHelp()
   .strict()
