@@ -141,7 +141,6 @@ export const DepositControl = () => {
         )
         return
       }
-      setStage(Stage.Confirm)
       setAmount(atomicAmount)
       if (atomicAmount > 0n) {
         const ns = await chosenCollateral?.tracker?.read.previewDeposit([
@@ -154,6 +153,7 @@ export const DepositControl = () => {
         ])
         setNewShares(ns)
       }
+      setStage(Stage.Confirm)
     },
     [numOpenPositions, maxWithdrawable, addMessage, chosenCollateral]
   )
@@ -192,7 +192,7 @@ export const DepositControl = () => {
           abi: chosenCollateral?.tokenContract?.abi,
           client
         })
-
+        // addMessage('executed!')
         const allowance = await allowanceOf(chosenCollateral.address)
         const transactions: AnnotatedTransaction[] = []
 
@@ -306,7 +306,7 @@ export const DepositControl = () => {
     }
 
     onCollateralSelected(choice).catch((ex: any) => {
-      addMessage((ex as Error).toString())
+      addMessage((ex as Error).toString(), { color: 'red' })
     })
   }, [
     stage,
@@ -325,17 +325,32 @@ export const DepositControl = () => {
       addMessage(`Invalid amount: ${AmountArg}`, { color: 'red' })
       setStage(Stage.Empty)
     }
-
     onAmountSubmitted(String(AmountArg)).catch((ex: any) => {
-      addMessage((ex as Error).toString())
+      addMessage((ex as Error).toString(), { color: 'red' })
     })
   }, [onAmountSubmitted, stage, addMessage])
 
   useEffect(() => {
-    if (IsCliMode && stage === Stage.Confirm && Force) {
-      onConfirm(true)
+    if (
+      IsCliMode &&
+      stage === Stage.Confirm &&
+      Force &&
+      chosenPairInfo.ready &&
+      chosenCollateral?.ready &&
+      client
+    ) {
+      onConfirm(true).catch((ex: any) => {
+        addMessage((ex as Error).toString(), { color: 'red' })
+      })
     }
-  }, [stage, onConfirm])
+  }, [
+    addMessage,
+    stage,
+    onConfirm,
+    chosenPairInfo.ready,
+    chosenCollateral?.ready,
+    client
+  ])
 
   if (IsCliMode) {
     if (!Pool || !QuoteAsset || AmountArg === undefined) {
