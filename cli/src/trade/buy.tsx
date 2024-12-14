@@ -16,6 +16,7 @@ import {
 } from '../config.js'
 import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
+import { isCli } from 'src/command/cmd.ts'
 
 export const BuyControl = () => {
   const {
@@ -78,10 +79,13 @@ export const BuyControl = () => {
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Buying simple options</SectionTitle>
-      {stage === TradeStage.PoolSelection && (
+      {!isCli() && stage === TradeStage.PoolSelection && (
         <PoolSelector onSelected={onPoolSelected} />
       )}
       <LegMaker
+        onPoolSelected={(pair) => {
+          onPoolSelected({ pair, text: '' })
+        }}
         chosenPairInfo={chosenPairInfo}
         onLegConfirm={onLegConfirm}
         position={'long'}

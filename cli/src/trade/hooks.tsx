@@ -5,7 +5,7 @@ import { NotificationContext } from '../notification.js'
 import type { ValidatedPair } from '../common.js'
 import { usePoolStats } from '../pools/hooks/panoptic.js'
 import { TradeStage } from './trade.js'
-import { UserInputContext } from '../commands.js'
+import { UserInputContext } from '../command/commands.js'
 
 export const useTrade = () => {
   const { wallet } = useWallet()

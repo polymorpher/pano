@@ -13,7 +13,8 @@ import {
 import { Box, Text } from 'ink'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
-import { UserInputContext } from '../commands.js'
+import { getOption, isCli } from 'src/command/cmd.js'
+import { UserInputContext } from '../command/commands.js'
 import { type Address, getContract } from 'viem'
 import { PanopticPoolAbi, UniswapPoolAbi } from '../constants.js'
 import { usePublicClient } from '../client.js'
@@ -27,11 +28,16 @@ import { usePositions } from './hooks.js'
 import { groupBy } from 'remeda'
 import { PoolPositions } from './position.js'
 import { SFPMProvider } from '../pools/sfpm.js'
+
 export enum PortfolioStage {
   SelectAction = 1,
   SetScanDuration = 2,
   ScanInProgress = 3
 }
+
+const Sync = Boolean(getOption('sync'))
+
+const Duration = getOption('duration') as string
 
 export const PortfolioControl = () => {
   const { addMessage } = useContext(NotificationContext)
@@ -44,19 +50,14 @@ export const PortfolioControl = () => {
   const { client, archiveClient } = usePublicClient()
   const { scan } = useScanPositions()
   const { setDisabled: setUserCommandDisabled } = useContext(UserInputContext)
-  const [filteredPairs, setFilteredPairs] = useState<
-    Array<[ValidatedPair, bigint]>
-  >([])
-  const poolIdMapping: Record<string, Address> = Object.fromEntries(
-    filteredPairs.map(([p]) => [
-      getUniswapPoolId(p.uniswapPoolAddress).toString(16),
-      p.uniswapPoolAddress
-    ])
-  )
+  const [filteredPairs, setFilteredPairs] =
+    useState<Array<[ValidatedPair, bigint]>>()
+
   const [stage, setStage] = useState<PortfolioStage>(
     PortfolioStage.SelectAction
   )
   const [scanInterrupt, setScanInterrupt] = useState<boolean>(false)
+
   useEffect(() => {
     const positionsByPool = groupBy(
       positions,
@@ -68,9 +69,10 @@ export const PortfolioControl = () => {
     // addMessage('pool positions set')
     setPositionsByPoolEntries(positionsByPoolEntries)
   }, [positions])
+
   useEffect(() => {
     async function init() {
-      if (!client || !wallet.address) {
+      if (!client || !wallet.address || !pairs) {
         return
       }
       const numPositionsArrayP = pairs.map(async (p) => {
@@ -93,11 +95,11 @@ export const PortfolioControl = () => {
     init().catch((ex) => {
       addMessage((ex as Error).toString(), { color: 'red' })
     })
-  }, [filteredPairs, addMessage, wallet.address, scan, client, pairs])
+  }, [addMessage, wallet.address, client, pairs])
 
   const doScan = useCallback(
     async (duration: number) => {
-      if (!client || !archiveClient || !wallet.address) {
+      if (!client || !archiveClient || !wallet.address || !filteredPairs) {
         return
       }
       addMessage(`Found ${filteredPairs.length} pools with open positions`)
@@ -155,6 +157,14 @@ export const PortfolioControl = () => {
             addMessage(
               `- [${percDone}% ${Number(update.totalBlocks)}/${Number(update.totalBlocks)}] Finished chunk ${update.fromBlock} to ${update.toBlock}. Found ${update.entries.length} positions`
             )
+
+            const poolIdMapping = Object.fromEntries(
+              filteredPairs.map(([p]) => [
+                getUniswapPoolId(p.uniswapPoolAddress).toString(16),
+                p.uniswapPoolAddress
+              ])
+            )
+
             for (const entry of update.entries) {
               const position = tokenIdToPosition(
                 entry.tokenId,
@@ -197,7 +207,6 @@ export const PortfolioControl = () => {
       archiveClient,
       scanInterrupt,
       wallet.address,
-      poolIdMapping,
       filteredPairs,
       addMessage,
       scan,
@@ -235,27 +244,41 @@ export const PortfolioControl = () => {
     addMessage('Terminating scan...')
   }, [addMessage])
 
+  useEffect(() => {
+    if (Sync && filteredPairs) {
+      onDurationSubmit(Duration)
+    }
+  }, [onDurationSubmit, filteredPairs])
+
+  if (isCli() && Sync) {
+    return <></>
+  }
+
   return (
     <SFPMProvider>
       <Box flexDirection={'column'}>
         <SectionTitle>Portfolio and Positions</SectionTitle>
-        {filteredPairs.map(([p, n]) => {
-          return (
-            <Text key={p.panopticPoolAddress}>
-              Pool {p.token0}/{p.token1}: {n.toString()} open positions
-            </Text>
-          )
-        })}
-        {positionsByPoolEntries.map(([uniswapPoolAddress, poolPositions]) => {
-          return (
-            <PoolPositions
-              key={uniswapPoolAddress}
-              uniswapPoolAddress={uniswapPoolAddress}
-              poolPositions={poolPositions}
-            />
-          )
-        })}
-        {stage === PortfolioStage.SelectAction && (
+        {!Sync && (
+          <>
+            {(filteredPairs?.length ?? 0) + positionsByPoolEntries.length ===
+              0 && <Text>No data</Text>}
+            {filteredPairs?.map(([p, n]) => (
+              <Text key={p.panopticPoolAddress}>
+                Pool {p.token0}/{p.token1}: {n.toString()} open positions
+              </Text>
+            ))}
+            {positionsByPoolEntries.map(
+              ([uniswapPoolAddress, poolPositions]) => (
+                <PoolPositions
+                  key={uniswapPoolAddress}
+                  uniswapPoolAddress={uniswapPoolAddress}
+                  poolPositions={poolPositions}
+                />
+              )
+            )}
+          </>
+        )}
+        {!isCli() && stage === PortfolioStage.SelectAction && (
           <MultiChoiceSelector
             options={['Sync positions on chain']}
             onSelected={onAction}
@@ -273,7 +296,7 @@ export const PortfolioControl = () => {
             }
           />
         )}
-        {stage === PortfolioStage.SetScanDuration && (
+        {!isCli() && stage === PortfolioStage.SetScanDuration && (
           <AmountSelector
             intro={'Scan for how far back?'}
             prompt={
@@ -285,7 +308,7 @@ export const PortfolioControl = () => {
             }}
           />
         )}
-        {stage === PortfolioStage.ScanInProgress && (
+        {!isCli() && stage === PortfolioStage.ScanInProgress && (
           <InProgressSelector
             intro={'Scan in progress...'}
             onExit={onScanInterrupted}

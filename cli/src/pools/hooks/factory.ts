@@ -6,7 +6,10 @@ import {
 } from 'viem'
 import { usePublicClient } from 'src/client.js'
 import { PanopticFactoryAbi, UniswapFactoryAbi } from 'src/constants.js'
-import { getPanopticFactoryAddress, getUniswapFactoryAddress } from 'src/cmd.js'
+import {
+  getPanopticFactoryAddress,
+  getUniswapFactoryAddress
+} from 'src/command/cmd.js'
 
 type UniswapFactory = GetContractReturnType<
   typeof UniswapFactoryAbi,
@@ -21,6 +24,7 @@ export const useFactories = () => {
   const { client } = usePublicClient()
   const [panopticFactory, setPanopticFactory] = useState<PanopticFactory>()
   const [uniswapFactory, setUniswapFactory] = useState<UniswapFactory>()
+
   useEffect(() => {
     async function init() {
       if (!client) {
@@ -43,5 +47,6 @@ export const useFactories = () => {
     }
     init().catch(console.error)
   }, [client])
+
   return { panopticFactory, uniswapFactory }
 }

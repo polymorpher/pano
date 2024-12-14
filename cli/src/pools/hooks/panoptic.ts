@@ -2,7 +2,6 @@ import { usePublicClient } from '../../client.js'
 import { useFactories } from './factory.js'
 import { useCallback, useContext, useEffect, useState } from 'react'
 import {
-  type BigInt01,
   EmptyTickSpacing,
   type PairedPoolAddresses,
   type PositionData,
@@ -33,7 +32,7 @@ import { useWallet } from '../../wallet.js'
 export const usePools = () => {
   const { network, client } = usePublicClient()
   const { panopticFactory, uniswapFactory } = useFactories()
-  const [pairs, setPairs] = useState<ValidatedPair[]>([])
+  const [pairs, setPairs] = useState<ValidatedPair[]>()
   const { addMessage } = useContext(NotificationContext)
 
   useEffect(() => {

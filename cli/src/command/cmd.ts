@@ -5,25 +5,47 @@ import {
   defaultUniswapFactoryAddress,
   defaultWalletPrivateKey,
   defaultPanopticHelperAddress
-} from './config.js'
+} from '../config.js'
 import yargs from 'yargs/yargs'
 import { hideBin } from 'yargs/helpers'
 import process from 'process'
-import options from './options.js'
+import {
+  baseOptions,
+  type BaseOptionKey,
+  portfolioCommand,
+  sellCommand,
+  buyCommand,
+  listCommand,
+  type PortfolioOptionKey,
+  type SellOptionKey,
+  type DepositOptionKey,
+  type BuyOptionKey,
+  depositCommand
+} from './options.js'
 import { type Address, type Hex } from 'viem'
 
 export const cmd = await yargs(hideBin(process.argv))
-  // .command('lp', 'Show liquidity provider tools')
-  .command('start', 'Enter interactive mode')
   .help(
-    'Interactively communicate with a Panoptic option pool deployment. Configuration parameters (network, contract address, wallet...) can be set using command line arguments, or inside the interactive interface'
+    'Trade options or provision liquidity to a Panoptic pool, via an interactive shell or command line arguments'
   )
-  .options(options)
+  .command('start', 'Enter interactive mode')
+  .options(baseOptions)
+  .command(...portfolioCommand)
+  .command(...sellCommand)
+  .command(...buyCommand)
+  .command(...depositCommand)
+  .command(...listCommand)
+  .showHelp()
   .strict()
-  // .demandCommand()
-  .showHelp().argv
+  // .argv
+  .parse()
 
-export const isCommand = (command: string) => cmd._[0] === command
+export const getCommand = (): string | undefined => {
+  if (cmd._[0] === 'start') {
+    return undefined
+  }
+  return cmd._[0]?.toString()
+}
 
 export const parseInitialNetwork = (): Network => {
   const network = cmd.network as string
@@ -62,3 +84,14 @@ export const getPk = (): Hex => {
   const pk = cmd.pk as Hex
   return pk ?? defaultWalletPrivateKey
 }
+
+export const getOption = (
+  optionKey:
+    | BaseOptionKey
+    | PortfolioOptionKey
+    | DepositOptionKey
+    | SellOptionKey
+    | BuyOptionKey
+) => cmd[optionKey]
+
+export const isCli = () => cmd._[0]?.toString().toLowerCase() !== 'start'

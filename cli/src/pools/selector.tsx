@@ -3,7 +3,7 @@ import React, { useCallback, useContext, useState } from 'react'
 import { Box, Text } from 'ink'
 import { usePools } from './hooks/panoptic.js'
 import TextInput from 'ink-text-input'
-import { UserInputContext } from '../commands.js'
+import { UserInputContext } from '../command/commands.js'
 import type { ValidatedPair } from '../common.js'
 import { NotificationContext } from '../notification.js'
 
@@ -21,7 +21,7 @@ export const PoolSelector = ({ onSelected, inactive }: PoolSelectorProps) => {
 
   const onPoolSelection = useCallback(
     (input: string) => {
-      if (!input) {
+      if (!input || !pairs) {
         return
       }
       if (input.toLowerCase() === 'x') {
@@ -48,7 +48,7 @@ export const PoolSelector = ({ onSelected, inactive }: PoolSelectorProps) => {
       <Box marginBottom={1}>
         <Text>Choose from an existing pool</Text>
       </Box>
-      {pairs.map((pair, i) => (
+      {pairs?.map((pair, i) => (
         <Box key={`pair-${i}`}>
           <Text>[{i + 1}] </Text>
           <SimplePoolInfo pair={pair} />

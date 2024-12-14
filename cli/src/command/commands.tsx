@@ -8,95 +8,11 @@ import React, {
 import process from 'process'
 import { Box, Text } from 'ink'
 import TextInput from 'ink-text-input'
-import { NotificationContext } from './notification.js'
-import { useWallet } from './wallet.js'
-
-export interface Command {
-  short: string
-  full: string
-  desc: string
-  wallet?: boolean
-  tbd?: boolean
-  submenu?: boolean // take exclusive focus on input, suppress user commands
-}
-export enum CommandKeys {
-  Help = 'help',
-  List = 'list',
-  Wallet = 'wallet',
-  Deposit = 'deposit',
-  Portfolio = 'portfolio',
-  Sell = 'sell',
-  Buy = 'buy',
-  Mint = 'mint',
-  Burn = 'burn',
-  Manage = 'manage',
-  Quit = 'quit'
-}
-
-export const Commands: Record<CommandKeys, Command> = {
-  help: { short: 'h', full: 'help', desc: 'show all commands' },
-  list: {
-    short: 'l',
-    full: 'list',
-    desc: 'list all available pools, and show their pool and collateral statistics'
-  },
-  wallet: {
-    short: 'w',
-    full: 'wallet',
-    desc: 'set private key for wallet (if not already set through .env, environment variable, or command line)',
-    submenu: true
-  },
-  deposit: {
-    short: 'd',
-    full: 'deposit',
-    desc: 'deposit or withdraw funds as collateral in one of the trading pools',
-    submenu: true,
-    wallet: true
-  },
-  portfolio: {
-    short: 'p',
-    full: 'portfolio',
-    desc: 'show your deposited assets collateral value, open positions, margin requirement, and net value of each position',
-    wallet: true,
-    submenu: true
-  },
-  sell: {
-    short: 's',
-    full: 'sell',
-    desc: 'sell a simple option (open a short position with a single leg)',
-    wallet: true,
-    submenu: true
-  },
-  buy: {
-    short: 'b',
-    full: 'buy',
-    desc: 'buy a simple option (open a long position with a single leg)',
-    wallet: true,
-    submenu: true
-  },
-  burn: {
-    short: 'u',
-    full: 'burn',
-    desc: 'Burn an option (close an existing position you minted)',
-    wallet: true,
-    submenu: true
-  },
-  mint: {
-    short: 'a',
-    full: 'advanced',
-    desc: 'mint a complex option (open a position with multiple legs that potentially hedge against each other, mixing long and short)',
-    tbd: true,
-    submenu: true
-  },
-  manage: {
-    short: 'm',
-    full: 'manage',
-    desc: 'perform market management operations (permissionless liquidation, forced exercise)',
-    wallet: true,
-    tbd: true
-  },
-  quit: { short: 'q', full: 'quit', desc: 'exit the program' }
-}
+import { NotificationContext } from '../notification.js'
+import { useWallet } from '../wallet.js'
+import { Commands, CommandKeys } from './common.js'
+import type { Command } from './common.js'
+import { getCommand } from './cmd.js'
 
 export const CommandsInverse = Object.fromEntries(
   Object.values(Commands).map((c) => [c.full, c])
@@ -203,8 +119,9 @@ const UserInput = () => {
 }
 
 export const CommandProvider = ({ children }: PropsWithChildren) => {
-  const [input, setInput] = useState<string>(CommandKeys.Help)
+  const [input, setInput] = useState<string>(getCommand() ?? CommandKeys.Help)
   const [disabled, setDisabled] = useState<boolean>(false)
+
   return (
     <UserInputContext.Provider
       value={{ input, setInput, disabled, setDisabled }}
@@ -215,6 +132,7 @@ export const CommandProvider = ({ children }: PropsWithChildren) => {
 }
 
 const numCommands = Object.values(CommandKeys).length
+
 export const CommandControl = () => {
   const { disabled } = useContext(UserInputContext)
   if (disabled) {
@@ -235,7 +153,7 @@ export const CommandControl = () => {
         <Text>Available commands: </Text>
         {Object.values(CommandKeys).map((k, i) => (
           <Text key={k} color={Commands[k].tbd ? 'gray' : undefined}>
-            ({k[0]}) {k}
+            ({Commands[k].short}) {k}
             {i !== numCommands - 1 ? ', ' : ''}{' '}
           </Text>
         ))}

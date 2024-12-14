@@ -10,7 +10,8 @@ import { type Address, type Hex } from 'viem'
 import type { Tuple } from 'reverse-mirage'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
+import { UserInputContext } from './command/commands.js'
+import { isCli } from './command/cmd.ts'
 
 export const SectionTitle = ({
   children,
@@ -400,7 +401,11 @@ export const ConfirmationSelector = ({
     <Box marginTop={1} flexDirection={'column'}>
       {typeof intro === 'string' ? <Text>{intro}</Text> : intro}
       <Box marginY={1}>
-        <Text>{prompt ?? 'Continue? (y) yes / (n) no / (a) abort'}: </Text>
+        <Text>
+          {prompt ??
+            `Continue? (y) yes / (n) no${isCli() ? '' : ' / (a) abort'}`}
+          :&nbsp;
+        </Text>
         <TextInput
           focus={!inactive && disabled}
           showCursor

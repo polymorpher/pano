@@ -2,8 +2,7 @@ import type { Address, GetContractReturnType, PublicClient } from 'viem'
 import {
   type CollateralTrackerAbi,
   type PanopticPoolAbi,
-  type UniswapPoolAbi,
-  type SFPMAbi
+  type UniswapPoolAbi
 } from '../../constants.js'
 import type { ERC20Info, ERC20Metadata, IERC20 } from '../../token.js'
 import type { PairedPoolAddresses, TickSpacing } from '../../common.js'

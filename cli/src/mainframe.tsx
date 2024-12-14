@@ -2,13 +2,13 @@ import React, { useContext } from 'react'
 import { render } from 'ink'
 import { PublicClientProvider, WalletClientProvider } from './client.js'
 import Stats from './stats.js'
+import { getCommand } from 'src/command/cmd.js'
 import {
   CommandControl,
-  CommandKeys,
   CommandProvider,
   matchCommand,
   UserInputContext
-} from './commands.js'
+} from './command/commands.js'
 import { HelpMessage } from './help.js'
 import { NotificationBar, NotificationProvider } from './notification.js'
 import { useWallet, WalletControl, WalletProvider } from './wallet.js'
@@ -18,15 +18,20 @@ import { SellControl } from './trade/sell.js'
 import { BuyControl } from './trade/buy.js'
 import { PortfolioControl } from './positions/portfolio.js'
 import { BurnControl } from './trade/burn.js'
+import { CommandKeys } from './command/common.js'
 
 const Router = () => {
   const { input } = useContext(UserInputContext)
   const { wallet } = useWallet()
+
   const matched = matchCommand(input)
+
   if (matched?.wallet && !wallet.address) {
     return <WalletRequired />
   }
+
   const m = matched?.full
+
   return (
     <>
       {m === CommandKeys.Help && <HelpMessage />}
@@ -41,26 +46,22 @@ const Router = () => {
   )
 }
 
-const Mainframe = () => {
-  return (
+const Mainframe: React.FC = () => (
+  <CommandProvider>
     <NotificationProvider>
       <PublicClientProvider>
         <WalletProvider>
           <WalletClientProvider>
-            <CommandProvider>
-              <Router />
-              <CommandControl />
-              <NotificationBar />
-            </CommandProvider>
+            <Router />
+            {!getCommand() && <CommandControl />}
+            <NotificationBar />
           </WalletClientProvider>
         </WalletProvider>
       </PublicClientProvider>
     </NotificationProvider>
-  )
-}
+  </CommandProvider>
+)
 
-export default Mainframe
+const renderMainframe = () => render(<Mainframe />)
 
-export const renderMainframe = () => {
-  return render(<Mainframe />)
-}
+export default renderMainframe

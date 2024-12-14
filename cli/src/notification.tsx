@@ -6,6 +6,7 @@ import React, {
   useState
 } from 'react'
 import { Text, Box } from 'ink'
+import { isCli } from './command/cmd.ts'
 
 interface NotificationOptions {
   time?: number
@@ -43,14 +44,21 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
   const [stickyMessages, setStickyMessages] = useState<NotificationMessage[]>(
     []
   )
+
   const [messageStore, setMessageStore] = useState<
     Map<string, NotificationMessage>
   >(new Map())
+
   const [expiredMessages, setExpiredMessages] = useState<NotificationMessage[]>(
     []
   )
+
   const addMessage = useCallback(
     (message: string, options: NotificationOptions = {}) => {
+      if (isCli()) {
+        options.sticky = true
+      }
+
       const id = options.id ?? Math.random().toString(36).slice(2)
       const duration =
         options.duration && options.duration > 0 ? options.duration : 10_000
@@ -100,28 +108,23 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
 
 export const NotificationBar = () => {
   const { stickyMessages, messageStore } = useContext(NotificationContext)
+
   return (
     <Box flexDirection={'column'} marginTop={1} marginBottom={1}>
-      {stickyMessages.map((message) => {
-        return (
-          <Text
-            key={message.options.id}
-            color={message.options.color ?? 'greenBright'}
-          >
-            [!] {message.message}
-          </Text>
-        )
-      })}
-      {[...messageStore.values()].map((message) => {
-        return (
-          <Text
-            key={message.options.id}
-            color={message.options.color ?? 'grey'}
-          >
-            [*] {message.message}
-          </Text>
-        )
-      })}
+      {isCli() && <Text>Logs:</Text>}
+      {stickyMessages.map((message) => (
+        <Text
+          key={message.options.id}
+          color={message.options.color ?? 'greenBright'}
+        >
+          [!] {message.message}
+        </Text>
+      ))}
+      {[...messageStore.values()].map((message) => (
+        <Text key={message.options.id} color={message.options.color ?? 'grey'}>
+          [*] {message.message}
+        </Text>
+      ))}
     </Box>
   )
 }

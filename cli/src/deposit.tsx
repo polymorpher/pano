@@ -10,14 +10,17 @@ import {
   type ValidatedPair
 } from './common.js'
 import { useCollateralBalance } from './pools/hooks/collateral.js'
-import { usePoolStats } from './pools/hooks/panoptic.js'
+import { usePools, usePoolStats } from './pools/hooks/panoptic.js'
 import { type CollateralFullInfo } from './pools/hooks/common.js'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
+import { UserInputContext } from './command/commands.js'
+import { getOption, isCli } from 'src/command/cmd.js'
 import { formatUnits, getContract } from 'viem'
 import { useERC20Balance } from './token.js'
 import { type AnnotatedTransaction, tryParseUnits } from './util.js'
 import { PoolSelector } from './pools/selector.js'
+import { depositOptions } from './command/options.js'
+import { SimpleHelpMessage } from './errors.js'
 
 enum Stage {
   PoolSelection = 1,
@@ -26,6 +29,16 @@ enum Stage {
   Confirm = 4,
   Empty = 5
 }
+
+const Pool = getOption('pool') as string
+
+const QuoteAsset = getOption('asset') as string
+
+const AmountArg = getOption('amount') as number
+
+const Force = getOption('force') as boolean
+
+const IsCliMode = isCli()
 
 export const DepositControl = () => {
   const { wallet } = useWallet()
@@ -128,7 +141,6 @@ export const DepositControl = () => {
         )
         return
       }
-      setStage(Stage.Confirm)
       setAmount(atomicAmount)
       if (atomicAmount > 0n) {
         const ns = await chosenCollateral?.tracker?.read.previewDeposit([
@@ -141,13 +153,16 @@ export const DepositControl = () => {
         ])
         setNewShares(ns)
       }
+      setStage(Stage.Confirm)
     },
     [numOpenPositions, maxWithdrawable, addMessage, chosenCollateral]
   )
 
   const onConfirm = useCallback(
     async (yes?: boolean) => {
-      if (yes === false) {
+      if (IsCliMode && !yes) {
+        setStage(Stage.Empty)
+      } else if (yes === false) {
         setStage(Stage.AmountInput)
       } else if (yes === undefined) {
         setStage(Stage.PoolSelection)
@@ -177,7 +192,7 @@ export const DepositControl = () => {
           abi: chosenCollateral?.tokenContract?.abi,
           client
         })
-
+        // addMessage('executed!')
         const allowance = await allowanceOf(chosenCollateral.address)
         const transactions: AnnotatedTransaction[] = []
 
@@ -239,13 +254,122 @@ export const DepositControl = () => {
     ]
   )
 
+  const { pairs } = usePools()
+
+  useEffect(() => {
+    if (!IsCliMode || !Pool || !pairs || stage !== Stage.PoolSelection) {
+      return
+    }
+
+    const pair = pairs.find((p) =>
+      [
+        `${p.token0}/${p.token1}`.toLowerCase(),
+        `${p.token1}/${p.token0}`.toLowerCase()
+      ].includes(Pool.toLowerCase())
+    )
+
+    if (pair === undefined) {
+      addMessage(`Pool not found: ${Pool.toUpperCase()}`, { color: 'red' })
+      setStage(Stage.Empty)
+      return
+    }
+
+    setChosenPair(pair)
+    setStage(Stage.CollateralSelection)
+  }, [addMessage, pairs, stage])
+
+  useEffect(() => {
+    if (
+      !IsCliMode ||
+      !QuoteAsset ||
+      !chosenPair ||
+      !chosenPairInfo.ready ||
+      stage !== Stage.CollateralSelection
+    ) {
+      return
+    }
+
+    let choice = 0
+
+    if (chosenPair.token0.toLowerCase() === QuoteAsset.toLowerCase()) {
+      choice = 1
+    } else if (chosenPair.token1.toLowerCase() === QuoteAsset.toLowerCase()) {
+      choice = 2
+    }
+
+    if (choice === 0) {
+      addMessage(`Invalid collateral: ${QuoteAsset.toUpperCase()}`, {
+        color: 'red'
+      })
+      setStage(Stage.Empty)
+      return
+    }
+
+    onCollateralSelected(choice).catch((ex: any) => {
+      addMessage((ex as Error).toString(), { color: 'red' })
+    })
+  }, [
+    stage,
+    chosenPair,
+    onCollateralSelected,
+    addMessage,
+    chosenPairInfo.ready
+  ])
+
+  useEffect(() => {
+    if (!IsCliMode || AmountArg === undefined || stage !== Stage.AmountInput) {
+      return
+    }
+
+    if (isNaN(Number(AmountArg))) {
+      addMessage(`Invalid amount: ${AmountArg}`, { color: 'red' })
+      setStage(Stage.Empty)
+    }
+    onAmountSubmitted(String(AmountArg)).catch((ex: any) => {
+      addMessage((ex as Error).toString(), { color: 'red' })
+    })
+  }, [onAmountSubmitted, stage, addMessage])
+
+  useEffect(() => {
+    if (
+      IsCliMode &&
+      stage === Stage.Confirm &&
+      Force &&
+      chosenPairInfo.ready &&
+      chosenCollateral?.ready &&
+      client
+    ) {
+      onConfirm(true).catch((ex: any) => {
+        addMessage((ex as Error).toString(), { color: 'red' })
+      })
+    }
+  }, [
+    addMessage,
+    stage,
+    onConfirm,
+    chosenPairInfo.ready,
+    chosenCollateral?.ready,
+    client
+  ])
+
+  if (IsCliMode) {
+    if (!Pool || !QuoteAsset || AmountArg === undefined) {
+      return (
+        <SimpleHelpMessage
+          title="Use the following options for deposit"
+          args={depositOptions}
+        />
+      )
+    }
+  }
+
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Deposit Collateral</SectionTitle>
-      {stage === Stage.PoolSelection && (
+      {!IsCliMode && stage === Stage.PoolSelection && (
         <PoolSelector onSelected={onPoolSelected} />
       )}
-      {stage === Stage.CollateralSelection && (
+      {!IsCliMode && stage === Stage.CollateralSelection && (
         <MultiChoiceSelector
           intro={
             'Which collateral are you depositing into or withdrawing from?'
@@ -263,7 +387,7 @@ export const DepositControl = () => {
           onSelected={onCollateralSelected}
         />
       )}
-      {stage === Stage.AmountInput && (
+      {!IsCliMode && stage === Stage.AmountInput && (
         <AmountSelector
           intro={
             <>
@@ -326,7 +450,7 @@ export const DepositControl = () => {
           onRawSubmit={onAmountSubmitted}
         />
       )}
-      {stage === Stage.Confirm && (
+      {(!Force || !IsCliMode) && stage === Stage.Confirm && (
         <ConfirmationSelector
           intro={
             <>

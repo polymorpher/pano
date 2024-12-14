@@ -13,6 +13,7 @@ import { useTrade } from './hooks.js'
 import { defaultSlippageTolerance } from '../config.js'
 import { getTickRange } from './calc.js'
 import { usePositions } from '../positions/hooks.js'
+import { isCli } from 'src/command/cmd.ts'
 
 export const SellControl = () => {
   const {
@@ -77,10 +78,13 @@ export const SellControl = () => {
   return (
     <Box flexDirection={'column'}>
       <SectionTitle>Selling simple options</SectionTitle>
-      {stage === TradeStage.PoolSelection && (
+      {!isCli() && stage === TradeStage.PoolSelection && (
         <PoolSelector onSelected={onPoolSelected} />
       )}
       <LegMaker
+        onPoolSelected={(pair) => {
+          onPoolSelected({ pair, text: '' })
+        }}
         chosenPair={chosenPair}
         chosenPairInfo={chosenPairInfo}
         onLegConfirm={onLegConfirm}

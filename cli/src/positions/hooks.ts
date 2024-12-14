@@ -3,6 +3,7 @@ import { useCallback, useState, useEffect, useContext } from 'react'
 import {
   calculateTokenId,
   type Position,
+  type PositionWithId,
   type PositionWithData,
   type ValidatedPair
 } from '../common.js'
@@ -22,6 +23,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
   const [positions, setPositions] = useState<PositionWithData[]>([])
   const positionIds = positions.map((p) => BigInt(p.id))
   const { panopticFactory } = useFactories()
+
   const reloadPositions = useCallback(async () => {
     if (!wallet.address || !panopticFactory || !client) {
       return
@@ -29,7 +31,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
     const ps = await readPositions(wallet.address, uniswapPoolAddress)
     // addMessage(`Found ${ps.length} local positions. Sorting...`)
     const positionsByPool = groupBy(ps, (p) => p.uniswapPoolAddress)
-    const positionsPA = Object.entries(positionsByPool).map(
+    const positionsPA = Object.entries<PositionWithId[]>(positionsByPool).map(
       async ([upa, positions]) => {
         const ppAddress = await panopticFactory.read.getPanopticPool([
           upa as Address
@@ -85,7 +87,7 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       })
     setPositions(sortedPositions)
     return sortedPositions
-  }, [client, panopticFactory, addMessage, wallet.address, uniswapPoolAddress])
+  }, [wallet.address, panopticFactory, client, uniswapPoolAddress, addMessage])
 
   const addPosition = useCallback(
     async (
@@ -139,7 +141,13 @@ export const usePositions = (uniswapPoolAddress?: Address) => {
       })
   }, [addMessage, reloadPositions])
 
-  return { positions, reloadPositions, addPosition, positionIds, deletePosition }
+  return {
+    positions,
+    reloadPositions,
+    addPosition,
+    positionIds,
+    deletePosition
+  }
 }
 
 export const usePortfolioValue = (pair?: ValidatedPair) => {}

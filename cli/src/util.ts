@@ -17,7 +17,6 @@ import {
   type PositionWithData,
   PutCall,
   type PutCallType,
-  type TickSpacing,
   type Token01,
   Zero01
 } from './common.js'
@@ -25,7 +24,6 @@ import type {
   PanopticPoolInfo,
   UniswapPoolBasicInfo
 } from './pools/hooks/common.js'
-import type { ERC20Info } from './token.js'
 
 export const getTokenAddress = (
   token: string,
@@ -407,10 +405,16 @@ export function toUniswapPoolBasicInfo(
   // sqrtPriceX96: bigint
   // tick: number
   // ready: boolean
+  let sqrtPriceX96 = 0n
+  if (info.price > 0 && info.price !== Infinity) {
+    sqrtPriceX96 = BigInt(Math.floor(Math.sqrt(info.price) * 2 ** 96))
+  } else if (info.price === Infinity) {
+    sqrtPriceX96 = 0n
+  }
   return {
     ready: true,
     tick: info.priceTick,
-    sqrtPriceX96: BigInt(Math.floor(Math.sqrt(info.price) * 2 ** 96)),
+    sqrtPriceX96,
     tickSpacing: info.tickSpacing,
     token0: {
       ready: true,

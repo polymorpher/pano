@@ -11,11 +11,10 @@ import TextInput from 'ink-text-input'
 import { Box, Text } from 'ink'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
-import { UserInputContext } from './commands.js'
+import { UserInputContext } from './command/commands.js'
 import { SectionTitle } from './common.js'
-import { defaultWalletPrivateKey } from './config.js'
 import { tryPrivateKeyToAccount } from './util.js'
-import { getPk } from './cmd.js'
+import { getPk } from './command/cmd.js'
 
 export enum WalletType {
   Unloaded = 'unloaded',
@@ -38,9 +37,10 @@ interface WalletContextProps {
 }
 
 const loadDefaultWallet = () => {
-  if (!defaultWalletPrivateKey) {
+  if (!getPk()) {
     return EmptyWallet
   }
+
   const a = tryPrivateKeyToAccount(getPk())
   if (!a) {
     return EmptyWallet

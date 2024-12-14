@@ -1,7 +1,7 @@
 import * as process from 'process'
 import { buildPublicClient } from './client.js'
-import { isCommand, parseInitialNetwork } from './cmd.js'
-import { renderMainframe } from './mainframe.js'
+import { parseInitialNetwork } from './command/cmd.js'
+import renderMainframe from './mainframe.js'
 
 async function main() {
   const network = parseInitialNetwork()
