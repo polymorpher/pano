@@ -5,7 +5,7 @@ import React, {
   useContext,
   useState
 } from 'react'
-import { Text, Box } from 'ink'
+import { Text, Box } from './shared/ui.js'
 import { isCli } from './command/cmd.ts'
 
 interface NotificationOptions {

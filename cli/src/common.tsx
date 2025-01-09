@@ -4,7 +4,7 @@ import React, {
   useContext,
   useState
 } from 'react'
-import { Box, Text } from 'ink'
+import { Box, Text } from './shared/ui.js'
 import type { Pair } from './config.js'
 import { type Address, type Hex } from 'viem'
 import type { Tuple } from 'reverse-mirage'

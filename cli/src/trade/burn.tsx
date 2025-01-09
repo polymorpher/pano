@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../shared/ui.js'
 import { usePositions } from '../positions/hooks.js'
 import { useTrade } from './hooks.js'
 import {
