@@ -1,10 +1,14 @@
 import * as dotenv from 'dotenv'
-import * as process from 'process'
+import * as proc from 'process'
 import { DefaultAssets } from './constants.js'
 import { merge } from 'remeda'
 import { type Address, type Hex } from 'viem'
 import { type Token01 } from './common.js'
-dotenv.config()
+
+if (typeof window === 'undefined') {
+  dotenv.config()
+  process = proc
+}
 
 export const DEBUG = Boolean(
   process.env.DEBUG === 'true' || process.env.DEBUG === '1'
