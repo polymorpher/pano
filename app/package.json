@@ -13,11 +13,12 @@
     "@chakra-ui/cli": "^3.2.5",
     "@chakra-ui/react": "^3.2.5",
     "@emotion/react": "^11.14.0",
+    "ink": "^5.1.0",
     "next-themes": "^0.4.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.4.0",
-    "vite-tsconfig-paths": "^5.1.4"
+    "yoga-wasm-web": "^0.3.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
