@@ -7,7 +7,14 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 
 // https://vite.dev/config/
 export default defineConfig(() => {
-  fs.copyFileSync('./node_modules/yoga-wasm-web/dist/yoga.wasm', './node_modules/.vite/deps/yoga.wasm')
+  const dest = './node_modules/.vite/deps/yoga.wasm';
+  const dir = path.dirname(dest);
+
+  if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+  }
+
+  fs.copyFileSync('./node_modules/yoga-wasm-web/dist/yoga.wasm', dest)
   
   return {
     define: {
@@ -22,6 +29,7 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@cli': path.resolve(__dirname, '../cli/src'),
+        'src': path.resolve(__dirname, '../cli/src'),
       },
     },
     plugins: [

@@ -1,6 +1,5 @@
 import { Box as BoxInk, Text as BoxText } from 'ink'
-import { Box as BoxUI } from '@chakra-ui/react/box'
-import { Text as TextUI } from '@chakra-ui/react/typography'
+import { Box as BoxUI, Text as TextUI } from '@chakra-ui/react'
 
 export const Box = typeof document === 'undefined' ? BoxInk : BoxUI
 
