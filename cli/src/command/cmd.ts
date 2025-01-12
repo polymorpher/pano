@@ -23,6 +23,7 @@ import {
   depositCommand
 } from './options.js'
 import { type Address, type Hex } from 'viem'
+import { isWeb } from 'src/shared/ui.tsx'
 
 export const cmd = await yargs(hideBin(process.argv))
   .help(
@@ -94,4 +95,4 @@ export const getOption = (
     | BuyOptionKey
 ) => cmd[optionKey]
 
-export const isCli = () => cmd._[0]?.toString().toLowerCase() !== 'start'
+export const isCli = () => cmd._[0]?.toString().toLowerCase() !== 'start' && !isWeb

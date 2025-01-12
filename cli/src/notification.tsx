@@ -5,8 +5,13 @@ import React, {
   useContext,
   useState
 } from 'react'
-import { Text, Box } from './shared/ui.js'
+import { Text, Box, isWeb } from './shared/ui.js'
 import { isCli } from './command/cmd.ts'
+import {
+  Alert,
+  AlertIcon,
+  useToast
+} from '@chakra-ui/react'
 
 interface NotificationOptions {
   time?: number
@@ -53,6 +58,8 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
     []
   )
 
+  const toast = useToast()
+
   const addMessage = useCallback(
     (message: string, options: NotificationOptions = {}) => {
       if (isCli()) {
@@ -68,6 +75,16 @@ export const NotificationProvider = ({ children }: PropsWithChildren) => {
         setStickyMessages((sm) => [...sm, { message, options }])
       }
       if (!options.sticky) {
+        if (isWeb) {
+          toast({
+            description: message,
+            status: options.color === 'red' ? 'error' : options.color === 'green' ? 'success' : 'info',
+            duration: 10000,
+            isClosable: true,
+          })
+          return
+        }
+
         setTimeout(() => {
           setMessageStore((ms) => new Map([...ms, [id, { message, options }]]))
         }, options.delay ?? 0)
@@ -112,7 +129,12 @@ export const NotificationBar = () => {
   return (
     <Box flexDirection={'column'} marginTop={1} marginBottom={1}>
       {isCli() && <Text>Logs:</Text>}
-      {stickyMessages.map((message) => (
+      {stickyMessages.map((message) => isWeb ? (
+        <Alert status={message.options.color === 'red' ? 'error' : 'success'} key={message.options.id} mb={2}>
+          <AlertIcon />
+          {message.message}
+        </Alert>
+      ) : (
         <Text
           key={message.options.id}
           color={message.options.color ?? 'greenBright'}
