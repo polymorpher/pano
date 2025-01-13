@@ -20,9 +20,9 @@ export default defineConfig(() => {
     define: {
       '__dirname': '""',
       'process.env': {},
-      'process.stdout': '() => {}',
+      'process.stdout': {},
       'process.cwd': '() => ""',
-      'process.argv': '["", ""]',
+      'process.argv': ['', ''],
       'process.versions.electron': '() => false'
     },
     resolve: {

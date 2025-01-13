@@ -23,7 +23,7 @@ import {
   depositCommand
 } from './options.js'
 import { type Address, type Hex } from 'viem'
-import { isWeb } from 'src/shared/ui.tsx'
+import { isWeb } from 'src/shared/ui.js'
 
 export const cmd = await yargs(hideBin(process.argv))
   .help(
