@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { useWallet } from './wallet.js'
 import { useWalletClient } from './client.js'
-import { Box, Text } from 'ink'
+import { Box, Text } from './shared/ui.js'
 import {
   AmountSelector,
   ConfirmationSelector,

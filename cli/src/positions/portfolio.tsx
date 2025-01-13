@@ -10,7 +10,7 @@ import {
   tokenIdToPosition,
   type ValidatedPair
 } from 'src/common.js'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../shared/ui.js'
 import { useScanPositions } from './scan.js'
 import { usePools } from '../pools/hooks/panoptic.js'
 import { getOption, isCli } from 'src/command/cmd.js'

@@ -5,7 +5,7 @@ import {
   type PositionWithData,
   Zero01
 } from '../common.js'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../shared/ui.js'
 import {
   type CollateralFullInfo,
   type UniswapPoolBasicInfo

@@ -1,6 +1,6 @@
 import { SectionTitle } from './common.js'
 import React, { useContext, useEffect } from 'react'
-import { Box, Text } from 'ink'
+import { Box, Text } from './shared/ui.js'
 import { NotificationContext } from './notification.js'
 import { isCli } from './command/cmd.ts'
 import type { Options } from 'yargs'

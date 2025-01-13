@@ -1,5 +1,5 @@
 import React from 'react'
-import { Text } from 'ink'
+import { Text } from './shared/ui.js'
 import { Commands } from 'src/command/common.js'
 import { SectionTitle } from './common.js'
 

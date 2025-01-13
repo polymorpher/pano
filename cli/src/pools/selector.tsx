@@ -1,6 +1,6 @@
 import { SimplePoolInfo } from './info.js'
 import React, { useCallback, useContext, useState } from 'react'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../shared/ui.js'
 import { usePools } from './hooks/panoptic.js'
 import TextInput from 'ink-text-input'
 import { UserInputContext } from '../command/commands.js'

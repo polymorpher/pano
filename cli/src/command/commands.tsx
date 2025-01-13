@@ -6,7 +6,7 @@ import React, {
   useState
 } from 'react'
 import process from 'process'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../shared/ui.js'
 import TextInput from 'ink-text-input'
 import { NotificationContext } from '../notification.js'
 import { useWallet } from '../wallet.js'

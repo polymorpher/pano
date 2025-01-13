@@ -5,7 +5,7 @@ import {
   type Position,
   SectionTitle
 } from 'src/common.js'
-import { Box } from 'ink'
+import { Box } from '../shared/ui.js'
 import { PoolSelector } from 'src/pools/selector.js'
 import { getContract } from 'viem'
 import { LegMaker, TradeStage } from './trade.js'

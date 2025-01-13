@@ -24,7 +24,7 @@ import {
   toFixed,
   tryParseUnits
 } from '../util.js'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../shared/ui.js'
 import { type PanopticPoolInfo } from '../pools/hooks/common.js'
 import { NotificationContext } from '../notification.js'
 import { formatUnits } from 'viem'

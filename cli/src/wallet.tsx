@@ -8,7 +8,7 @@ import React, {
 } from 'react'
 import { type Address, type Hex } from 'viem'
 import TextInput from 'ink-text-input'
-import { Box, Text } from 'ink'
+import { Box, Text } from './shared/ui.js'
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts'
 import { NotificationContext } from './notification.js'
 import { UserInputContext } from './command/commands.js'
